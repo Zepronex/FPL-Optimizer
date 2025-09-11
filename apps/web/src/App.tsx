@@ -64,44 +64,43 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+            <div className="flex items-center h-16 space-x-8">
               <div className="flex items-center">
                 <h1 className="text-2xl font-bold text-fpl-dark">
                   FPL Optimizer
                 </h1>
               </div>
-              <div className="flex items-center space-x-6">
-                <nav className="flex space-x-4">
-                  <a 
-                    href="/" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    Home
-                  </a>
-                  <a 
-                    href="/generate" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    Generate Team
-                  </a>
-                  <a 
-                    href="/squad" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    New Squad
-                  </a>
-                  <a 
-                    href="/analyze" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    Analysis
-                  </a>
-                </nav>
-                
-                {/* Global Player Search */}
-                <div className="w-80">
-                  <GlobalPlayerSearch />
-                </div>
+              
+              <nav className="flex space-x-6">
+                <a 
+                  href="/squad" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  New Squad
+                </a>
+                <a 
+                  href="/generate" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Generate Team
+                </a>
+                <a 
+                  href="/analyze" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Analysis
+                </a>
+                <a 
+                  href="/" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Home
+                </a>
+              </nav>
+              
+              {/* Global Player Search - On the right */}
+              <div className="w-80 ml-auto">
+                <GlobalPlayerSearch />
               </div>
             </div>
           </div>
