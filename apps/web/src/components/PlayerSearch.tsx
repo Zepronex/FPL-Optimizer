@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
@@ -9,6 +10,7 @@ interface PlayerSearchProps {
 }
 
 const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<EnrichedPlayer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -71,10 +73,16 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
               <div className="flex-1">
                 <div className="font-semibold">{player.name}</div>
                 <div className="text-sm text-gray-600">
-                  {player.teamShort} • {player.pos} • {formatPrice(player.price)}
+                  {player.teamShort}
                 </div>
               </div>
               <div className="flex space-x-2">
+                <button
+                  onClick={() => navigate(`/player/${player.id}`)}
+                  className="btn-secondary text-xs px-3 py-1"
+                >
+                  View Details
+                </button>
                 <button
                   onClick={() => handleAddPlayer(player, true)}
                   className="btn-primary text-xs px-3 py-1"

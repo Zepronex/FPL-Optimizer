@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import SquadPage from './pages/SquadPage';
 import AnalyzePage from './pages/AnalyzePage';
 import GenerateTeamPage from './pages/GenerateTeamPage';
+import PlayerDetailPage from './pages/PlayerDetailPage';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
@@ -113,6 +114,7 @@ function App() {
             <Route path="/generate" element={<GenerateTeamPage />} />
             <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
             <Route path="/analyze" element={<AnalyzePage />} />
+            <Route path="/player/:id" element={<PlayerDetailPage />} />
           </Routes>
         </main>
 
