@@ -65,14 +65,21 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center h-16 space-x-8">
+            <div className="flex items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-2xl font-bold text-fpl-dark">
                   FPL Optimizer
                 </h1>
               </div>
               
-              <nav className="flex space-x-6">
+              {/* Global Player Search - Left of Nav */}
+              <div className="w-80 ml-8">
+                <GlobalPlayerSearch />
+              </div>
+              
+              <div className="w-4"></div>
+              
+              <nav className="flex space-x-6 ml-auto">
                 <a 
                   href="/squad" 
                   className="text-gray-600 hover:text-fpl-dark transition-colors"
@@ -98,11 +105,6 @@ function App() {
                   Home
                 </a>
               </nav>
-              
-              {/* Global Player Search - On the right */}
-              <div className="w-80 ml-auto">
-                <GlobalPlayerSearch />
-              </div>
             </div>
           </div>
         </header>
