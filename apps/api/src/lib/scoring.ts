@@ -31,7 +31,12 @@ export class ScoringService {
     return Math.round(score * 100) / 100; // Round to 2 decimal places
   }
 
-  static getPlayerLabel(score: number): PlayerLabel {
+  static getPlayerLabel(score: number, player: EnrichedPlayer): PlayerLabel {
+    // Check if player is injured, suspended, or doubtful
+    if (player.status === 'i' || player.status === 's' || player.status === 'd') {
+      return 'not-playing';
+    }
+    
     if (score >= 8) return 'perfect';
     if (score >= 6) return 'good';
     if (score >= 4) return 'poor';
@@ -76,12 +81,13 @@ export class ScoringService {
       perfect: 0,
       good: 0,
       poor: 0,
-      urgent: 0
+      urgent: 0,
+      'not-playing': 0
     };
 
     players.forEach(player => {
       if (player.score !== undefined) {
-        const label = this.getPlayerLabel(player.score);
+        const label = this.getPlayerLabel(player.score, player);
         counts[label]++;
       }
     });

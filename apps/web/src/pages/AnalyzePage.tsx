@@ -39,20 +39,6 @@ const AnalyzePage = () => {
     navigate('/squad');
   };
 
-  const copySuggestionsToClipboard = (result: AnalysisResult) => {
-    if (result.suggestions.length === 0) return;
-    
-    const suggestionsText = result.suggestions
-      .map(s => `${s.name} (${formatPrice(s.price)}) - ${s.delta > 0 ? '+' : ''}${s.delta.toFixed(1)} points`)
-      .join('\n');
-    
-    const clipboardText = `OUT: ${result.player.name} (${formatPrice(result.player.price)})\nIN:\n${suggestionsText}`;
-    
-    navigator.clipboard.writeText(clipboardText).then(() => {
-      // You could add a toast notification here
-      // Suggestions copied successfully
-    });
-  };
 
   if (isLoading) {
     return (
@@ -186,7 +172,6 @@ const AnalyzePage = () => {
             <PlayerRow
               key={result.player.id}
               result={result}
-              onCopySuggestions={() => copySuggestionsToClipboard(result)}
             />
           ))}
         </div>
@@ -200,7 +185,6 @@ const AnalyzePage = () => {
             <PlayerRow
               key={result.player.id}
               result={result}
-              onCopySuggestions={() => copySuggestionsToClipboard(result)}
               isBench={true}
             />
           ))}
@@ -210,7 +194,7 @@ const AnalyzePage = () => {
       {/* Legend */}
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="flex items-center space-x-2">
             <span className="badge bg-green-100 text-green-800 border-green-200">Perfect</span>
             <span className="text-sm text-gray-600">Score ≥ 8.0</span>
@@ -226,6 +210,10 @@ const AnalyzePage = () => {
           <div className="flex items-center space-x-2">
             <span className="badge bg-red-100 text-red-800 border-red-200">Urgent</span>
             <span className="text-sm text-gray-600">Score &lt; 4.0</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="badge bg-red-900 text-red-100 border-red-800">Not Playing</span>
+            <span className="text-sm text-gray-600">Injured/Suspended</span>
           </div>
         </div>
       </div>

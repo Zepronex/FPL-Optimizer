@@ -35,7 +35,7 @@ export class SquadAnalyzer {
       if (!player) continue;
       
       const score = ScoringService.calculatePlayerScore(player, weights);
-      const label = ScoringService.getPlayerLabel(score);
+      const label = ScoringService.getPlayerLabel(score, player);
       
       // Get suggestions for non-perfect players
       const suggestions = label !== 'perfect' 
@@ -59,7 +59,7 @@ export class SquadAnalyzer {
       if (!player) continue;
       
       const score = ScoringService.calculatePlayerScore(player, weights);
-      const label = ScoringService.getPlayerLabel(score);
+      const label = ScoringService.getPlayerLabel(score, player);
       
       results.push({
         player: { ...player, score },

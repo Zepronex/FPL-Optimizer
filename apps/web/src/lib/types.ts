@@ -47,7 +47,7 @@ export type AnalysisWeights = {
   next3Ease: number;
 };
 
-export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent';
+export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent' | 'not-playing';
 
 export type AnalysisResult = {
   player: EnrichedPlayer;

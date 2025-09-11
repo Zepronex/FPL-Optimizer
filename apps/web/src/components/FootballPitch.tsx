@@ -69,9 +69,12 @@ const FootballPitch = ({ startingXI, onRemovePlayer }: FootballPitchProps) => {
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-2">Defenders</h4>
           <div className="flex justify-center space-x-3">
-            {Array.from({ length: 5 }, (_, i) => (
-              <PlayerSlot key={i} slot={defenders[i] || null} position="DEF" index={i} />
+            {defenders.map((slot, i) => (
+              <PlayerSlot key={i} slot={slot} position="DEF" index={i} />
             ))}
+            {defenders.length === 0 && (
+              <PlayerSlot slot={null} position="DEF" index={0} />
+            )}
           </div>
         </div>
         
@@ -79,9 +82,12 @@ const FootballPitch = ({ startingXI, onRemovePlayer }: FootballPitchProps) => {
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-2">Midfielders</h4>
           <div className="flex justify-center space-x-3">
-            {Array.from({ length: 5 }, (_, i) => (
-              <PlayerSlot key={i} slot={midfielders[i] || null} position="MID" index={i} />
+            {midfielders.map((slot, i) => (
+              <PlayerSlot key={i} slot={slot} position="MID" index={i} />
             ))}
+            {midfielders.length === 0 && (
+              <PlayerSlot slot={null} position="MID" index={0} />
+            )}
           </div>
         </div>
         
@@ -89,9 +95,12 @@ const FootballPitch = ({ startingXI, onRemovePlayer }: FootballPitchProps) => {
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-2">Forwards</h4>
           <div className="flex justify-center space-x-3">
-            {Array.from({ length: 3 }, (_, i) => (
-              <PlayerSlot key={i} slot={forwards[i] || null} position="FWD" index={i} />
+            {forwards.map((slot, i) => (
+              <PlayerSlot key={i} slot={slot} position="FWD" index={i} />
             ))}
+            {forwards.length === 0 && (
+              <PlayerSlot slot={null} position="FWD" index={0} />
+            )}
           </div>
         </div>
       </div>

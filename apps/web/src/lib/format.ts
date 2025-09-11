@@ -23,6 +23,8 @@ export const getLabelColor = (label: PlayerLabel): string => {
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     case 'urgent':
       return 'bg-red-100 text-red-800 border-red-200';
+    case 'not-playing':
+      return 'bg-red-900 text-red-100 border-red-800';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
   }
@@ -38,6 +40,8 @@ export const getLabelText = (label: PlayerLabel): string => {
       return 'Poor';
     case 'urgent':
       return 'Urgent';
+    case 'not-playing':
+      return 'Not Playing';
     default:
       return 'Unknown';
   }
