@@ -24,7 +24,7 @@ const AnalyzePage = () => {
           setError('No analysis results found. Please analyze your squad first.');
         }
       } catch (err) {
-        console.error('AnalyzePage: Error loading analysis:', err);
+        // Error loading analysis
         setError('Failed to load analysis results.');
       } finally {
         setIsLoading(false);
@@ -50,7 +50,7 @@ const AnalyzePage = () => {
     
     navigator.clipboard.writeText(clipboardText).then(() => {
       // You could add a toast notification here
-      console.log('Suggestions copied to clipboard');
+      // Suggestions copied successfully
     });
   };
 

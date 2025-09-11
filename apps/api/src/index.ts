@@ -34,11 +34,11 @@ app.get('/api/health', (req, res) => {
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  // Server error occurred
   res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 FPL Optimizer API running on port ${PORT}`);
+  // FPL Optimizer API started
 });
 

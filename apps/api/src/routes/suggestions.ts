@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
       });
     }
     
-    console.error('Error getting suggestions:', error);
+    // Error getting suggestions
     res.status(500).json({
       success: false,
       error: 'Failed to get suggestions'
@@ -149,7 +149,7 @@ router.post('/bulk', async (req, res) => {
       });
     }
     
-    console.error('Error getting bulk suggestions:', error);
+    // Error getting bulk suggestions
     res.status(500).json({
       success: false,
       error: 'Failed to get bulk suggestions'

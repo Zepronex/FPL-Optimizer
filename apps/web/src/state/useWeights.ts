@@ -23,7 +23,7 @@ export const useWeights = () => {
         const parsed = JSON.parse(savedWeights);
         setWeights(parsed);
       } catch (err) {
-        console.warn('Failed to parse saved weights, using defaults');
+        // Failed to parse saved weights, using defaults
       }
     }
   }, []);

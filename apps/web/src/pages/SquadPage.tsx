@@ -35,7 +35,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       // Navigate to analyze page
       navigate('/analyze');
     } catch (error) {
-      console.error('Analysis failed:', error);
+      // Analysis failed
       setAnalysisError('Analysis failed. Please try again.');
     } finally {
       setIsAnalyzing(false);

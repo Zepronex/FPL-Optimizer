@@ -18,7 +18,7 @@ function App() {
         await apiClient.healthCheck();
         setIsApiConnected(true);
       } catch (error) {
-        console.error('API connection failed:', error);
+        // API connection failed
         setIsApiConnected(false);
       }
     };

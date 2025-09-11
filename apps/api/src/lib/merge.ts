@@ -127,7 +127,7 @@ export class DataMerger {
       
       return playersWithScores.map(item => item.player);
     } catch (error) {
-      console.error('Error searching players by name:', error);
+      // Error searching players by name
       return [];
     }
   }
@@ -202,7 +202,7 @@ export class DataMerger {
 
       return await this.enrichPlayers(players, teams, fixtures);
     } catch (error) {
-      console.error('Error getting enriched players:', error);
+      // Error getting enriched players
       throw error;
     }
   }

@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
       });
     }
     
-    console.error('Error analyzing squad:', error);
+    // Error analyzing squad
     res.status(500).json({
       success: false,
       error: 'Failed to analyze squad'
@@ -114,7 +114,7 @@ router.post('/validate', async (req, res) => {
       });
     }
     
-    console.error('Error validating squad:', error);
+    // Error validating squad
     res.status(500).json({
       success: false,
       error: 'Failed to validate squad'
