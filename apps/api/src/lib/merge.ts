@@ -46,16 +46,26 @@ export class DataMerger {
     cacheTimestamp = 0;
   }
 
+  /**
+   * Enriches FPL player data with advanced statistics and team information
+   * This is the core data processing function that combines multiple data sources
+   * 
+   * @param players - Raw FPL player data from the official API
+   * @param teams - Team information for mapping team IDs to names
+   * @param fixtures - Fixture data for calculating difficulty ratings
+   * @returns Promise<EnrichedPlayer[]> - Players with enhanced statistics
+   */
   static async enrichPlayers(
     players: FPLPlayer[],
     teams: FPLTeam[],
     fixtures: FPLFixture[]
   ): Promise<EnrichedPlayer[]> {
-    // Create lookup map for team data
+    // Create lookup map for team data to avoid O(n) searches for each player
     const teamMap = new Map(teams.map(team => [team.id, team]));
     const playerIds = players.map(p => p.id);
     
-    // Fetch advanced statistics and fixture difficulty data
+    // Fetch advanced statistics and fixture difficulty data in parallel
+    // This includes xG, xA, expected minutes, and fixture difficulty ratings
     const advancedStats = await AdvancedStatsFetcher.getAdvancedStats(playerIds);
     const fixtureDifficulty = await AdvancedStatsFetcher.getFixtureDifficulty();
 
@@ -75,7 +85,11 @@ export class DataMerger {
         xg90: stats.xG90 || 0,
         xa90: stats.xA90 || 0,
         expMin: stats.expMin || 0,
-        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty)
+        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty),
+        // Additional metrics
+        avgPoints: stats.avgPoints || 0,
+        value: stats.value || 0,
+        ownership: stats.ownership || 0
       };
     });
   }
@@ -127,7 +141,7 @@ export class DataMerger {
       
       return playersWithScores.map(item => item.player);
     } catch (error) {
-      console.error('Error searching players by name:', error);
+      // Error searching players by name
       return [];
     }
   }
@@ -202,7 +216,7 @@ export class DataMerger {
 
       return await this.enrichPlayers(players, teams, fixtures);
     } catch (error) {
-      console.error('Error getting enriched players:', error);
+      // Error getting enriched players
       throw error;
     }
   }

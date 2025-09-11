@@ -21,7 +21,7 @@ export class CacheService {
   }
 
   static set<T>(key: string, value: T, ttl?: number): boolean {
-    return cache.set(key, value, ttl);
+    return cache.set(key, value, ttl || 3600);
   }
 
   static del(key: string): number {
@@ -37,32 +37,32 @@ export class CacheService {
   }
 
   // Specific cache methods for FPL data
-  static getPlayers() {
-    return this.get(CACHE_KEYS.PLAYERS);
+  static getPlayers<T = any>(): T | undefined {
+    return this.get<T>(CACHE_KEYS.PLAYERS);
   }
 
   static setPlayers(players: any, ttl = 3600) {
     return this.set(CACHE_KEYS.PLAYERS, players, ttl);
   }
 
-  static getTeams() {
-    return this.get(CACHE_KEYS.TEAMS);
+  static getTeams<T = any>(): T | undefined {
+    return this.get<T>(CACHE_KEYS.TEAMS);
   }
 
   static setTeams(teams: any, ttl = 3600) {
     return this.set(CACHE_KEYS.TEAMS, teams, ttl);
   }
 
-  static getFixtures() {
-    return this.get(CACHE_KEYS.FIXTURES);
+  static getFixtures<T = any>(): T | undefined {
+    return this.get<T>(CACHE_KEYS.FIXTURES);
   }
 
   static setFixtures(fixtures: any, ttl = 3600) {
     return this.set(CACHE_KEYS.FIXTURES, fixtures, ttl);
   }
 
-  static getCurrentGameweek() {
-    return this.get(CACHE_KEYS.CURRENT_GW);
+  static getCurrentGameweek(): number | undefined {
+    return this.get<number>(CACHE_KEYS.CURRENT_GW);
   }
 
   static setCurrentGameweek(gw: number, ttl = 3600) {

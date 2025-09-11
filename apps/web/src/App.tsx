@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import HomePage from './pages/HomePage';
 import SquadPage from './pages/SquadPage';
 import AnalyzePage from './pages/AnalyzePage';
+import GenerateTeamPage from './pages/GenerateTeamPage';
+import PlayerDetailPage from './pages/PlayerDetailPage';
+import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
@@ -18,7 +21,7 @@ function App() {
         await apiClient.healthCheck();
         setIsApiConnected(true);
       } catch (error) {
-        console.error('API connection failed:', error);
+        // API connection failed
         setIsApiConnected(false);
       }
     };
@@ -62,33 +65,45 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+            <div className="flex items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-2xl font-bold text-fpl-dark">
                   FPL Optimizer
                 </h1>
               </div>
-              <nav className="flex space-x-4">
-                <a 
-                  href="/" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
-                >
-                  Home
-                </a>
+              
+              {/* Global Player Search - Left of Nav */}
+              <div className="w-80 ml-8">
+                <GlobalPlayerSearch />
+              </div>
+              
+              <div className="w-4"></div>
+              
+              <nav className="flex space-x-6 ml-auto">
                 <a 
                   href="/squad" 
                   className="text-gray-600 hover:text-fpl-dark transition-colors"
                 >
                   New Squad
                 </a>
-                {sessionStorage.getItem('fpl-analysis-results') && (
-                  <a 
-                    href="/analyze" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    Current Analysis
-                  </a>
-                )}
+                <a 
+                  href="/generate" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Generate Team
+                </a>
+                <a 
+                  href="/analyze" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Analysis
+                </a>
+                <a 
+                  href="/" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Home
+                </a>
               </nav>
             </div>
           </div>
@@ -97,8 +112,10 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/generate" element={<GenerateTeamPage />} />
             <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
             <Route path="/analyze" element={<AnalyzePage />} />
+            <Route path="/player/:id" element={<PlayerDetailPage />} />
           </Routes>
         </main>
 

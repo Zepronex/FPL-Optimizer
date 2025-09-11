@@ -29,97 +29,72 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
     try {
       const response = await apiClient.analyzeSquad(squad, weights);
       
-      // Store results in session storage for the analyze page
+      // Store results and original squad in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
+      sessionStorage.setItem('fpl-original-squad', JSON.stringify(squad));
       
       // Navigate to analyze page
       navigate('/analyze');
     } catch (error) {
-      console.error('Analysis failed:', error);
+      // Analysis failed
       setAnalysisError('Analysis failed. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleQuickStart = async () => {
-    // Create a sample analysis result for demonstration
-    const sampleAnalysis = {
-      results: [
-        {
-          id: 1,
-          name: "Mohamed Salah",
-          teamShort: "LIV",
-          pos: "MID",
-          price: 14.5,
-          score: 8.2,
-          breakdown: {
-            form: 2.4,
-            xg90: 2.1,
-            xa90: 1.8,
-            expMin: 1.2,
-            next3Ease: 0.7
-          }
-        },
-        {
-          id: 2,
-          name: "Erling Haaland",
-          teamShort: "MCI",
-          pos: "FWD",
-          price: 15.0,
-          score: 9.1,
-          breakdown: {
-            form: 2.7,
-            xg90: 2.8,
-            xa90: 1.2,
-            expMin: 1.5,
-            next3Ease: 0.9
-          }
-        }
-      ],
-      averageScore: 7.65,
-      flaggedPlayers: 0,
-      bankLeft: 0.5,
-      totalScore: 15.3,
-      weights: {
-        form: 0.3,
-        xg90: 0.25,
-        xa90: 0.2,
-        expMin: 0.15,
-        next3Ease: 0.1
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    sessionStorage.setItem('fpl-analysis-results', JSON.stringify(sampleAnalysis));
-    navigate('/analyze');
-  };
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
+      {/* Page Header with Analyze Button */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-fpl-dark mb-4">
           Squad Builder
         </h1>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
           Build your Fantasy Premier League squad and get AI-powered analysis with personalized suggestions to maximize your points potential.
         </p>
-      </div>
-
-      {/* Quick Start Section */}
-      <div className="text-center">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Quick Start</h3>
-          <p className="text-blue-700 mb-4">
-            Want to see how it works? Try our demo with a sample analysis.
-          </p>
+        
+        {/* Analyze Button - Moved to top */}
+        <div className="flex flex-col items-center space-y-3">
           <button
-            onClick={handleQuickStart}
-            className="btn-secondary"
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
+            className="btn-primary text-xl px-10 py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            View Demo Analysis
+            {isAnalyzing ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Analyzing Squad...
+              </>
+            ) : (
+              '🚀 Analyze My Squad'
+            )}
           </button>
+          
+          {/* Progress indicators */}
+          <div className="flex flex-col items-center space-y-1">
+            {squad.startingXI.length !== 11 && (
+              <p className="text-sm text-orange-600 font-medium">
+                Complete your starting XI ({squad.startingXI.length}/11 players)
+              </p>
+            )}
+            
+            {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
+              <p className="text-sm text-orange-600 font-medium">
+                Complete your bench ({squad.bench.length}/4 players)
+              </p>
+            )}
+            
+            {squad.startingXI.length === 11 && squad.bench.length === 4 && (
+              <p className="text-sm text-green-600 font-medium">
+                ✅ Squad complete! Ready to analyze
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -158,39 +133,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         <div className="lg:col-span-1">
           <WeightsPanel weightsState={weightsState} />
         </div>
-      </div>
-
-      {/* Analyze Button */}
-      <div className="text-center">
-        <button
-          onClick={handleAnalyze}
-          disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
-          className="btn-primary text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAnalyzing ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-fpl-dark inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Analyzing Squad...
-            </>
-          ) : (
-            'Analyze My Squad'
-          )}
-        </button>
-        
-        {squad.startingXI.length !== 11 && (
-          <p className="text-sm text-gray-500 mt-2">
-            Complete your starting XI ({squad.startingXI.length}/11 players)
-          </p>
-        )}
-        
-        {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
-          <p className="text-sm text-gray-500 mt-2">
-            Complete your bench ({squad.bench.length}/4 players)
-          </p>
-        )}
       </div>
     </div>
   );

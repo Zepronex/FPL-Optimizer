@@ -15,6 +15,10 @@ export type EnrichedPlayer = {
   xa90: number;
   expMin: number;
   next3Ease: number;
+  // Additional metrics for enhanced scoring
+  avgPoints: number; // Average FPL points per game
+  value: number; // Points per million (value metric)
+  ownership: number; // Ownership percentage (0-100)
   score?: number;
 };
 
@@ -45,9 +49,18 @@ export type AnalysisWeights = {
   xa90: number;
   expMin: number;
   next3Ease: number;
+  avgPoints: number;
+  value: number;
+  ownership: number;
 };
 
-export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent';
+export type WeightPreset = {
+  name: string;
+  description: string;
+  weights: AnalysisWeights;
+};
+
+export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent' | 'not-playing';
 
 export type AnalysisResult = {
   player: EnrichedPlayer;

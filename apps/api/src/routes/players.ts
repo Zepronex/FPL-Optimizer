@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
       count: players.length
     });
   } catch (error) {
-    console.error('Error fetching players:', error);
+    // Error fetching players
     res.status(500).json({
       success: false,
       error: 'Failed to fetch players'
@@ -56,7 +56,7 @@ router.get('/search', async (req, res) => {
       });
     }
     
-    console.error('Error searching players:', error);
+    // Error searching players
     res.status(500).json({
       success: false,
       error: 'Failed to search players'
@@ -90,7 +90,7 @@ router.get('/:id', async (req, res) => {
       data: player
     });
   } catch (error) {
-    console.error('Error fetching player:', error);
+    // Error fetching player
     res.status(500).json({
       success: false,
       error: 'Failed to fetch player'
@@ -120,7 +120,7 @@ router.get('/position/:pos', async (req, res) => {
       count: filteredPlayers.length
     });
   } catch (error) {
-    console.error('Error fetching players by position:', error);
+    // Error fetching players by position
     res.status(500).json({
       success: false,
       error: 'Failed to fetch players by position'
@@ -139,7 +139,7 @@ router.post('/refresh', async (req, res) => {
       message: 'Player data refreshed successfully'
     });
   } catch (error) {
-    console.error('Error refreshing player data:', error);
+    // Error refreshing player data
     res.status(500).json({
       success: false,
       error: 'Failed to refresh player data'

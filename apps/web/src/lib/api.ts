@@ -13,14 +13,8 @@ const api = axios.create({
 
 // Request interceptor for logging
 api.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor for error handling
@@ -28,10 +22,7 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    console.error('API Response Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export const apiClient = {
@@ -69,6 +60,16 @@ export const apiClient = {
 
   async getDefaultWeights(): Promise<{ success: boolean; data?: AnalysisWeights; error?: string }> {
     const response = await api.get('/analyze/weights');
+    return response.data;
+  },
+
+  async getWeightPresets(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    const response = await api.get('/analyze/presets');
+    return response.data;
+  },
+
+  async generateTeam(strategy: string, budget: number = 100): Promise<{ success: boolean; data?: any; error?: string }> {
+    const response = await api.post('/generate', { strategy, budget });
     return response.data;
   },
 

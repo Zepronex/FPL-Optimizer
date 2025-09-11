@@ -14,15 +14,14 @@ import {
   formatXA,
   formatMinutes
 } from '../lib/format';
-import { ChevronDown, ChevronUp, Copy, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PlayerRowProps {
   result: AnalysisResult;
-  onCopySuggestions: () => void;
   isBench?: boolean;
 }
 
-const PlayerRow = ({ result, onCopySuggestions, isBench = false }: PlayerRowProps) => {
+const PlayerRow = ({ result, isBench = false }: PlayerRowProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { player, score, label, suggestions } = result;
 
@@ -143,15 +142,8 @@ const PlayerRow = ({ result, onCopySuggestions, isBench = false }: PlayerRowProp
           {/* Suggestions */}
           {hasSuggestions && (
             <div className="p-4 border-t border-gray-200">
-              <div className="flex justify-between items-center mb-3">
+              <div className="mb-3">
                 <h4 className="font-semibold text-gray-900">Suggested Replacements</h4>
-                <button
-                  onClick={onCopySuggestions}
-                  className="btn-secondary text-sm"
-                >
-                  <Copy className="w-4 h-4 mr-1" />
-                  Copy Suggestions
-                </button>
               </div>
               
               <div className="space-y-2">
@@ -168,25 +160,13 @@ const PlayerRow = ({ result, onCopySuggestions, isBench = false }: PlayerRowProp
                         {formatPrice(suggestion.price)}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="text-right">
-                        <div className={`text-lg font-semibold ${
-                          suggestion.delta > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {formatDelta(suggestion.delta)}
-                        </div>
-                        <div className="text-xs text-gray-500">Score Change</div>
+                    <div className="text-right">
+                      <div className={`text-lg font-semibold ${
+                        suggestion.delta > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {formatDelta(suggestion.delta)}
                       </div>
-                      <button
-                        onClick={() => {
-                          // This would open player details in a new tab
-                          window.open(`https://fantasy.premierleague.com/players/${suggestion.id}`, '_blank');
-                        }}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                        title="View on FPL"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
+                      <div className="text-xs text-gray-500">Score Change</div>
                     </div>
                   </div>
                 ))}

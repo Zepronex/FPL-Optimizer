@@ -1,17 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
-import { AnalysisWeights } from '../lib/types';
+import { AnalysisWeights, WeightPreset } from '../lib/types';
 import { apiClient } from '../lib/api';
 
 const defaultWeights: AnalysisWeights = {
-  form: 0.3,
-  xg90: 0.25,
-  xa90: 0.2,
+  form: 0.2,
+  xg90: 0.15,
+  xa90: 0.15,
   expMin: 0.15,
-  next3Ease: 0.1
+  next3Ease: 0.1,
+  avgPoints: 0.15,
+  value: 0.05,
+  ownership: 0.05
 };
 
 export const useWeights = () => {
   const [weights, setWeights] = useState<AnalysisWeights>(defaultWeights);
+  const [presets, setPresets] = useState<WeightPreset[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,9 +27,24 @@ export const useWeights = () => {
         const parsed = JSON.parse(savedWeights);
         setWeights(parsed);
       } catch (err) {
-        console.warn('Failed to parse saved weights, using defaults');
+        // Failed to parse saved weights, using defaults
       }
     }
+  }, []);
+
+  // Load presets on mount
+  useEffect(() => {
+    const loadPresets = async () => {
+      try {
+        const response = await apiClient.getWeightPresets();
+        if (response.success && response.data) {
+          setPresets(response.data);
+        }
+      } catch (err) {
+        // Failed to load presets
+      }
+    };
+    loadPresets();
   }, []);
 
   // Save weights to localStorage whenever they change
@@ -77,14 +96,25 @@ export const useWeights = () => {
     setError(null);
   }, []);
 
+  const applyPreset = useCallback((preset: WeightPreset) => {
+    setWeights(preset.weights);
+  }, []);
+
+  const getPresetByName = useCallback((name: string): WeightPreset | undefined => {
+    return presets.find(preset => preset.name === name);
+  }, [presets]);
+
   return {
     weights,
+    presets,
     isLoading,
     error,
     updateWeight,
     resetToDefaults,
     normalizeWeights,
-    clearError
+    clearError,
+    applyPreset,
+    getPresetByName
   };
 };
 

@@ -6,6 +6,7 @@ import { playersRouter } from './routes/players';
 import { fixturesRouter } from './routes/fixtures';
 import { analyzeRouter } from './routes/analyze';
 import { suggestionsRouter } from './routes/suggestions';
+import { generateRouter } from './routes/generate';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/players', playersRouter);
 app.use('/api/fixtures', fixturesRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/suggestions', suggestionsRouter);
+app.use('/api/generate', generateRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -34,11 +36,11 @@ app.get('/api/health', (req, res) => {
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  // Server error occurred
   res.status(500).json({ error: 'Internal server error' });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 FPL Optimizer API running on port ${PORT}`);
+  // FPL Optimizer API started
 });
 

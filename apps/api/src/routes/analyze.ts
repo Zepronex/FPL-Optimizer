@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { SquadAnalyzer } from '../lib/squad';
+import { ScoringService } from '../lib/scoring';
 import { AnalysisWeights } from '../types';
 
 const router = Router();
@@ -23,7 +24,10 @@ const weightsSchema = z.object({
   xg90: z.number().min(0).max(1).optional(),
   xa90: z.number().min(0).max(1).optional(),
   expMin: z.number().min(0).max(1).optional(),
-  next3Ease: z.number().min(0).max(1).optional()
+  next3Ease: z.number().min(0).max(1).optional(),
+  avgPoints: z.number().min(0).max(1).optional(),
+  value: z.number().min(0).max(1).optional(),
+  ownership: z.number().min(0).max(1).optional()
 });
 
 const analyzeRequestSchema = z.object({
@@ -48,11 +52,14 @@ router.post('/', async (req, res) => {
     
     // Use provided weights or defaults
     const analysisWeights: AnalysisWeights = {
-      form: weights?.form ?? 0.3,
-      xg90: weights?.xg90 ?? 0.25,
-      xa90: weights?.xa90 ?? 0.2,
+      form: weights?.form ?? 0.2,
+      xg90: weights?.xg90 ?? 0.15,
+      xa90: weights?.xa90 ?? 0.15,
       expMin: weights?.expMin ?? 0.15,
-      next3Ease: weights?.next3Ease ?? 0.1
+      next3Ease: weights?.next3Ease ?? 0.1,
+      avgPoints: weights?.avgPoints ?? 0.15,
+      value: weights?.value ?? 0.05,
+      ownership: weights?.ownership ?? 0.05
     };
     
     // Normalize weights to sum to 1
@@ -83,7 +90,7 @@ router.post('/', async (req, res) => {
       });
     }
     
-    console.error('Error analyzing squad:', error);
+    // Error analyzing squad
     res.status(500).json({
       success: false,
       error: 'Failed to analyze squad'
@@ -114,7 +121,7 @@ router.post('/validate', async (req, res) => {
       });
     }
     
-    console.error('Error validating squad:', error);
+    // Error validating squad
     res.status(500).json({
       success: false,
       error: 'Failed to validate squad'
@@ -127,12 +134,23 @@ router.get('/weights', (req, res) => {
   res.json({
     success: true,
     data: {
-      form: 0.3,
-      xg90: 0.25,
-      xa90: 0.2,
+      form: 0.2,
+      xg90: 0.15,
+      xa90: 0.15,
       expMin: 0.15,
-      next3Ease: 0.1
+      next3Ease: 0.1,
+      avgPoints: 0.15,
+      value: 0.05,
+      ownership: 0.05
     }
+  });
+});
+
+// GET /api/analyze/presets - Get weight presets
+router.get('/presets', (req, res) => {
+  res.json({
+    success: true,
+    data: ScoringService.getWeightPresets()
   });
 });
 

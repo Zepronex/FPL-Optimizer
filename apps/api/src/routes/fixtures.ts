@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
       count: fixtures.length
     });
   } catch (error) {
-    console.error('Error fetching fixtures:', error);
+    // Error fetching fixtures
     res.status(500).json({
       success: false,
       error: 'Failed to fetch fixtures'
@@ -41,7 +41,7 @@ router.get('/gameweek/:gw', async (req, res) => {
       count: gameweekFixtures.length
     });
   } catch (error) {
-    console.error('Error fetching gameweek fixtures:', error);
+    // Error fetching gameweek fixtures
     res.status(500).json({
       success: false,
       error: 'Failed to fetch gameweek fixtures'
@@ -69,7 +69,7 @@ router.get('/team/:teamId', async (req, res) => {
       count: teamFixtures.length
     });
   } catch (error) {
-    console.error('Error fetching team fixtures:', error);
+    // Error fetching team fixtures
     res.status(500).json({
       success: false,
       error: 'Failed to fetch team fixtures'
@@ -86,7 +86,7 @@ router.get('/current', async (req, res) => {
       data: { currentGameweek: currentGw }
     });
   } catch (error) {
-    console.error('Error fetching current gameweek:', error);
+    // Error fetching current gameweek
     res.status(500).json({
       success: false,
       error: 'Failed to fetch current gameweek'

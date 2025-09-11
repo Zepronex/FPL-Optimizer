@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FPLPlayer, FPLTeam, FPLFixture } from '../types';
+import { FPLPlayer, FPLTeam, FPLFixture } from '../../types';
 import { CacheService } from '../cache';
 
 const FPL_API_BASE = 'https://fantasy.premierleague.com/api';
@@ -18,7 +18,7 @@ const makeRequest = async (url: string, retries = 3): Promise<any> => {
       });
       return response.data;
     } catch (error) {
-      console.warn(`Request failed (attempt ${i + 1}/${retries}):`, error);
+      // Request failed, retrying...
       if (i === retries - 1) throw error;
       await sleep(1000 * Math.pow(2, i)); // Exponential backoff
     }
@@ -27,7 +27,7 @@ const makeRequest = async (url: string, retries = 3): Promise<any> => {
 
 export class FPLDataFetcher {
   static async getPlayers(): Promise<FPLPlayer[]> {
-    const cached = CacheService.getPlayers();
+    const cached = CacheService.getPlayers<FPLPlayer[]>();
     if (cached) return cached;
 
     try {
@@ -36,13 +36,13 @@ export class FPLDataFetcher {
       CacheService.setPlayers(players);
       return players;
     } catch (error) {
-      console.error('Failed to fetch players:', error);
+      // Failed to fetch players
       throw new Error('Failed to fetch player data');
     }
   }
 
   static async getTeams(): Promise<FPLTeam[]> {
-    const cached = CacheService.getTeams();
+    const cached = CacheService.getTeams<FPLTeam[]>();
     if (cached) return cached;
 
     try {
@@ -51,13 +51,13 @@ export class FPLDataFetcher {
       CacheService.setTeams(teams);
       return teams;
     } catch (error) {
-      console.error('Failed to fetch teams:', error);
+      // Failed to fetch teams
       throw new Error('Failed to fetch team data');
     }
   }
 
   static async getFixtures(): Promise<FPLFixture[]> {
-    const cached = CacheService.getFixtures();
+    const cached = CacheService.getFixtures<FPLFixture[]>();
     if (cached) return cached;
 
     try {
@@ -65,14 +65,14 @@ export class FPLDataFetcher {
       CacheService.setFixtures(data);
       return data;
     } catch (error) {
-      console.error('Failed to fetch fixtures:', error);
+      // Failed to fetch fixtures
       throw new Error('Failed to fetch fixture data');
     }
   }
 
   static async getCurrentGameweek(): Promise<number> {
     const cached = CacheService.getCurrentGameweek();
-    if (cached) return cached;
+    if (cached !== undefined) return cached;
 
     try {
       const data = await makeRequest(`${FPL_API_BASE}/bootstrap-static/`);
@@ -80,7 +80,7 @@ export class FPLDataFetcher {
       CacheService.setCurrentGameweek(currentGw);
       return currentGw;
     } catch (error) {
-      console.error('Failed to fetch current gameweek:', error);
+      // Failed to fetch current gameweek
       return 1; // Fallback
     }
   }
@@ -93,9 +93,9 @@ export class FPLDataFetcher {
         this.getFixtures(),
         this.getCurrentGameweek()
       ]);
-      console.log('All FPL data refreshed successfully');
+      // All FPL data refreshed successfully
     } catch (error) {
-      console.error('Failed to refresh FPL data:', error);
+      // Failed to refresh FPL data
       throw error;
     }
   }
