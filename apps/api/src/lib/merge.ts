@@ -75,7 +75,11 @@ export class DataMerger {
         xg90: stats.xG90 || 0,
         xa90: stats.xA90 || 0,
         expMin: stats.expMin || 0,
-        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty)
+        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty),
+        // Additional metrics
+        avgPoints: stats.avgPoints || 0,
+        value: stats.value || 0,
+        ownership: stats.ownership || 0
       };
     });
   }

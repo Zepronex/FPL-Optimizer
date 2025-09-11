@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FPLPlayer, FPLTeam, FPLFixture } from '../types';
+import { FPLPlayer, FPLTeam, FPLFixture } from '../../types';
 import { CacheService } from '../cache';
 
 const FPL_API_BASE = 'https://fantasy.premierleague.com/api';
@@ -27,7 +27,7 @@ const makeRequest = async (url: string, retries = 3): Promise<any> => {
 
 export class FPLDataFetcher {
   static async getPlayers(): Promise<FPLPlayer[]> {
-    const cached = CacheService.getPlayers();
+    const cached = CacheService.getPlayers<FPLPlayer[]>();
     if (cached) return cached;
 
     try {
@@ -42,7 +42,7 @@ export class FPLDataFetcher {
   }
 
   static async getTeams(): Promise<FPLTeam[]> {
-    const cached = CacheService.getTeams();
+    const cached = CacheService.getTeams<FPLTeam[]>();
     if (cached) return cached;
 
     try {
@@ -57,7 +57,7 @@ export class FPLDataFetcher {
   }
 
   static async getFixtures(): Promise<FPLFixture[]> {
-    const cached = CacheService.getFixtures();
+    const cached = CacheService.getFixtures<FPLFixture[]>();
     if (cached) return cached;
 
     try {
@@ -72,7 +72,7 @@ export class FPLDataFetcher {
 
   static async getCurrentGameweek(): Promise<number> {
     const cached = CacheService.getCurrentGameweek();
-    if (cached) return cached;
+    if (cached !== undefined) return cached;
 
     try {
       const data = await makeRequest(`${FPL_API_BASE}/bootstrap-static/`);

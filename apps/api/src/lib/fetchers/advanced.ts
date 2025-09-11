@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FPLPlayer } from '../types';
+import { FPLPlayer } from '../../types';
 import { CacheService } from '../cache';
 
 // Mock advanced stats fetcher - in a real implementation, this would integrate with
@@ -8,18 +8,23 @@ export class AdvancedStatsFetcher {
   private static readonly CACHE_KEY = 'advanced_stats';
 
   static async getAdvancedStats(playerIds: number[]): Promise<Record<number, any>> {
-    const cached = CacheService.get(this.CACHE_KEY);
+    const cached = CacheService.get<Record<number, any>>(this.CACHE_KEY);
     if (cached) return cached;
 
     // Mock implementation - replace with real data source
     const mockStats: Record<number, any> = {};
     
     for (const playerId of playerIds) {
+      const basePoints = Math.random() * 15 + 2; // 2-17 points range
+      const price = Math.random() * 12 + 4; // 4-16 price range
+      
       mockStats[playerId] = {
         xG90: Math.random() * 0.8, // Mock xG per 90
         xA90: Math.random() * 0.6, // Mock xA per 90
         expMin: Math.floor(Math.random() * 90), // Mock expected minutes
-        // Add more advanced metrics as needed
+        avgPoints: basePoints, // Mock average points per game
+        value: basePoints / price, // Mock value (points per million)
+        ownership: Math.random() * 100 // Mock ownership percentage (0-100)
       };
     }
 

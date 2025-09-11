@@ -4,6 +4,7 @@ import PlayerSearch from './PlayerSearch';
 import FootballPitch from './FootballPitch';
 import BenchDisplay from './BenchDisplay';
 import BudgetDisplay from './BudgetDisplay';
+import { EnrichedPlayer } from '../lib/types';
 
 interface SquadFormProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -33,10 +34,10 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
         <div className="flex space-x-2">
           <button
             onClick={clearSquad}
-            className="btn-danger text-sm"
+            className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
           >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Clear Squad
+            <Trash2 className="w-4 h-4" />
+            <span>Clear Squad</span>
           </button>
         </div>
       </div>

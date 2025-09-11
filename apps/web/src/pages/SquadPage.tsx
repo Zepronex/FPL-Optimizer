@@ -45,16 +45,57 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
+      {/* Page Header with Analyze Button */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-fpl-dark mb-4">
           Squad Builder
         </h1>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
           Build your Fantasy Premier League squad and get AI-powered analysis with personalized suggestions to maximize your points potential.
         </p>
+        
+        {/* Analyze Button - Moved to top */}
+        <div className="flex flex-col items-center space-y-3">
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
+            className="btn-primary text-xl px-10 py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            {isAnalyzing ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Analyzing Squad...
+              </>
+            ) : (
+              '🚀 Analyze My Squad'
+            )}
+          </button>
+          
+          {/* Progress indicators */}
+          <div className="flex flex-col items-center space-y-1">
+            {squad.startingXI.length !== 11 && (
+              <p className="text-sm text-orange-600 font-medium">
+                Complete your starting XI ({squad.startingXI.length}/11 players)
+              </p>
+            )}
+            
+            {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
+              <p className="text-sm text-orange-600 font-medium">
+                Complete your bench ({squad.bench.length}/4 players)
+              </p>
+            )}
+            
+            {squad.startingXI.length === 11 && squad.bench.length === 4 && (
+              <p className="text-sm text-green-600 font-medium">
+                ✅ Squad complete! Ready to analyze
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-
 
       {/* Error Display */}
       {(squadError || weightsError || analysisError) && (
@@ -91,39 +132,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         <div className="lg:col-span-1">
           <WeightsPanel weightsState={weightsState} />
         </div>
-      </div>
-
-      {/* Analyze Button */}
-      <div className="text-center">
-        <button
-          onClick={handleAnalyze}
-          disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
-          className="btn-primary text-lg px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isAnalyzing ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-fpl-dark inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Analyzing Squad...
-            </>
-          ) : (
-            'Analyze My Squad'
-          )}
-        </button>
-        
-        {squad.startingXI.length !== 11 && (
-          <p className="text-sm text-gray-500 mt-2">
-            Complete your starting XI ({squad.startingXI.length}/11 players)
-          </p>
-        )}
-        
-        {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
-          <p className="text-sm text-gray-500 mt-2">
-            Complete your bench ({squad.bench.length}/4 players)
-          </p>
-        )}
       </div>
     </div>
   );

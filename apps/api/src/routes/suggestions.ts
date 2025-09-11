@@ -122,7 +122,7 @@ router.post('/bulk', async (req, res) => {
     
     const results = await Promise.all(
       players.map(async (player) => {
-        const suggestions = await this.getSuggestionsForPlayer(
+        const suggestions = await getSuggestionsForPlayer(
           player.id,
           player.position,
           player.maxPrice,

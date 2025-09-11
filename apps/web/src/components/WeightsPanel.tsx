@@ -1,4 +1,4 @@
-import { RotateCcw, Info } from 'lucide-react';
+import { RotateCcw, Info, Settings } from 'lucide-react';
 
 interface WeightsPanelProps {
   weightsState: ReturnType<typeof import('../state/useWeights').useWeights>;
@@ -7,9 +7,11 @@ interface WeightsPanelProps {
 const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
   const { 
     weights, 
+    presets,
     updateWeight, 
     resetToDefaults, 
     normalizeWeights,
+    applyPreset,
     isLoading,
     error,
     clearError
@@ -47,6 +49,24 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       label: 'Next 3 Fixtures',
       description: 'Difficulty of upcoming matches',
       color: 'bg-red-500'
+    },
+    {
+      key: 'avgPoints' as const,
+      label: 'Avg Points',
+      description: 'Historical FPL points per game',
+      color: 'bg-indigo-500'
+    },
+    {
+      key: 'value' as const,
+      label: 'Value',
+      description: 'Points per million (cost efficiency)',
+      color: 'bg-emerald-500'
+    },
+    {
+      key: 'ownership' as const,
+      label: 'Ownership',
+      description: 'Popularity among FPL managers',
+      color: 'bg-pink-500'
     }
   ];
 
@@ -86,6 +106,28 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
             >
               ×
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Preset Selector */}
+      {presets.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center space-x-2 mb-3">
+            <Settings className="w-4 h-4 text-gray-600" />
+            <h3 className="text-sm font-semibold text-gray-800">Quick Presets</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {presets.map((preset) => (
+              <button
+                key={preset.name}
+                onClick={() => applyPreset(preset)}
+                className="text-left p-4 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <div className="font-semibold text-sm text-gray-800 mb-1">{preset.name}</div>
+                <div className="text-xs text-gray-600 leading-relaxed">{preset.description}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}

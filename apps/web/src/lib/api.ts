@@ -63,6 +63,11 @@ export const apiClient = {
     return response.data;
   },
 
+  async getWeightPresets(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    const response = await api.get('/analyze/presets');
+    return response.data;
+  },
+
   // Suggestions API
   async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
     const response = await api.post('/suggestions', {

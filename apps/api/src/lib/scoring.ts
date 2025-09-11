@@ -1,13 +1,89 @@
-import { EnrichedPlayer, AnalysisWeights, PlayerLabel } from '../types';
+import { EnrichedPlayer, AnalysisWeights, PlayerLabel, WeightPreset } from '../types';
 
 export class ScoringService {
   static readonly DEFAULT_WEIGHTS: AnalysisWeights = {
-    form: 0.3,
-    xg90: 0.25,
-    xa90: 0.2,
+    form: 0.2,
+    xg90: 0.15,
+    xa90: 0.15,
     expMin: 0.15,
-    next3Ease: 0.1
+    next3Ease: 0.1,
+    avgPoints: 0.15,
+    value: 0.05,
+    ownership: 0.05
   };
+
+  static readonly WEIGHT_PRESETS: WeightPreset[] = [
+    {
+      name: 'Balanced',
+      description: 'Well-rounded approach considering all factors equally',
+      weights: {
+        form: 0.2,
+        xg90: 0.15,
+        xa90: 0.15,
+        expMin: 0.15,
+        next3Ease: 0.1,
+        avgPoints: 0.15,
+        value: 0.05,
+        ownership: 0.05
+      }
+    },
+    {
+      name: 'Historical Performance',
+      description: 'Focus on proven track record and consistency',
+      weights: {
+        form: 0.1,
+        xg90: 0.1,
+        xa90: 0.1,
+        expMin: 0.2,
+        next3Ease: 0.05,
+        avgPoints: 0.3,
+        value: 0.05,
+        ownership: 0.1
+      }
+    },
+    {
+      name: 'Cost-Effective',
+      description: 'Maximize value for money and budget efficiency',
+      weights: {
+        form: 0.15,
+        xg90: 0.1,
+        xa90: 0.1,
+        expMin: 0.15,
+        next3Ease: 0.1,
+        avgPoints: 0.1,
+        value: 0.25,
+        ownership: 0.05
+      }
+    },
+    {
+      name: 'Trending Up',
+      description: 'Prioritize current form and upcoming fixtures',
+      weights: {
+        form: 0.35,
+        xg90: 0.2,
+        xa90: 0.15,
+        expMin: 0.1,
+        next3Ease: 0.15,
+        avgPoints: 0.03,
+        value: 0.01,
+        ownership: 0.01
+      }
+    },
+    {
+      name: 'Risky',
+      description: 'High-risk, high-reward strategy focusing heavily on form',
+      weights: {
+        form: 0.6,
+        xg90: 0.15,
+        xa90: 0.1,
+        expMin: 0.05,
+        next3Ease: 0.05,
+        avgPoints: 0.02,
+        value: 0.02,
+        ownership: 0.01
+      }
+    }
+  ];
 
   static calculatePlayerScore(
     player: EnrichedPlayer,
@@ -19,6 +95,11 @@ export class ScoringService {
     const normalizedXA = Math.min(player.xa90 * 25, 10); // Scale xA90
     const normalizedMinutes = (player.expMin / 90) * 10; // Minutes as percentage of 90
     const normalizedEase = (6 - player.next3Ease) * 2; // Invert difficulty (1-5 -> 10-2)
+    
+    // New metrics normalization
+    const normalizedAvgPoints = Math.min(player.avgPoints * 0.5, 10); // Scale avg points (typically 0-20)
+    const normalizedValue = Math.min(player.value * 2, 10); // Scale value metric (points per million)
+    const normalizedOwnership = (player.ownership / 10); // Scale ownership % (0-100 -> 0-10)
 
     // Apply weights and calculate weighted score
     const score = 
@@ -26,7 +107,10 @@ export class ScoringService {
       normalizedXG * weights.xg90 +
       normalizedXA * weights.xa90 +
       normalizedMinutes * weights.expMin +
-      normalizedEase * weights.next3Ease;
+      normalizedEase * weights.next3Ease +
+      normalizedAvgPoints * weights.avgPoints +
+      normalizedValue * weights.value +
+      normalizedOwnership * weights.ownership;
 
     return Math.round(score * 100) / 100; // Round to 2 decimal places
   }
@@ -104,6 +188,14 @@ export class ScoringService {
     if (validScores.length === 0) return 0;
     
     return this.calculateTotalScore(validScores) / validScores.length;
+  }
+
+  static getWeightPresets(): WeightPreset[] {
+    return this.WEIGHT_PRESETS;
+  }
+
+  static getPresetByName(name: string): WeightPreset | null {
+    return this.WEIGHT_PRESETS.find(preset => preset.name === name) || null;
   }
 }
 
