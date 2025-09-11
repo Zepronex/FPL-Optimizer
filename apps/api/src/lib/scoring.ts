@@ -1,15 +1,25 @@
 import { EnrichedPlayer, AnalysisWeights, PlayerLabel, WeightPreset } from '../types';
 
+/**
+ * ScoringService handles the calculation of player scores based on various metrics
+ * The scoring algorithm combines multiple factors to provide a comprehensive player rating
+ * that helps FPL managers make informed decisions about their team selections.
+ */
 export class ScoringService {
+  /**
+   * Default weight configuration for player scoring
+   * These weights determine how much each metric contributes to the final score
+   * All weights should sum to 1.0 for proper normalization
+   */
   static readonly DEFAULT_WEIGHTS: AnalysisWeights = {
-    form: 0.2,
-    xg90: 0.15,
-    xa90: 0.15,
-    expMin: 0.15,
-    next3Ease: 0.1,
-    avgPoints: 0.15,
-    value: 0.05,
-    ownership: 0.05
+    form: 0.2,        // Recent performance (last 5 games)
+    xg90: 0.15,       // Expected goals per 90 minutes
+    xa90: 0.15,       // Expected assists per 90 minutes
+    expMin: 0.15,     // Expected minutes (playing time likelihood)
+    next3Ease: 0.1,   // Fixture difficulty for next 3 games
+    avgPoints: 0.15,  // Historical FPL points average
+    value: 0.05,      // Points per million (value for money)
+    ownership: 0.05   // Ownership percentage (differential factor)
   };
 
   static readonly WEIGHT_PRESETS: WeightPreset[] = [
@@ -85,23 +95,33 @@ export class ScoringService {
     }
   ];
 
+  /**
+   * Calculates a comprehensive score for a player based on multiple weighted metrics
+   * The score ranges from 0-10 and helps rank players for FPL selection
+   * 
+   * @param player - The enriched player data containing all relevant metrics
+   * @param weights - Custom weight configuration (defaults to DEFAULT_WEIGHTS)
+   * @returns number - Player score between 0-10 (higher is better)
+   */
   static calculatePlayerScore(
     player: EnrichedPlayer,
     weights: AnalysisWeights = this.DEFAULT_WEIGHTS
   ): number {
-    // Normalize each metric to 0-10 scale
-    const normalizedForm = Math.min(player.form * 2, 10); // Form is typically 0-5
-    const normalizedXG = Math.min(player.xg90 * 20, 10); // Scale xG90
-    const normalizedXA = Math.min(player.xa90 * 25, 10); // Scale xA90
+    // Normalize each metric to 0-10 scale for consistent comparison
+    // This ensures all metrics contribute equally regardless of their original scale
+    const normalizedForm = Math.min(player.form * 2, 10); // Form is typically 0-5, scale to 0-10
+    const normalizedXG = Math.min(player.xg90 * 20, 10); // Scale xG90 (0-0.5 -> 0-10)
+    const normalizedXA = Math.min(player.xa90 * 25, 10); // Scale xA90 (0-0.4 -> 0-10)
     const normalizedMinutes = (player.expMin / 90) * 10; // Minutes as percentage of 90
     const normalizedEase = (6 - player.next3Ease) * 2; // Invert difficulty (1-5 -> 10-2)
     
-    // New metrics normalization
+    // Additional metrics normalization for enhanced scoring
     const normalizedAvgPoints = Math.min(player.avgPoints * 0.5, 10); // Scale avg points (typically 0-20)
     const normalizedValue = Math.min(player.value * 2, 10); // Scale value metric (points per million)
     const normalizedOwnership = (player.ownership / 10); // Scale ownership % (0-100 -> 0-10)
 
     // Apply weights and calculate weighted score
+    // Each metric is multiplied by its weight and summed for the final score
     const score = 
       normalizedForm * weights.form +
       normalizedXG * weights.xg90 +
@@ -112,7 +132,7 @@ export class ScoringService {
       normalizedValue * weights.value +
       normalizedOwnership * weights.ownership;
 
-    return Math.round(score * 100) / 100; // Round to 2 decimal places
+    return Math.round(score * 100) / 100; // Round to 2 decimal places for precision
   }
 
   static getPlayerLabel(score: number, player: EnrichedPlayer): PlayerLabel {

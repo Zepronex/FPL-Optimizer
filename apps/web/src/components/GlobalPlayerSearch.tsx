@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, X, User, TrendingUp, DollarSign } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
@@ -11,6 +12,7 @@ interface GlobalPlayerSearchProps {
 }
 
 const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any player...", className = "" }: GlobalPlayerSearchProps) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<EnrichedPlayer[]>([]);
@@ -66,27 +68,10 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
     }
   };
 
-  const handlePlayerClick = async (player: EnrichedPlayer) => {
-    setSelectedPlayer(player);
+  const handlePlayerClick = (player: EnrichedPlayer) => {
     setIsOpen(false);
-    setQuery(player.name);
-    
-    // Calculate player score
-    setIsScoring(true);
-    try {
-      // For now, we'll calculate a simple score based on available data
-      // In a real implementation, you'd call an API endpoint for individual player scoring
-      const score = calculateSimpleScore(player);
-      setPlayerScore(score);
-    } catch (error) {
-      console.error('Scoring failed:', error);
-    } finally {
-      setIsScoring(false);
-    }
-
-    if (onPlayerSelect) {
-      onPlayerSelect(player);
-    }
+    setQuery('');
+    navigate(`/player/${player.id}`);
   };
 
   const calculateSimpleScore = (player: EnrichedPlayer): number => {
@@ -176,13 +161,9 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
                       <div>
                         <div className="font-medium text-gray-900">{player.name}</div>
                         <div className="text-sm text-gray-500">
-                          {player.teamShort} • {player.pos} • {formatPrice(player.price)}
+                          {player.teamShort}
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{player.form.toFixed(1)}</div>
-                      <div className="text-xs text-gray-500">Form</div>
                     </div>
                   </div>
                 </button>
