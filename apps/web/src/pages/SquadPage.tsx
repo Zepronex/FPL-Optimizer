@@ -42,58 +42,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
     }
   };
 
-  const handleQuickStart = async () => {
-    // Create a sample analysis result for demonstration
-    const sampleAnalysis = {
-      results: [
-        {
-          id: 1,
-          name: "Mohamed Salah",
-          teamShort: "LIV",
-          pos: "MID",
-          price: 14.5,
-          score: 8.2,
-          breakdown: {
-            form: 2.4,
-            xg90: 2.1,
-            xa90: 1.8,
-            expMin: 1.2,
-            next3Ease: 0.7
-          }
-        },
-        {
-          id: 2,
-          name: "Erling Haaland",
-          teamShort: "MCI",
-          pos: "FWD",
-          price: 15.0,
-          score: 9.1,
-          breakdown: {
-            form: 2.7,
-            xg90: 2.8,
-            xa90: 1.2,
-            expMin: 1.5,
-            next3Ease: 0.9
-          }
-        }
-      ],
-      averageScore: 7.65,
-      flaggedPlayers: 0,
-      bankLeft: 0.5,
-      totalScore: 15.3,
-      weights: {
-        form: 0.3,
-        xg90: 0.25,
-        xa90: 0.2,
-        expMin: 0.15,
-        next3Ease: 0.1
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    sessionStorage.setItem('fpl-analysis-results', JSON.stringify(sampleAnalysis));
-    navigate('/analyze');
-  };
 
   return (
     <div className="space-y-8">
@@ -107,21 +55,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         </p>
       </div>
 
-      {/* Quick Start Section */}
-      <div className="text-center">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Quick Start</h3>
-          <p className="text-blue-700 mb-4">
-            Want to see how it works? Try our demo with a sample analysis.
-          </p>
-          <button
-            onClick={handleQuickStart}
-            className="btn-secondary"
-          >
-            View Demo Analysis
-          </button>
-        </div>
-      </div>
 
       {/* Error Display */}
       {(squadError || weightsError || analysisError) && (

@@ -81,14 +81,12 @@ function App() {
                 >
                   New Squad
                 </a>
-                {sessionStorage.getItem('fpl-analysis-results') && (
-                  <a 
-                    href="/analyze" 
-                    className="text-gray-600 hover:text-fpl-dark transition-colors"
-                  >
-                    Current Analysis
-                  </a>
-                )}
+                <a 
+                  href="/analyze" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                >
+                  Analysis
+                </a>
               </nav>
             </div>
           </div>

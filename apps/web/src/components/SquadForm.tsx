@@ -27,7 +27,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async (query: string) => {
-    if (query.length < 3) { // Increased minimum length to reduce API calls
+    if (query.length < 2) {
       setSearchResults([]);
       return;
     }
@@ -51,7 +51,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       handleSearch(searchQuery);
-    }, 500); // Increased debounce time for better performance
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);

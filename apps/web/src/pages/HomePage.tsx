@@ -13,18 +13,12 @@ const HomePage = () => {
         <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.
         </p>
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center">
           <button
             onClick={() => navigate('/squad')}
             className="btn-primary text-lg px-8 py-3"
           >
             Start Building Squad
-          </button>
-          <button
-            onClick={() => navigate('/analyze')}
-            className="btn-secondary text-lg px-8 py-3"
-          >
-            View Demo Analysis
           </button>
         </div>
       </div>

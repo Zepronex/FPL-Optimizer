@@ -14,13 +14,17 @@ const AnalyzePage = () => {
     const loadAnalysis = () => {
       try {
         const storedAnalysis = sessionStorage.getItem('fpl-analysis-results');
+        
         if (storedAnalysis) {
           const parsed = JSON.parse(storedAnalysis);
-          setAnalysis(parsed);
+          // Extract the actual analysis data from the API response
+          const analysisData = parsed.success ? parsed.data : parsed;
+          setAnalysis(analysisData);
         } else {
           setError('No analysis results found. Please analyze your squad first.');
         }
       } catch (err) {
+        console.error('AnalyzePage: Error loading analysis:', err);
         setError('Failed to load analysis results.');
       } finally {
         setIsLoading(false);

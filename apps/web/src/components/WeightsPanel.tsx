@@ -151,24 +151,6 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
         </div>
       </div>
 
-      {/* Quick Presets */}
-      <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Quick Preset:</h3>
-        <div className="flex justify-center">
-          <button
-            onClick={() => {
-              updateWeight('form', 0.2);
-              updateWeight('xg90', 0.2);
-              updateWeight('xa90', 0.2);
-              updateWeight('expMin', 0.2);
-              updateWeight('next3Ease', 0.2);
-            }}
-            className="btn-secondary text-xs py-1 px-4"
-          >
-            Balanced
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
