@@ -46,26 +46,16 @@ export class DataMerger {
     cacheTimestamp = 0;
   }
 
-  /**
-   * Enriches FPL player data with advanced statistics and team information
-   * This is the core data processing function that combines multiple data sources
-   * 
-   * @param players - Raw FPL player data from the official API
-   * @param teams - Team information for mapping team IDs to names
-   * @param fixtures - Fixture data for calculating difficulty ratings
-   * @returns Promise<EnrichedPlayer[]> - Players with enhanced statistics
-   */
   static async enrichPlayers(
     players: FPLPlayer[],
     teams: FPLTeam[],
     fixtures: FPLFixture[]
   ): Promise<EnrichedPlayer[]> {
-    // Create lookup map for team data to avoid O(n) searches for each player
+    // Create lookup map for team data
     const teamMap = new Map(teams.map(team => [team.id, team]));
     const playerIds = players.map(p => p.id);
     
-    // Fetch advanced statistics and fixture difficulty data in parallel
-    // This includes xG, xA, expected minutes, and fixture difficulty ratings
+    // Fetch advanced statistics and fixture difficulty data
     const advancedStats = await AdvancedStatsFetcher.getAdvancedStats(playerIds);
     const fixtureDifficulty = await AdvancedStatsFetcher.getFixtureDifficulty();
 

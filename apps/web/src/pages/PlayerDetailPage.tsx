@@ -2,16 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
 import { apiClient } from '../lib/api';
-import { formatPrice, formatForm } from '../lib/format';
-import { ArrowLeft } from 'lucide-react';
-import PlayerStats from '../components/PlayerStats';
-import PlayerAlternatives from '../components/PlayerAlternatives';
-
-/**
- * PlayerDetailPage displays comprehensive information about a specific player
- * including their FPL stats, performance metrics, and alternative player suggestions.
- * This page is accessed when users click on a player from search results.
- */
+import { formatPrice, formatForm, formatXG, formatXA } from '../lib/format';
+import { ArrowLeft, TrendingUp, TrendingDown, Users, Target, Clock } from 'lucide-react';
 
 interface PlayerSuggestion {
   id: number;
@@ -45,17 +37,16 @@ const PlayerDetailPage = () => {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Default weights for scoring - these match the backend scoring algorithm
-  // Used for consistent player evaluation across the application
+  // Default weights for scoring
   const defaultWeights: AnalysisWeights = {
-    form: 0.2,        // Recent performance (last 5 games)
-    xg90: 0.15,       // Expected goals per 90 minutes
-    xa90: 0.15,       // Expected assists per 90 minutes
-    expMin: 0.15,     // Expected minutes (playing time likelihood)
-    next3Ease: 0.1,   // Fixture difficulty for next 3 games
-    avgPoints: 0.15,  // Historical FPL points average
-    value: 0.05,      // Points per million (value for money)
-    ownership: 0.05   // Ownership percentage (differential factor)
+    form: 0.2,
+    xg90: 0.15,
+    xa90: 0.15,
+    expMin: 0.15,
+    next3Ease: 0.1,
+    avgPoints: 0.15,
+    value: 0.05,
+    ownership: 0.05
   };
 
   useEffect(() => {
@@ -170,41 +161,41 @@ const PlayerDetailPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-12">
+        <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-fpl-dark transition-colors mb-6 font-medium"
+            className="flex items-center text-gray-600 hover:text-fpl-dark transition-colors mb-4"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </button>
           
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-4 mb-6">
+                <div className="flex items-center space-x-4 mb-4">
                   <span className={`badge ${getPositionColor(player.pos)}`}>
                     {player.pos}
                   </span>
-                  <h1 className="text-4xl font-bold text-gray-900 tracking-tight">{player.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">{player.name}</h1>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <div className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Team</div>
-                    <div className="font-semibold text-gray-900">{player.teamShort}</div>
+                    <div className="text-gray-500">Team</div>
+                    <div className="font-semibold">{player.teamShort}</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Price</div>
-                    <div className="font-semibold text-gray-900">{formatPrice(player.price)}</div>
+                    <div className="text-gray-500">Price</div>
+                    <div className="font-semibold">{formatPrice(player.price)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Form</div>
-                    <div className="font-semibold text-gray-900">{formatForm(player.form)}</div>
+                    <div className="text-gray-500">Form</div>
+                    <div className="font-semibold">{formatForm(player.form)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Status</div>
-                    <div className="font-semibold text-gray-900 capitalize">
+                    <div className="text-gray-500">Status</div>
+                    <div className="font-semibold capitalize">
                       {player.status === 'a' ? 'Available' : 'Unavailable'}
                     </div>
                   </div>
@@ -225,14 +216,128 @@ const PlayerDetailPage = () => {
         </div>
 
         {/* Player Stats */}
-        <PlayerStats player={player} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Performance Stats */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <Target className="w-5 h-5 mr-2" />
+              Performance Stats
+            </h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Goals (xG/90)</span>
+                <span className="font-semibold">{formatXG(player.xg90)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Assists (xA/90)</span>
+                <span className="font-semibold">{formatXA(player.xa90)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Minutes</span>
+                <span className="font-semibold">{player.expMin.toFixed(0)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Next 3 Fixture Ease</span>
+                <span className="font-semibold">{player.next3Ease.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* FPL Stats */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2" />
+              FPL Stats
+            </h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Average Points</span>
+                <span className="font-semibold">{player.avgPoints.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Value (Pts/£M)</span>
+                <span className="font-semibold">{player.value.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Ownership</span>
+                <span className="font-semibold">{player.ownership.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Alternative Players */}
-        <PlayerAlternatives 
-          suggestions={suggestions} 
-          isLoading={isLoadingSuggestions} 
-          playerPos={player.pos}
-        />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2" />
+            Alternative Players
+          </h2>
+          
+          {isLoadingSuggestions ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fpl-green mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading alternatives...</p>
+            </div>
+          ) : suggestions.length > 0 ? (
+            <div className="space-y-3">
+              {suggestions.map((suggestion) => (
+                <div
+                  key={suggestion.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <span className={`badge ${getPositionColor(player.pos)}`}>
+                        {player.pos}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{suggestion.name}</div>
+                      <div className="text-sm text-gray-600">
+                        {suggestion.teamShort} • {formatPrice(suggestion.price)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Score</div>
+                      <div className="font-semibold">{suggestion.score.toFixed(1)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Form</div>
+                      <div className="font-semibold">{formatForm(suggestion.form)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Improvement</div>
+                      <div className={`font-semibold flex items-center ${
+                        suggestion.delta > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {suggestion.delta > 0 ? (
+                          <TrendingUp className="w-4 h-4 mr-1" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 mr-1" />
+                        )}
+                        {suggestion.delta > 0 ? '+' : ''}{suggestion.delta.toFixed(1)}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/player/${suggestion.id}`)}
+                      className="btn-primary text-sm px-4 py-2"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>No alternative players found for this position and budget.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
