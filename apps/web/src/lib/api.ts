@@ -68,6 +68,11 @@ export const apiClient = {
     return response.data;
   },
 
+  async generateTeam(strategy: string, budget: number = 100): Promise<{ success: boolean; data?: any; error?: string }> {
+    const response = await api.post('/generate', { strategy, budget });
+    return response.data;
+  },
+
   // Suggestions API
   async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
     const response = await api.post('/suggestions', {

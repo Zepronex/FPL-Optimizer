@@ -6,6 +6,7 @@ import { playersRouter } from './routes/players';
 import { fixturesRouter } from './routes/fixtures';
 import { analyzeRouter } from './routes/analyze';
 import { suggestionsRouter } from './routes/suggestions';
+import { generateRouter } from './routes/generate';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/players', playersRouter);
 app.use('/api/fixtures', fixturesRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/suggestions', suggestionsRouter);
+app.use('/api/generate', generateRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -29,8 +29,9 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
     try {
       const response = await apiClient.analyzeSquad(squad, weights);
       
-      // Store results in session storage for the analyze page
+      // Store results and original squad in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
+      sessionStorage.setItem('fpl-original-squad', JSON.stringify(squad));
       
       // Navigate to analyze page
       navigate('/analyze');

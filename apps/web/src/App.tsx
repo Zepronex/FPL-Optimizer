@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import HomePage from './pages/HomePage';
 import SquadPage from './pages/SquadPage';
 import AnalyzePage from './pages/AnalyzePage';
+import GenerateTeamPage from './pages/GenerateTeamPage';
+import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
@@ -68,26 +70,39 @@ function App() {
                   FPL Optimizer
                 </h1>
               </div>
-              <nav className="flex space-x-4">
-                <a 
-                  href="/" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
-                >
-                  Home
-                </a>
-                <a 
-                  href="/squad" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
-                >
-                  New Squad
-                </a>
-                <a 
-                  href="/analyze" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
-                >
-                  Analysis
-                </a>
-              </nav>
+              <div className="flex items-center space-x-6">
+                <nav className="flex space-x-4">
+                  <a 
+                    href="/" 
+                    className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  >
+                    Home
+                  </a>
+                  <a 
+                    href="/generate" 
+                    className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  >
+                    Generate Team
+                  </a>
+                  <a 
+                    href="/squad" 
+                    className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  >
+                    New Squad
+                  </a>
+                  <a 
+                    href="/analyze" 
+                    className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  >
+                    Analysis
+                  </a>
+                </nav>
+                
+                {/* Global Player Search */}
+                <div className="w-80">
+                  <GlobalPlayerSearch />
+                </div>
+              </div>
             </div>
           </div>
         </header>
@@ -95,6 +110,7 @@ function App() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/generate" element={<GenerateTeamPage />} />
             <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
             <Route path="/analyze" element={<AnalyzePage />} />
           </Routes>
