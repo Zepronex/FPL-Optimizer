@@ -1,7 +1,9 @@
 import { Trash2 } from 'lucide-react';
 import SquadSummary from './SquadSummary';
 import PlayerSearch from './PlayerSearch';
-import SquadSlots from './SquadSlots';
+import FootballPitch from './FootballPitch';
+import BenchDisplay from './BenchDisplay';
+import BudgetDisplay from './BudgetDisplay';
 
 interface SquadFormProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -59,38 +61,11 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
 
       <PlayerSearch onAddPlayer={handleAddPlayer} />
 
-      {/* Bank Input */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Bank (Remaining Budget)
-        </label>
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-500">£</span>
-          <input
-            type="number"
-            value={squad.bank}
-            onChange={(e) => setBank(parseFloat(e.target.value) || 0)}
-            step="0.1"
-            min="0"
-            max="100"
-            className="input-field flex-1"
-          />
-          <span className="text-gray-500">m</span>
-        </div>
-      </div>
+      <BudgetDisplay squad={squad} onSetBank={setBank} />
 
-      <SquadSlots
-        slots={Array.from({ length: 11 }, (_, index) => squad.startingXI[index] || null)}
-        onRemovePlayer={removePlayer}
-        title="Starting XI"
-        className="mb-6"
-      />
+      <FootballPitch startingXI={squad.startingXI} onRemovePlayer={removePlayer} />
 
-      <SquadSlots
-        slots={Array.from({ length: 4 }, (_, index) => squad.bench[index] || null)}
-        onRemovePlayer={removePlayer}
-        title="Bench"
-      />
+      <BenchDisplay bench={squad.bench} onRemovePlayer={removePlayer} />
     </div>
   );
 };
