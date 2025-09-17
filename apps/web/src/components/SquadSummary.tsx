@@ -1,5 +1,6 @@
 import { formatPrice, getFormationString, calculateTotalSquadValue } from '../lib/format';
 import { Squad } from '../lib/types';
+import { memo } from 'react';
 
 interface SquadSummaryProps {
   squad: Squad;
@@ -45,4 +46,4 @@ const SquadSummary = ({ squad }: SquadSummaryProps) => {
   );
 };
 
-export default SquadSummary;
+export default memo(SquadSummary);

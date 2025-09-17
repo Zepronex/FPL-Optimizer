@@ -1,16 +1,27 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import HomePage from './pages/HomePage';
-import SquadPage from './pages/SquadPage';
-import AnalyzePage from './pages/AnalyzePage';
-import GenerateTeamPage from './pages/GenerateTeamPage';
-import GeneratedTeamPage from './pages/GeneratedTeamPage';
-import PlayerDetailPage from './pages/PlayerDetailPage';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
+
+// Import main pages directly for faster navigation
+import HomePage from './pages/HomePage';
+import SquadPage from './pages/SquadPage';
+import GenerateTeamPage from './pages/GenerateTeamPage';
+
+// Only lazy load less frequently used pages
+const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
+const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
+const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
+
+// Create a fast loading component
+const FastLoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fpl-green"></div>
+  </div>
+);
 
 function App() {
   const [isApiConnected, setIsApiConnected] = useState<boolean | null>(null);
@@ -109,14 +120,16 @@ function App() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/generate" element={<GenerateTeamPage />} />
-            <Route path="/generated-team" element={<GeneratedTeamPage />} />
-            <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
-            <Route path="/analyze" element={<AnalyzePage />} />
-            <Route path="/player/:id" element={<PlayerDetailPage />} />
-          </Routes>
+          <Suspense fallback={<FastLoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/generate" element={<GenerateTeamPage />} />
+              <Route path="/generated-team" element={<GeneratedTeamPage />} />
+              <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
+              <Route path="/analyze" element={<AnalyzePage />} />
+              <Route path="/player/:id" element={<PlayerDetailPage />} />
+            </Routes>
+          </Suspense>
         </main>
 
         <footer className="bg-white border-t border-gray-200 mt-16">

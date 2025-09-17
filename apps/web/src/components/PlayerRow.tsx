@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { AnalysisResult } from '../lib/types';
 import { 
   formatPrice, 
@@ -188,5 +188,5 @@ const PlayerRow = ({ result, isBench = false }: PlayerRowProps) => {
   );
 };
 
-export default PlayerRow;
+export default memo(PlayerRow);
 

@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wand2, Users, Target, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../lib/api';
-import { Squad, AnalysisWeights } from '../lib/types';
-import { useSquad } from '../state/useSquad';
-import { useWeights } from '../state/useWeights';
+import { AnalysisWeights } from '../lib/types';
 
 interface TeamGenerationStrategy {
   id: string;
@@ -18,8 +16,6 @@ interface TeamGenerationStrategy {
 
 const GenerateTeamPage = () => {
   const navigate = useNavigate();
-  const squadState = useSquad();
-  const weightsState = useWeights();
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);

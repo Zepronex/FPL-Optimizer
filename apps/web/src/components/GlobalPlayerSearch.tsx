@@ -5,6 +5,7 @@ import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import SearchResults from './SearchResults';
 import PlayerScoring from './PlayerScoring';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface GlobalPlayerSearchProps {
   onPlayerSelect?: (player: EnrichedPlayer) => void;
@@ -20,9 +21,11 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<EnrichedPlayer | null>(null);
   const [playerScore, setPlayerScore] = useState<number | null>(null);
-  const [isScoring, setIsScoring] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Debounce search query to avoid excessive API calls
+  const debouncedQuery = useDebounce(query, 300);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,17 +39,17 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
   }, []);
 
   useEffect(() => {
-    if (query.length >= 2) {
+    if (debouncedQuery.length >= 2) {
       searchPlayers();
     } else {
       setResults([]);
     }
-  }, [query]);
+  }, [debouncedQuery]);
 
   const searchPlayers = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.searchPlayer(query);
+      const response = await apiClient.searchPlayer(debouncedQuery);
       if (response.success && response.data) {
         setResults(response.data.slice(0, 8)); // Limit to 8 results
       }
@@ -63,33 +66,6 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
     navigate(`/player/${player.id}`);
   };
 
-  const calculateSimpleScore = (player: EnrichedPlayer): number => {
-    // Simple scoring calculation based on available metrics
-    const formScore = Math.min(player.form * 2, 10);
-    const xgScore = Math.min(player.xg90 * 20, 10);
-    const xaScore = Math.min(player.xa90 * 25, 10);
-    const minutesScore = (player.expMin / 90) * 10;
-    const avgPointsScore = Math.min(player.avgPoints * 0.5, 10);
-    const valueScore = Math.min(player.value * 2, 10);
-    const ownershipScore = (player.ownership / 10);
-
-    return Math.round((
-      formScore * defaultWeights.form +
-      xgScore * defaultWeights.xg90 +
-      xaScore * defaultWeights.xa90 +
-      minutesScore * defaultWeights.expMin +
-      avgPointsScore * defaultWeights.avgPoints +
-      valueScore * defaultWeights.value +
-      ownershipScore * defaultWeights.ownership
-    ) * 100) / 100;
-  };
-
-  const getScoreLabel = (score: number): { label: string; color: string } => {
-    if (score >= 8) return { label: 'Perfect', color: 'text-green-600 bg-green-100' };
-    if (score >= 6) return { label: 'Good', color: 'text-blue-600 bg-blue-100' };
-    if (score >= 4) return { label: 'Poor', color: 'text-yellow-600 bg-yellow-100' };
-    return { label: 'Urgent', color: 'text-red-600 bg-red-100' };
-  };
 
   const clearSelection = () => {
     setSelectedPlayer(null);
@@ -130,8 +106,8 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
           results={results}
           isLoading={isLoading}
           onPlayerSelect={handlePlayerClick}
-          onPlayerScore={handlePlayerScore}
-          isScoring={isScoring}
+          onPlayerScore={() => {}} // Placeholder function
+          isScoring={false}
         />
       )}
 

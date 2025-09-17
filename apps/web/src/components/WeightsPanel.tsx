@@ -152,7 +152,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
         {weightConfigs.map((config) => (
           <div key={config.key} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex justify-between items-center mb-3">
-              <div>
+              <div className="flex-1">
                 <label className="text-sm font-semibold text-gray-800">
                   {config.label}
                 </label>

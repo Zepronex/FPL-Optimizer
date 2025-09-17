@@ -1,5 +1,6 @@
 import { formatPrice } from '../lib/format';
 import { SquadSlot } from '../lib/types';
+import { memo } from 'react';
 
 interface FootballPitchProps {
   startingXI: (SquadSlot | null)[];
@@ -30,8 +31,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
     };
 
     return (
-      <div className="relative group">
-        <div className="w-28 h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
+      <div className="relative group flex-shrink-0">
+        <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
           {slot ? (
             <div className="text-center p-1 w-full h-full flex flex-col justify-center">
               <div className={`font-semibold ${getTextSize(slot.name)} break-words overflow-hidden`} title={slot.name}>
@@ -60,16 +61,16 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">Starting XI Formation</h3>
+    <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+      <div className="text-center mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800">Starting XI Formation</h3>
       </div>
       
-      {/* Simple Position Rows */}
-      <div className="space-y-4">
+      {/* Simple Position Rows - Mobile Optimized */}
+      <div className="space-y-3 sm:space-y-4">
         {/* Goalkeeper */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Goalkeeper</h4>
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Goalkeeper</h4>
           <div className="flex justify-center">
             <PlayerSlot slot={goalkeeper} position="GK" index={0} />
           </div>
@@ -77,8 +78,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Defenders */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Defenders</h4>
-          <div className="flex justify-center space-x-3">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Defenders</h4>
+          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {defenders.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="DEF" index={i} />
             ))}
@@ -90,8 +91,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Midfielders */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Midfielders</h4>
-          <div className="flex justify-center space-x-3">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Midfielders</h4>
+          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {midfielders.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="MID" index={i} />
             ))}
@@ -103,8 +104,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Forwards */}
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Forwards</h4>
-          <div className="flex justify-center space-x-3">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Forwards</h4>
+          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {forwards.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="FWD" index={i} />
             ))}
@@ -125,4 +126,4 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   );
 };
 
-export default FootballPitch;
+export default memo(FootballPitch);
