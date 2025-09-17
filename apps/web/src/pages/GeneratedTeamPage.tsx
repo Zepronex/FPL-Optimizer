@@ -65,12 +65,14 @@ const GeneratedTeamPage = () => {
 
   const getStrategyInfo = (strategy: string) => {
     const strategies = {
-      balanced: { name: 'Balanced Team', color: 'bg-blue-500', description: 'Well-rounded team with good value' },
-      premium: { name: 'Premium Heavy', color: 'bg-purple-500', description: 'Focus on top-tier players' },
-      value: { name: 'Value Team', color: 'bg-green-500', description: 'Maximum points per million spent' },
-      differential: { name: 'Differential Team', color: 'bg-orange-500', description: 'Low ownership players for unique advantages' },
-      form: { name: 'Form Team', color: 'bg-red-500', description: 'Players in hot form with favorable fixtures' },
-      template: { name: 'Template Team', color: 'bg-indigo-500', description: 'Popular picks with high ownership' }
+      balanced: { name: 'Balanced Approach', color: 'bg-blue-500', description: 'Well-rounded team focusing on consistent performers across all positions' },
+      premium: { name: 'Premium Heavy', color: 'bg-purple-500', description: 'Invest heavily in proven premium players with guaranteed minutes' },
+      value: { name: 'Value Optimized', color: 'bg-green-500', description: 'Maximum points per million - focus on budget enablers and differentials' },
+      differential: { name: 'Differential Focus', color: 'bg-orange-500', description: 'Low ownership players for unique advantages and rank climbing' },
+      form: { name: 'Form & Fixtures', color: 'bg-red-500', description: 'Players in hot form with favorable upcoming fixture runs' },
+      template: { name: 'Template Team', color: 'bg-indigo-500', description: 'Popular picks with high ownership for consistent, safe returns' },
+      setforget: { name: 'Set & Forget', color: 'bg-gray-500', description: 'Stable team with minimal transfers - focus on season-long consistency' },
+      wildcard: { name: 'Wildcard Strategy', color: 'bg-yellow-500', description: 'Aggressive approach for short-term gains with high-risk, high-reward players' }
     };
     return strategies[strategy as keyof typeof strategies] || { name: strategy, color: 'bg-gray-500', description: 'Custom strategy' };
   };

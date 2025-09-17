@@ -8,7 +8,7 @@ const router = Router();
 
 // Validation schemas
 const generateRequestSchema = z.object({
-  strategy: z.enum(['balanced', 'premium', 'value', 'differential', 'form', 'template']),
+  strategy: z.enum(['balanced', 'premium', 'value', 'differential', 'form', 'template', 'setforget', 'wildcard']),
   budget: z.number().min(80).max(100).optional().default(100)
 });
 
@@ -20,23 +20,23 @@ router.post('/', async (req, res) => {
     // Get all players
     const allPlayers = await DataMerger.getAllEnrichedPlayers();
     
-    // Define strategy weights
+    // Define strategy weights - Updated with realistic FPL strategies
     const strategyWeights: Record<string, AnalysisWeights> = {
       balanced: {
-        form: 0.2,
+        form: 0.15,
         xg90: 0.15,
         xa90: 0.15,
-        expMin: 0.15,
-        next3Ease: 0.1,
+        expMin: 0.2,
+        next3Ease: 0.15,
         avgPoints: 0.15,
         value: 0.05,
-        ownership: 0.05
+        ownership: 0.0
       },
       premium: {
-        form: 0.15,
+        form: 0.1,
         xg90: 0.2,
         xa90: 0.2,
-        expMin: 0.2,
+        expMin: 0.25,
         next3Ease: 0.1,
         avgPoints: 0.1,
         value: 0.02,
@@ -44,43 +44,63 @@ router.post('/', async (req, res) => {
       },
       value: {
         form: 0.15,
-        xg90: 0.1,
-        xa90: 0.1,
+        xg90: 0.15,
+        xa90: 0.15,
         expMin: 0.15,
         next3Ease: 0.1,
         avgPoints: 0.1,
-        value: 0.25,
-        ownership: 0.05
+        value: 0.2,
+        ownership: 0.0
       },
       differential: {
-        form: 0.25,
+        form: 0.2,
         xg90: 0.2,
         xa90: 0.15,
-        expMin: 0.1,
+        expMin: 0.15,
         next3Ease: 0.15,
         avgPoints: 0.1,
         value: 0.03,
         ownership: 0.02
       },
       form: {
-        form: 0.4,
+        form: 0.25,
         xg90: 0.15,
         xa90: 0.1,
-        expMin: 0.1,
-        next3Ease: 0.2,
-        avgPoints: 0.03,
-        value: 0.01,
-        ownership: 0.01
+        expMin: 0.15,
+        next3Ease: 0.25,
+        avgPoints: 0.05,
+        value: 0.03,
+        ownership: 0.02
       },
       template: {
         form: 0.1,
         xg90: 0.1,
         xa90: 0.1,
-        expMin: 0.2,
+        expMin: 0.25,
         next3Ease: 0.1,
         avgPoints: 0.2,
         value: 0.05,
-        ownership: 0.15
+        ownership: 0.1
+      },
+      setforget: {
+        form: 0.05,
+        xg90: 0.15,
+        xa90: 0.15,
+        expMin: 0.3,
+        next3Ease: 0.05,
+        avgPoints: 0.25,
+        value: 0.03,
+        ownership: 0.02
+      },
+      wildcard: {
+        form: 0.3,
+        xg90: 0.2,
+        xa90: 0.15,
+        expMin: 0.1,
+        next3Ease: 0.2,
+        avgPoints: 0.02,
+        value: 0.02,
+        ownership: 0.01
       }
     };
 
