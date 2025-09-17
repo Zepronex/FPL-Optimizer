@@ -75,3 +75,17 @@ yarn.lock
 
 # Vercel
 .vercel
+
+# Vite cache and temporary files
+.vite/
+**/.vite/
+deps_temp_*/
+**/deps_temp_*/
+
+# Development server cache
+.cache/
+**/.cache/
+
+# Temporary build artifacts
+*.tmp
+*.temp

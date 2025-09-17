@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, User, TrendingUp, DollarSign } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { apiClient } from '../lib/api';
-import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
-import { formatPrice } from '../lib/format';
+import { EnrichedPlayer } from '../lib/types';
+import SearchResults from './SearchResults';
+import PlayerScoring from './PlayerScoring';
 
 interface GlobalPlayerSearchProps {
   onPlayerSelect?: (player: EnrichedPlayer) => void;
@@ -22,18 +23,6 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
   const [isScoring, setIsScoring] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Default weights for scoring
-  const defaultWeights: AnalysisWeights = {
-    form: 0.2,
-    xg90: 0.15,
-    xa90: 0.15,
-    expMin: 0.15,
-    next3Ease: 0.1,
-    avgPoints: 0.15,
-    value: 0.05,
-    ownership: 0.05
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -137,110 +126,22 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
 
       {/* Search Results Dropdown */}
       {isOpen && query.length >= 2 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-4 text-center text-gray-500">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
-              Searching players...
-            </div>
-          ) : results.length > 0 ? (
-            <div className="py-1">
-              {results.map((player) => (
-                <button
-                  key={player.id}
-                  onClick={() => handlePlayerClick(player)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-gray-600" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{player.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {player.teamShort}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 text-center text-gray-500">
-              No players found for "{query}"
-            </div>
-          )}
-        </div>
+        <SearchResults
+          results={results}
+          isLoading={isLoading}
+          onPlayerSelect={handlePlayerClick}
+          onPlayerScore={handlePlayerScore}
+          isScoring={isScoring}
+        />
       )}
 
-      {/* Selected Player Details */}
+      {/* Player Scoring Modal */}
       {selectedPlayer && (
-        <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-gray-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{selectedPlayer.name}</h3>
-                <p className="text-sm text-gray-600">
-                  {selectedPlayer.teamShort} • {selectedPlayer.pos} • {formatPrice(selectedPlayer.price)}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={clearSelection}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Player Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-blue-600">{selectedPlayer.form.toFixed(1)}</div>
-              <div className="text-xs text-gray-500">Form</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-green-600">{selectedPlayer.xg90.toFixed(2)}</div>
-              <div className="text-xs text-gray-500">xG/90</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-purple-600">{selectedPlayer.xa90.toFixed(2)}</div>
-              <div className="text-xs text-gray-500">xA/90</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-orange-600">{selectedPlayer.avgPoints.toFixed(1)}</div>
-              <div className="text-xs text-gray-500">Avg Points</div>
-            </div>
-          </div>
-
-          {/* Player Score */}
-          {isScoring ? (
-            <div className="text-center py-2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
-              <div className="text-sm text-gray-500">Calculating score...</div>
-            </div>
-          ) : playerScore !== null ? (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-gray-600" />
-                <span className="font-medium text-gray-900">Player Score</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-gray-900">{playerScore.toFixed(1)}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getScoreLabel(playerScore).color}`}>
-                  {getScoreLabel(playerScore).label}
-                </span>
-              </div>
-            </div>
-          ) : null}
-        </div>
+        <PlayerScoring
+          player={selectedPlayer}
+          onClose={clearSelection}
+          onScoreCalculated={setPlayerScore}
+        />
       )}
     </div>
   );
