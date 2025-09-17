@@ -7,6 +7,7 @@ import GenerateTeamPage from './pages/GenerateTeamPage';
 import GeneratedTeamPage from './pages/GeneratedTeamPage';
 import PlayerDetailPage from './pages/PlayerDetailPage';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
+import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
@@ -32,11 +33,8 @@ function App() {
 
   if (isApiConnected === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fpl-green mx-auto mb-4"></div>
-          <p className="text-gray-600">Connecting to API...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" text="Connecting to API..." />
       </div>
     );
   }
@@ -83,25 +81,25 @@ function App() {
               <nav className="flex space-x-6 ml-auto">
                 <a 
                   href="/squad" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
-                  New Squad
+                  Squad Builder
                 </a>
                 <a 
                   href="/generate" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Generate Team
                 </a>
                 <a 
                   href="/analyze" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
-                  Analysis
+                  Team Analysis
                 </a>
                 <a 
                   href="/" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Home
                 </a>

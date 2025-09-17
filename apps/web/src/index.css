@@ -14,31 +14,51 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-fpl-green hover:bg-green-400 text-fpl-dark font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-fpl-green hover:bg-fpl-green-dark text-fpl-dark font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg border border-gray-300 transition-colors duration-200;
+    @apply bg-white hover:bg-gray-50 text-fpl-dark font-semibold py-2 px-4 rounded-lg border border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
   .btn-danger {
-    @apply bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-fpl-red hover:bg-fpl-red-light text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .btn-gold {
+    @apply bg-fpl-gold hover:bg-fpl-gold-dark text-fpl-dark font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent transition-all duration-200;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md;
+  }
+  
+  .card-fpl {
+    @apply bg-gradient-to-br from-white to-fpl-green-light/5 rounded-lg shadow-sm border border-fpl-green/20 p-6 transition-all duration-200 hover:shadow-md hover:border-fpl-green/30;
   }
   
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
   }
   
+  .badge-fpl {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-fpl-green/10 text-fpl-dark border border-fpl-green/20;
+  }
+  
   .loading-skeleton {
-    @apply animate-pulse bg-gray-200 rounded;
+    @apply animate-pulse bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded;
+  }
+  
+  .fpl-gradient {
+    @apply bg-gradient-to-r from-fpl-green to-fpl-green-dark;
+  }
+  
+  .fpl-gradient-dark {
+    @apply bg-gradient-to-r from-fpl-dark to-fpl-dark-light;
   }
   
   .slider {
