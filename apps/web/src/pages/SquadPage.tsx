@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import WeightsPanel from '../components/WeightsPanel';
@@ -16,6 +16,31 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
   const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  // Check if we need to load a generated team for editing
+  useEffect(() => {
+    const editGeneratedTeam = sessionStorage.getItem('edit-generated-team');
+    if (editGeneratedTeam) {
+      try {
+        const generatedSquad: Squad = JSON.parse(editGeneratedTeam);
+        
+        // Clear current squad and load the generated team
+        squadState.clearSquad();
+        generatedSquad.startingXI.forEach(player => {
+          squadState.addPlayer(player, true);
+        });
+        generatedSquad.bench.forEach(player => {
+          squadState.addPlayer(player, false);
+        });
+        squadState.setBank(generatedSquad.bank);
+        
+        // Clear the session storage
+        sessionStorage.removeItem('edit-generated-team');
+      } catch (error) {
+        console.error('Failed to load generated team for editing:', error);
+      }
+    }
+  }, [squadState]);
 
   const handleAnalyze = async () => {
     if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {

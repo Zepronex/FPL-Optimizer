@@ -149,25 +149,25 @@ const GenerateTeamPage = () => {
       const response = await apiClient.generateTeam(selectedStrategy, strategy.budget);
       
       if (response.success && response.data) {
-        const { squad } = response.data;
+        const { squad, strategy: strategyName, weights, budget } = response.data;
         
-        // Set the generated squad in the squad state
-        squadState.clearSquad();
-        squad.startingXI.forEach(player => {
-          squadState.addPlayer(player, true);
-        });
-        squad.bench.forEach(player => {
-          squadState.addPlayer(player, false);
-        });
-        squadState.setBank(squad.bank);
+        console.log('GenerateTeamPage - API Response:', response.data);
+        console.log('GenerateTeamPage - Squad:', squad);
+        
+        // Store the generated team data
+        const generatedData = {
+          squad,
+          strategy: strategyName,
+          weights,
+          budget
+        };
+        
+        // Store in session storage for the generated team page
+        sessionStorage.setItem('generated-team-data', JSON.stringify(generatedData));
+        console.log('GenerateTeamPage - Stored data:', generatedData);
 
-        // Set the weights for this strategy
-        Object.entries(strategy.weights).forEach(([key, value]) => {
-          weightsState.updateWeight(key as keyof AnalysisWeights, value);
-        });
-
-        // Navigate to squad page to review the generated team
-        navigate('/squad');
+        // Navigate to the generated team page
+        navigate('/generated-team', { state: { generatedData } });
       } else {
         setError(response.error || 'Failed to generate team. Please try again.');
       }

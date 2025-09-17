@@ -1,7 +1,9 @@
 import { PlayerLabel } from './types';
 
 export const formatPrice = (price: number): string => {
-  return `£${price.toFixed(1)}m`;
+  // Round to avoid floating point precision issues
+  const rounded = Math.round(price * 10) / 10;
+  return `£${rounded.toFixed(1)}m`;
 };
 
 export const formatScore = (score: number): string => {
