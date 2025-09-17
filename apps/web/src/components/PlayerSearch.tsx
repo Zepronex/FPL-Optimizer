@@ -16,7 +16,7 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
   const [searchResults, setSearchResults] = useState<EnrichedPlayer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
-  // Debounce search query to avoid excessive API calls
+  // debounce search to reduce api calls while typing
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const handleSearch = async (query: string) => {
@@ -40,6 +40,7 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
     }
   };
 
+  // search when debounced query changes
   useEffect(() => {
     handleSearch(debouncedSearchQuery);
   }, [debouncedSearchQuery]);

@@ -6,17 +6,17 @@ import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
 
-// Import main pages directly for faster navigation
+// main pages loaded directly for instant navigation
 import HomePage from './pages/HomePage';
 import SquadPage from './pages/SquadPage';
 import GenerateTeamPage from './pages/GenerateTeamPage';
 
-// Only lazy load less frequently used pages
+// secondary pages lazy loaded to reduce initial bundle size
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
 const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
 const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
 
-// Create a fast loading component
+// lightweight loading spinner for page transitions
 const FastLoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[200px]">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fpl-green"></div>
@@ -28,13 +28,13 @@ function App() {
   const squadState = useSquad();
   const weightsState = useWeights();
 
+  // check api connection on app startup
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
         await apiClient.healthCheck();
         setIsApiConnected(true);
       } catch (error) {
-        // API connection failed
         setIsApiConnected(false);
       }
     };

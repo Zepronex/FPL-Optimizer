@@ -4,7 +4,6 @@ import { Search, X } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import SearchResults from './SearchResults';
-import PlayerScoring from './PlayerScoring';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface GlobalPlayerSearchProps {
@@ -19,14 +18,13 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<EnrichedPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<EnrichedPlayer | null>(null);
-  const [playerScore, setPlayerScore] = useState<number | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Debounce search query to avoid excessive API calls
+  // debounce search to reduce api calls while typing
   const debouncedQuery = useDebounce(query, 300);
 
+  // close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -38,6 +36,7 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // search when debounced query changes
   useEffect(() => {
     if (debouncedQuery.length >= 2) {
       searchPlayers();
@@ -68,8 +67,6 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
 
 
   const clearSelection = () => {
-    setSelectedPlayer(null);
-    setPlayerScore(null);
     setQuery('');
     setIsOpen(false);
   };
@@ -100,23 +97,14 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
         )}
       </div>
 
-      {/* Search Results Dropdown */}
+      {/* search results dropdown */}
       {isOpen && query.length >= 2 && (
         <SearchResults
           results={results}
           isLoading={isLoading}
           onPlayerSelect={handlePlayerClick}
-          onPlayerScore={() => {}} // Placeholder function
+          onPlayerScore={() => {}} // placeholder function
           isScoring={false}
-        />
-      )}
-
-      {/* Player Scoring Modal */}
-      {selectedPlayer && (
-        <PlayerScoring
-          player={selectedPlayer}
-          onClose={clearSelection}
-          onScoreCalculated={setPlayerScore}
         />
       )}
     </div>

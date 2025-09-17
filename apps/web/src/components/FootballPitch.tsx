@@ -9,14 +9,14 @@ interface FootballPitchProps {
 }
 
 const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: FootballPitchProps) => {
-  // Organize players by position
+  // organize players by position for display
   const goalkeeper = startingXI.find(slot => slot?.pos === 'GK') || null;
   const defenders = startingXI.filter(slot => slot?.pos === 'DEF');
   const midfielders = startingXI.filter(slot => slot?.pos === 'MID');
   const forwards = startingXI.filter(slot => slot?.pos === 'FWD');
 
   const PlayerSlot = ({ slot, position, index }: { slot: SquadSlot | null; position: string; index: number }) => {
-    // Determine text size based on name length
+    // adjust text size based on name length for better fit
     const getTextSize = (name: string) => {
       if (name.length <= 10) return 'text-sm';
       if (name.length <= 15) return 'text-xs';
@@ -24,7 +24,7 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
       return 'text-xs leading-tight';
     };
 
-    // Truncate very long names
+    // truncate very long names to fit in player slot
     const truncateName = (name: string) => {
       if (name.length <= 20) return name;
       return name.substring(0, 17) + '...';

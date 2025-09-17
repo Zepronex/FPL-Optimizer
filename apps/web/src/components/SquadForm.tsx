@@ -21,6 +21,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
     clearError
   } = squadState;
   
+  // add player to squad (starting xi or bench)
   const handleAddPlayer = (player: EnrichedPlayer, isStarting: boolean = true) => {
     addPlayer(player, isStarting);
   };
