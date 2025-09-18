@@ -132,11 +132,11 @@ const GeneratedTeamPage = () => {
           </button>
           
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="flex items-center justify-center space-x-4 mb-4">
               <div className={`p-3 rounded-lg ${strategyInfo.color} text-white`}>
                 <BarChart3 className="w-8 h-8" />
               </div>
-              <div>
+              <div className="text-center">
                 <h1 className="text-4xl font-bold text-fpl-dark">{strategyInfo.name}</h1>
                 <p className="text-lg text-gray-600">{strategyInfo.description}</p>
               </div>
@@ -241,33 +241,33 @@ const GeneratedTeamPage = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Team Statistics */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Team Statistics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-fpl-dark">{generatedData.squad.startingXI.length}</div>
-              <div className="text-sm text-gray-600">Starting XI</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-fpl-dark">{generatedData.squad.bench.length}</div>
-              <div className="text-sm text-gray-600">Bench Players</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-fpl-dark">
-                {generatedData.squad.startingXI.reduce((sum, player) => sum + player.price, 0) + 
-                 generatedData.squad.bench.reduce((sum, player) => sum + player.price, 0)}
+            
+            {/* Team Statistics */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Statistics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.startingXI.length}</div>
+                  <div className="text-sm text-gray-600">Starting XI</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.bench.length}</div>
+                  <div className="text-sm text-gray-600">Bench Players</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">
+                    {formatPrice(generatedData.squad.startingXI.reduce((sum, player) => sum + player.price, 0) + 
+                     generatedData.squad.bench.reduce((sum, player) => sum + player.price, 0))}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Cost</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">
+                    {new Set([...generatedData.squad.startingXI, ...generatedData.squad.bench].map(p => p.teamShort)).size}
+                  </div>
+                  <div className="text-sm text-gray-600">Different Teams</div>
+                </div>
               </div>
-              <div className="text-sm text-gray-600">Total Cost (£M)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-fpl-dark">
-                {new Set([...generatedData.squad.startingXI, ...generatedData.squad.bench].map(p => p.teamShort)).size}
-              </div>
-              <div className="text-sm text-gray-600">Different Teams</div>
             </div>
           </div>
         </div>

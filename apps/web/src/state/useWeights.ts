@@ -41,6 +41,7 @@ export const useWeights = () => {
           setPresets(response.data);
         }
       } catch (err) {
+        console.error('Failed to load presets:', err);
         // Failed to load presets
       }
     };

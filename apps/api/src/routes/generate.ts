@@ -33,14 +33,14 @@ router.post('/', async (req, res) => {
         ownership: 0.0
       },
       premium: {
-        form: 0.1,
-        xg90: 0.2,
-        xa90: 0.2,
-        expMin: 0.25,
-        next3Ease: 0.1,
-        avgPoints: 0.1,
-        value: 0.02,
-        ownership: 0.03
+        form: 0.15,
+        xg90: 0.25,
+        xa90: 0.25,
+        expMin: 0.2,
+        next3Ease: 0.05,
+        avgPoints: 0.05,
+        value: 0.0, // No value consideration for premium
+        ownership: 0.05
       },
       value: {
         form: 0.15,
@@ -107,7 +107,7 @@ router.post('/', async (req, res) => {
     const weights = strategyWeights[strategy];
     
     // Generate team using the strategy
-    const generatedSquad = await generateTeam(allPlayers, weights, budget);
+    const generatedSquad = await generateTeam(allPlayers, weights, budget, strategy);
     
     res.json({
       success: true,
@@ -135,7 +135,7 @@ router.post('/', async (req, res) => {
 });
 
 // Team generation algorithm
-async function generateTeam(players: any[], weights: AnalysisWeights, budget: number): Promise<Squad> {
+async function generateTeam(players: any[], weights: AnalysisWeights, budget: number, strategy: string): Promise<Squad> {
   // Score all players
   const scoredPlayers = players.map(player => ({
     ...player,
@@ -176,7 +176,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
   // Add required positions first
   for (const { pos, count } of requiredPositions) {
     for (let i = 0; i < count; i++) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank);
+      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
       if (player) {
         squad.startingXI.push({
           id: player.id,
@@ -201,7 +201,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
 
     // Find the best available player across flexible positions
     for (const pos of flexiblePositions) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank);
+      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
       if (player && player.score > bestScore) {
         bestPlayer = player;
         bestScore = player.score;
@@ -231,7 +231,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
 
   for (const { pos, count } of benchPositions) {
     for (let i = 0; i < count; i++) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank);
+      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
       if (player) {
         squad.bench.push({
           id: player.id,
@@ -245,19 +245,97 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
     }
   }
 
+  // Budget optimization: try to upgrade players if we have remaining budget
+  if (squad.bank > 2) { // If we have more than 2M left
+    optimizeBudgetUsage(squad, playersByPosition, strategy);
+  }
+
   return squad;
 }
 
 // Helper function to find the best available player
-function findBestPlayer(players: any[], squad: Squad, availableBudget: number) {
+function findBestPlayer(players: any[], squad: Squad, availableBudget: number, strategy: string = 'balanced') {
   const usedPlayerIds = new Set([...squad.startingXI, ...squad.bench].map(p => p.id));
   
-  for (const player of players) {
-    if (!usedPlayerIds.has(player.id) && player.price <= availableBudget) {
-      return player;
+  // Filter available players
+  const availablePlayers = players.filter(p => 
+    !usedPlayerIds.has(p.id) && p.price <= availableBudget
+  );
+  
+  if (availablePlayers.length === 0) return null;
+  
+  // For premium strategy, prioritize more expensive players with good scores
+  if (strategy === 'premium') {
+    // Sort by score per price ratio, but heavily weight towards higher-priced players
+    return availablePlayers.sort((a, b) => {
+      const scoreA = a.score * (1 + a.price * 0.1); // Boost for higher price
+      const scoreB = b.score * (1 + b.price * 0.1);
+      return scoreB - scoreA;
+    })[0];
+  }
+  
+  // For value strategy, prioritize score per price ratio
+  if (strategy === 'value') {
+    return availablePlayers.sort((a, b) => {
+      const ratioA = a.score / a.price;
+      const ratioB = b.score / b.price;
+      return ratioB - ratioA;
+    })[0];
+  }
+  
+  // Default: highest score
+  return availablePlayers.sort((a, b) => b.score - a.score)[0];
+}
+
+// Budget optimization function to use remaining budget more effectively
+function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: string) {
+  const usedPlayerIds = new Set([...squad.startingXI, ...squad.bench].map(p => p.id));
+  
+  // Try to upgrade players in starting XI first
+  for (let i = 0; i < squad.startingXI.length; i++) {
+    const currentPlayer = squad.startingXI[i];
+    const position = currentPlayer.pos;
+    const availableBudget = squad.bank + currentPlayer.price;
+    
+    // Find better players in the same position
+    const availablePlayers = playersByPosition[position].filter((p: any) => 
+      !usedPlayerIds.has(p.id) && 
+      p.price <= availableBudget && 
+      p.price > currentPlayer.price // Only consider more expensive players
+    );
+    
+    if (availablePlayers.length > 0) {
+      let bestUpgrade = null;
+      
+      if (strategy === 'premium') {
+        // For premium, prioritize higher-priced players with good scores
+        bestUpgrade = availablePlayers.sort((a: any, b: any) => {
+          const scoreA = a.score * (1 + a.price * 0.1);
+          const scoreB = b.score * (1 + b.price * 0.1);
+          return scoreB - scoreA;
+        })[0];
+      } else {
+        // For other strategies, prioritize score improvement
+        bestUpgrade = availablePlayers.sort((a: any, b: any) => b.score - a.score)[0];
+      }
+      
+      if (bestUpgrade && bestUpgrade.score > currentPlayer.price) { // Simple check for improvement
+        // Replace the player
+        squad.bank = squad.bank + currentPlayer.price - bestUpgrade.price;
+        squad.startingXI[i] = {
+          id: bestUpgrade.id,
+          pos: bestUpgrade.pos,
+          price: bestUpgrade.price,
+          name: bestUpgrade.name,
+          teamShort: bestUpgrade.teamShort
+        };
+        
+        // Update used player tracking
+        usedPlayerIds.delete(currentPlayer.id);
+        usedPlayerIds.add(bestUpgrade.id);
+      }
     }
   }
-  return null;
 }
 
 export { router as generateRouter };

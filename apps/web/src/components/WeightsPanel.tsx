@@ -1,4 +1,5 @@
-import { RotateCcw, Info, Settings } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Info } from 'lucide-react';
 
 interface WeightsPanelProps {
   weightsState: ReturnType<typeof import('../state/useWeights').useWeights>;
@@ -16,6 +17,17 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
     error,
     clearError
   } = weightsState;
+  
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const presetAppliedRef = useRef(false);
+
+  // Clear selected preset when weights change manually (not from preset)
+  useEffect(() => {
+    if (!presetAppliedRef.current) {
+      setSelectedPreset(null);
+    }
+    presetAppliedRef.current = false;
+  }, [weights]);
 
   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
 
@@ -79,14 +91,20 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={normalizeWeights}
+            onClick={() => {
+              normalizeWeights();
+              setSelectedPreset(null);
+            }}
             className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
             title="Normalize weights to sum to 1"
           >
-            <RotateCcw className="w-4 h-4" />
+            Normalize
           </button>
           <button
-            onClick={resetToDefaults}
+            onClick={() => {
+              resetToDefaults();
+              setSelectedPreset(null);
+            }}
             className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
             disabled={isLoading}
           >
@@ -113,16 +131,23 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       {/* Preset Selector */}
       {presets.length > 0 && (
         <div className="mb-6">
-          <div className="flex items-center space-x-2 mb-3">
-            <Settings className="w-4 h-4 text-gray-600" />
+          <div className="mb-3">
             <h3 className="text-sm font-semibold text-gray-800">Quick Presets</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {presets.map((preset) => (
               <button
                 key={preset.name}
-                onClick={() => applyPreset(preset)}
-                className="text-left p-4 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={() => {
+                  presetAppliedRef.current = true;
+                  applyPreset(preset);
+                  setSelectedPreset(preset.name);
+                }}
+                className={`text-left p-4 border-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md ${
+                  selectedPreset === preset.name
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                }`}
               >
                 <div className="font-semibold text-sm text-gray-800 mb-1">{preset.name}</div>
                 <div className="text-xs text-gray-600 leading-relaxed">{preset.description}</div>
