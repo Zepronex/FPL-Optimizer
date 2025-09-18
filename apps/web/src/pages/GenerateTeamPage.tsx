@@ -183,8 +183,6 @@ const GenerateTeamPage = () => {
       if (response.success && response.data) {
         const { squad, strategy: strategyName, weights, budget } = response.data;
         
-        console.log('GenerateTeamPage - API Response:', response.data);
-        console.log('GenerateTeamPage - Squad:', squad);
         
         // Store the generated team data
         const generatedData = {
@@ -196,7 +194,6 @@ const GenerateTeamPage = () => {
         
         // Store in session storage for the generated team page
         sessionStorage.setItem('generated-team-data', JSON.stringify(generatedData));
-        console.log('GenerateTeamPage - Stored data:', generatedData);
 
         // Navigate to the generated team page
         navigate('/generated-team', { state: { generatedData } });

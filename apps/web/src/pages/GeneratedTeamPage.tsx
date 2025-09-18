@@ -26,8 +26,6 @@ const GeneratedTeamPage = () => {
     // Get the generated team data from location state or session storage
     const data = location.state?.generatedData || JSON.parse(sessionStorage.getItem('generated-team-data') || 'null');
     
-    console.log('GeneratedTeamPage - Data from location.state:', location.state);
-    console.log('GeneratedTeamPage - Data from sessionStorage:', data);
     
     if (data) {
       setGeneratedData(data);
@@ -59,7 +57,6 @@ const GeneratedTeamPage = () => {
       // Navigate to analyze page
       navigate('/analyze');
     } catch (error) {
-      console.error('Analysis failed:', error);
     }
   };
 

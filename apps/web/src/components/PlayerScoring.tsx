@@ -47,7 +47,6 @@ const PlayerScoring = ({ player, onClose, onScoreCalculated }: PlayerScoringProp
       }
     } catch (err) {
       setError('Error calculating score');
-      console.error('Scoring error:', err);
     } finally {
       setIsScoring(false);
     }

@@ -53,7 +53,6 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
         setResults(response.data.slice(0, 8)); // Limit to 8 results
       }
     } catch (error) {
-      console.error('Search failed:', error);
     } finally {
       setIsLoading(false);
     }

@@ -31,7 +31,7 @@ const limiter = rateLimit({
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // Allow 50 requests per 15 minutes, then...
-  delayMs: 500, // Add 500ms delay per request above 50
+  delayMs: () => 500, // Add 500ms delay per request above 50
   maxDelayMs: 20000, // Maximum delay of 20 seconds
 });
 
@@ -91,21 +91,11 @@ app.get('/api/health', (req, res) => {
 // Request logging middleware
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   const timestamp = new Date().toISOString();
-  console.log(`${timestamp} - ${req.method} ${req.path} - IP: ${req.ip}`);
   next();
 });
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error occurred:', {
-    error: err.message,
-    stack: err.stack,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-  
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === 'development';
   

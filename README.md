@@ -1,64 +1,54 @@
 # FPL Optimizer
 
-A Fantasy Premier League team optimization tool that provides AI-powered analysis and personalized suggestions to maximize your FPL points potential.
+An intelligent Fantasy Premier League team optimization tool that analyzes player performance and suggests optimal team compositions.
 
 ## Features
 
-- **Squad Analysis**: Analyze your current FPL squad with configurable scoring weights
-- **Player Suggestions**: Get personalized replacement suggestions for underperforming players
-- **Advanced Metrics**: Consider form, expected goals/assists, expected minutes, and fixture difficulty
+- **Team Generation**: Generate optimized squads using different strategies (Premium, Balanced, Value, etc.)
+- **Squad Analysis**: Analyze your current team with configurable scoring weights
+- **Player Suggestions**: Get replacement recommendations based on performance metrics
 - **Real-time Data**: Uses official FPL API for up-to-date player and fixture information
-- **Responsive UI**: Modern, mobile-friendly interface built with React and Tailwind CSS
 
 ## Quick Start
 
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd FPL-Optimizer
+# Install dependencies
+pnpm install
+
+# Start development servers
+pnpm run dev
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-3. Start the development servers:
-```bash
-npm run dev
-```
+## How It Works
 
-4. Open your browser and navigate to `http://localhost:3000`
+The tool uses advanced metrics to score players:
+
+- **Form**: Recent performance and consistency
+- **Expected Goals/Assists**: Statistical performance indicators
+- **Expected Minutes**: Playing time likelihood
+- **Fixture Difficulty**: Upcoming match difficulty
+- **Average Points**: Historical FPL performance
 
 ## Project Structure
 
 ```
-FPL-Optimizer/
 ├── apps/
-│   ├── api/                 # Express.js API server
-│   └── web/                 # React frontend
-├── docs/                    # Documentation
-└── package.json            # Root package.json
+│   ├── api/          # Express.js backend
+│   └── web/          # React frontend
+├── docker-compose.yml
+└── README.md
 ```
 
-## Configuration
+## Deployment
 
-### Analysis Weights
+The application is containerized and ready for deployment:
 
-The tool uses configurable weights to score players based on different metrics:
-
-- **Form** (30%): Recent performance and consistency
-- **xG/90** (25%): Expected goals per 90 minutes
-- **xA/90** (20%): Expected assists per 90 minutes
-- **Expected Minutes** (15%): Likelihood of playing time
-- **Next 3 Fixtures** (10%): Difficulty of upcoming matches
-
-You can adjust these weights in the web interface to match your preferences.
+```bash
+docker-compose up -d
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Disclaimer
-
-This tool is for educational and entertainment purposes only. It is not affiliated with the official Fantasy Premier League. Always make your own decisions when managing your FPL team.
+MIT License - see [LICENSE](LICENSE) for details.

@@ -37,7 +37,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         // Clear the session storage
         sessionStorage.removeItem('edit-generated-team');
       } catch (error) {
-        console.error('Failed to load generated team for editing:', error);
       }
     }
   }, [squadState]);

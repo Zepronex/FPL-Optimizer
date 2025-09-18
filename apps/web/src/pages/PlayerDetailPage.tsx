@@ -52,7 +52,6 @@ const PlayerDetailPage = () => {
         setError('Player not found');
       }
     } catch (error) {
-      console.error('Failed to load player:', error);
       setError('Failed to load player data');
     } finally {
       setIsLoading(false);
@@ -83,7 +82,6 @@ const PlayerDetailPage = () => {
         setSuggestions(data.data.suggestions);
       }
     } catch (error) {
-      console.error('Failed to load suggestions:', error);
     } finally {
       setIsLoadingSuggestions(false);
     }
