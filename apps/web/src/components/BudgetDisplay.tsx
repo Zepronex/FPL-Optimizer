@@ -46,7 +46,7 @@ const BudgetDisplay = ({ squad, onSetBank }: BudgetDisplayProps) => {
           <span className="text-gray-500 font-medium">£</span>
           <input
             type="number"
-            value={Math.round(squad.bank * 10) / 10}
+            value={squad.bank}
             onChange={(e) => onSetBank(parseFloat(e.target.value) || 0)}
             step="0.1"
             min="0"

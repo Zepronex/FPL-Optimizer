@@ -1,53 +1,42 @@
 import { formatPrice } from '../lib/format';
 import { SquadSlot } from '../lib/types';
-import { memo } from 'react';
 
 interface FootballPitchProps {
   startingXI: (SquadSlot | null)[];
-  onRemovePlayer?: (playerId: number) => void;
-  isReadOnly?: boolean;
+  onRemovePlayer: (playerId: number) => void;
 }
 
-const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: FootballPitchProps) => {
-  // organize players by position for display
+const FootballPitch = ({ startingXI, onRemovePlayer }: FootballPitchProps) => {
+  // Organize players by position
   const goalkeeper = startingXI.find(slot => slot?.pos === 'GK') || null;
   const defenders = startingXI.filter(slot => slot?.pos === 'DEF');
   const midfielders = startingXI.filter(slot => slot?.pos === 'MID');
   const forwards = startingXI.filter(slot => slot?.pos === 'FWD');
 
   const PlayerSlot = ({ slot, position, index }: { slot: SquadSlot | null; position: string; index: number }) => {
-    // adjust text size based on name length for better fit
+    // Determine text size based on name length
     const getTextSize = (name: string) => {
-      if (name.length <= 10) return 'text-sm';
-      if (name.length <= 15) return 'text-xs';
-      if (name.length <= 20) return 'text-xs leading-tight';
+      if (name.length <= 12) return 'text-sm';
+      if (name.length <= 16) return 'text-xs';
       return 'text-xs leading-tight';
     };
 
-    // truncate very long names to fit in player slot
-    const truncateName = (name: string) => {
-      if (name.length <= 20) return name;
-      return name.substring(0, 17) + '...';
-    };
-
     return (
-      <div className="relative group flex-shrink-0">
-        <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
+      <div className="relative group">
+        <div className="w-28 h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
           {slot ? (
-            <div className="text-center p-1 w-full h-full flex flex-col justify-center">
-              <div className={`font-semibold ${getTextSize(slot.name)} break-words overflow-hidden`} title={slot.name}>
-                {truncateName(slot.name || `Player ${slot.id}`)}
+            <div className="text-center p-2 w-full">
+              <div className={`font-semibold ${getTextSize(slot.name)} break-words`} title={slot.name}>
+                {slot.name || `Player ${slot.id}`}
               </div>
-              <div className="text-xs text-gray-600 mt-1">{slot.teamShort}</div>
+              <div className="text-xs text-gray-600">{slot.teamShort}</div>
               <div className="text-xs text-gray-600">{formatPrice(slot.price)}</div>
-              {!isReadOnly && onRemovePlayer && (
-                <button
-                  onClick={() => onRemovePlayer(slot.id)}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-md"
-                >
-                  ×
-                </button>
-              )}
+              <button
+                onClick={() => onRemovePlayer(slot.id)}
+                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-md"
+              >
+                ×
+              </button>
             </div>
           ) : (
             <div className="text-gray-400 text-sm text-center">
@@ -61,16 +50,16 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-      <div className="text-center mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800">Starting XI Formation</h3>
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-800">Starting XI Formation</h3>
       </div>
       
-      {/* Simple Position Rows - Mobile Optimized */}
-      <div className="space-y-3 sm:space-y-4">
+      {/* Simple Position Rows */}
+      <div className="space-y-4">
         {/* Goalkeeper */}
         <div>
-          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Goalkeeper</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Goalkeeper</h4>
           <div className="flex justify-center">
             <PlayerSlot slot={goalkeeper} position="GK" index={0} />
           </div>
@@ -78,8 +67,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Defenders */}
         <div>
-          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Defenders</h4>
-          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Defenders</h4>
+          <div className="flex justify-center space-x-3">
             {defenders.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="DEF" index={i} />
             ))}
@@ -91,8 +80,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Midfielders */}
         <div>
-          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Midfielders</h4>
-          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Midfielders</h4>
+          <div className="flex justify-center space-x-3">
             {midfielders.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="MID" index={i} />
             ))}
@@ -104,8 +93,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         
         {/* Forwards */}
         <div>
-          <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Forwards</h4>
-          <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Forwards</h4>
+          <div className="flex justify-center space-x-3">
             {forwards.map((slot, i) => (
               <PlayerSlot key={i} slot={slot} position="FWD" index={i} />
             ))}
@@ -126,4 +115,4 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   );
 };
 
-export default memo(FootballPitch);
+export default FootballPitch;

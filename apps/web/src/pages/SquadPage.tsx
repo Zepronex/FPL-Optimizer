@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import WeightsPanel from '../components/WeightsPanel';
@@ -16,30 +16,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
   const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-
-  // Check if we need to load a generated team for editing
-  useEffect(() => {
-    const editGeneratedTeam = sessionStorage.getItem('edit-generated-team');
-    if (editGeneratedTeam) {
-      try {
-        const generatedSquad: Squad = JSON.parse(editGeneratedTeam);
-        
-        // Clear current squad and load the generated team
-        squadState.clearSquad();
-        generatedSquad.startingXI.forEach(player => {
-          squadState.addPlayer(player, true);
-        });
-        generatedSquad.bench.forEach(player => {
-          squadState.addPlayer(player, false);
-        });
-        squadState.setBank(generatedSquad.bank);
-        
-        // Clear the session storage
-        sessionStorage.removeItem('edit-generated-team');
-      } catch (error) {
-      }
-    }
-  }, [squadState]);
 
   const handleAnalyze = async () => {
     if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {
@@ -69,22 +45,22 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
 
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-8">
       {/* Page Header with Analyze Button */}
       <div className="text-center">
-        <h1 className="text-2xl sm:text-4xl font-bold text-fpl-dark mb-3 sm:mb-4">
+        <h1 className="text-4xl font-bold text-fpl-dark mb-4">
           Squad Builder
         </h1>
-        <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-6">
           Build your Fantasy Premier League squad and get AI-powered analysis with personalized suggestions to maximize your points potential.
         </p>
         
         {/* Analyze Button - Moved to top */}
-        <div className="flex flex-col items-center space-y-3 px-4">
+        <div className="flex flex-col items-center space-y-3">
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
-            className="btn-primary text-lg sm:text-xl px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
+            className="btn-primary text-xl px-10 py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
             {isAnalyzing ? (
               <>
@@ -147,14 +123,14 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       )}
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Squad Input */}
-        <div className="lg:col-span-2 order-2 lg:order-1">
+        <div className="lg:col-span-2">
           <SquadForm squadState={squadState} />
         </div>
 
         {/* Weights Panel */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
+        <div className="lg:col-span-1">
           <WeightsPanel weightsState={weightsState} />
         </div>
       </div>

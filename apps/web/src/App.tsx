@@ -1,40 +1,27 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect } from 'react';
+import HomePage from './pages/HomePage';
+import SquadPage from './pages/SquadPage';
+import AnalyzePage from './pages/AnalyzePage';
+import GenerateTeamPage from './pages/GenerateTeamPage';
+import PlayerDetailPage from './pages/PlayerDetailPage';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
-import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
 import { useWeights } from './state/useWeights';
-
-// main pages loaded directly for instant navigation
-import HomePage from './pages/HomePage';
-import SquadPage from './pages/SquadPage';
-import GenerateTeamPage from './pages/GenerateTeamPage';
-
-// secondary pages lazy loaded to reduce initial bundle size
-const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
-const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
-const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
-
-// lightweight loading spinner for page transitions
-const FastLoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[200px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fpl-green"></div>
-  </div>
-);
 
 function App() {
   const [isApiConnected, setIsApiConnected] = useState<boolean | null>(null);
   const squadState = useSquad();
   const weightsState = useWeights();
 
-  // check api connection on app startup
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
         await apiClient.healthCheck();
         setIsApiConnected(true);
       } catch (error) {
+        // API connection failed
         setIsApiConnected(false);
       }
     };
@@ -44,8 +31,11 @@ function App() {
 
   if (isApiConnected === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Connecting to API..." />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fpl-green mx-auto mb-4"></div>
+          <p className="text-gray-600">Connecting to API...</p>
+        </div>
       </div>
     );
   }
@@ -92,25 +82,25 @@ function App() {
               <nav className="flex space-x-6 ml-auto">
                 <a 
                   href="/squad" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
                 >
-                  Squad Builder
+                  New Squad
                 </a>
                 <a 
                   href="/generate" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
                 >
                   Generate Team
                 </a>
                 <a 
                   href="/analyze" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
                 >
-                  Team Analysis
+                  Analysis
                 </a>
                 <a 
                   href="/" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors"
                 >
                   Home
                 </a>
@@ -120,16 +110,13 @@ function App() {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Suspense fallback={<FastLoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/generate" element={<GenerateTeamPage />} />
-              <Route path="/generated-team" element={<GeneratedTeamPage />} />
-              <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
-              <Route path="/analyze" element={<AnalyzePage />} />
-              <Route path="/player/:id" element={<PlayerDetailPage />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/generate" element={<GenerateTeamPage />} />
+            <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
+            <Route path="/analyze" element={<AnalyzePage />} />
+            <Route path="/player/:id" element={<PlayerDetailPage />} />
+          </Routes>
         </main>
 
         <footer className="bg-white border-t border-gray-200 mt-16">

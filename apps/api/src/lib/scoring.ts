@@ -24,73 +24,73 @@ export class ScoringService {
 
   static readonly WEIGHT_PRESETS: WeightPreset[] = [
     {
-      name: 'Balanced Approach',
-      description: 'Well-rounded team focusing on consistent performers across all positions',
+      name: 'Balanced',
+      description: 'Well-rounded approach considering all factors equally',
       weights: {
-        form: 0.15,
+        form: 0.2,
         xg90: 0.15,
         xa90: 0.15,
-        expMin: 0.2,
-        next3Ease: 0.15,
+        expMin: 0.15,
+        next3Ease: 0.1,
         avgPoints: 0.15,
         value: 0.05,
-        ownership: 0.0
+        ownership: 0.05
       }
     },
     {
-      name: 'Premium Heavy',
-      description: 'Invest heavily in proven premium players with guaranteed minutes',
+      name: 'Historical Performance',
+      description: 'Focus on proven track record and consistency',
       weights: {
         form: 0.1,
-        xg90: 0.2,
-        xa90: 0.2,
-        expMin: 0.25,
-        next3Ease: 0.1,
-        avgPoints: 0.1,
-        value: 0.02,
-        ownership: 0.03
+        xg90: 0.1,
+        xa90: 0.1,
+        expMin: 0.2,
+        next3Ease: 0.05,
+        avgPoints: 0.3,
+        value: 0.05,
+        ownership: 0.1
       }
     },
     {
-      name: 'Value Optimized',
-      description: 'Maximum points per million - focus on budget enablers and differentials',
+      name: 'Cost-Effective',
+      description: 'Maximize value for money and budget efficiency',
       weights: {
         form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
+        xg90: 0.1,
+        xa90: 0.1,
         expMin: 0.15,
         next3Ease: 0.1,
         avgPoints: 0.1,
-        value: 0.2,
-        ownership: 0.0
+        value: 0.25,
+        ownership: 0.05
       }
     },
     {
-      name: 'Form & Fixtures',
-      description: 'Players in hot form with favorable upcoming fixture runs',
+      name: 'Trending Up',
+      description: 'Prioritize current form and upcoming fixtures',
       weights: {
-        form: 0.25,
+        form: 0.35,
+        xg90: 0.2,
+        xa90: 0.15,
+        expMin: 0.1,
+        next3Ease: 0.15,
+        avgPoints: 0.03,
+        value: 0.01,
+        ownership: 0.01
+      }
+    },
+    {
+      name: 'Risky',
+      description: 'High-risk, high-reward strategy focusing heavily on form',
+      weights: {
+        form: 0.6,
         xg90: 0.15,
         xa90: 0.1,
-        expMin: 0.15,
-        next3Ease: 0.25,
-        avgPoints: 0.05,
-        value: 0.03,
-        ownership: 0.02
-      }
-    },
-    {
-      name: 'Set & Forget',
-      description: 'Stable team with minimal transfers - focus on season-long consistency',
-      weights: {
-        form: 0.05,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.3,
+        expMin: 0.05,
         next3Ease: 0.05,
-        avgPoints: 0.25,
-        value: 0.03,
-        ownership: 0.02
+        avgPoints: 0.02,
+        value: 0.02,
+        ownership: 0.01
       }
     }
   ];

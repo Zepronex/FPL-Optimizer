@@ -4,7 +4,6 @@ import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import { formatPrice } from '../lib/format';
-import { useDebounce } from '../hooks/useDebounce';
 
 interface PlayerSearchProps {
   onAddPlayer: (player: EnrichedPlayer, isStarting: boolean) => void;
@@ -15,9 +14,6 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<EnrichedPlayer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  // debounce search to reduce api calls while typing
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const handleSearch = async (query: string) => {
     if (query.length < 2) {
@@ -40,10 +36,13 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
     }
   };
 
-  // search when debounced query changes
   useEffect(() => {
-    handleSearch(debouncedSearchQuery);
-  }, [debouncedSearchQuery]);
+    const timeoutId = setTimeout(() => {
+      handleSearch(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   const handleAddPlayer = (player: EnrichedPlayer, isStarting: boolean = true) => {
     onAddPlayer(player, isStarting);

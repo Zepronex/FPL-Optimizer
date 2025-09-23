@@ -37,8 +37,10 @@ export class SquadAnalyzer {
       const score = ScoringService.calculatePlayerScore(player, weights);
       const label = ScoringService.getPlayerLabel(score, player);
       
-      // Get suggestions for all players (within +/- 1.5 score range)
-      const suggestions = await this.getSuggestions(player, slot, squad, allPlayers, weights);
+      // Get suggestions for non-perfect players
+      const suggestions = label !== 'perfect' 
+        ? await this.getSuggestions(player, slot, squad, allPlayers, weights)
+        : [];
       
       results.push({
         player: { ...player, score },
@@ -103,12 +105,11 @@ export class SquadAnalyzer {
       score: ScoringService.calculatePlayerScore(player, weights)
     }));
     
-    // Filter candidates within +/- 1.5 score range
-    const scoreRange = 1.5;
+    // Sort by score improvement
     const sortedCandidates = scoredCandidates
-      .filter(player => Math.abs(player.score - currentScore) <= scoreRange)
-      .sort((a, b) => Math.abs(b.score - currentScore) - Math.abs(a.score - currentScore))
-      .slice(0, 5); // Top 5 suggestions within range
+      .filter(player => player.score > currentScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3); // Top 3 suggestions
     
     return sortedCandidates.map(player => ({
       id: player.id,

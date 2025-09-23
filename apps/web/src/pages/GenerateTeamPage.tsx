@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wand2, Users, Target, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../lib/api';
-import { AnalysisWeights } from '../lib/types';
+import { Squad, AnalysisWeights } from '../lib/types';
+import { useSquad } from '../state/useSquad';
+import { useWeights } from '../state/useWeights';
 
 interface TeamGenerationStrategy {
   id: string;
@@ -16,6 +18,8 @@ interface TeamGenerationStrategy {
 
 const GenerateTeamPage = () => {
   const navigate = useNavigate();
+  const squadState = useSquad();
+  const weightsState = useWeights();
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,18 +27,18 @@ const GenerateTeamPage = () => {
   const strategies: TeamGenerationStrategy[] = [
     {
       id: 'balanced',
-      name: 'Balanced Approach',
-      description: 'Well-rounded team focusing on consistent performers across all positions',
+      name: 'Balanced Team',
+      description: 'A well-rounded team with good value across all positions',
       icon: <Shield className="w-6 h-6" />,
       weights: {
-        form: 0.15,
+        form: 0.2,
         xg90: 0.15,
         xa90: 0.15,
-        expMin: 0.2,
-        next3Ease: 0.15,
+        expMin: 0.15,
+        next3Ease: 0.1,
         avgPoints: 0.15,
         value: 0.05,
-        ownership: 0.0
+        ownership: 0.05
       },
       budget: 100,
       color: 'bg-blue-500'
@@ -42,13 +46,13 @@ const GenerateTeamPage = () => {
     {
       id: 'premium',
       name: 'Premium Heavy',
-      description: 'Invest heavily in proven premium players with guaranteed minutes',
+      description: 'Focus on top-tier players with proven track records',
       icon: <Target className="w-6 h-6" />,
       weights: {
-        form: 0.1,
+        form: 0.15,
         xg90: 0.2,
         xa90: 0.2,
-        expMin: 0.25,
+        expMin: 0.2,
         next3Ease: 0.1,
         avgPoints: 0.1,
         value: 0.02,
@@ -59,32 +63,32 @@ const GenerateTeamPage = () => {
     },
     {
       id: 'value',
-      name: 'Value Optimized',
-      description: 'Maximum points per million - focus on budget enablers and differentials',
+      name: 'Value Team',
+      description: 'Maximum points per million spent - budget optimization',
       icon: <DollarSign className="w-6 h-6" />,
       weights: {
         form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
+        xg90: 0.1,
+        xa90: 0.1,
         expMin: 0.15,
         next3Ease: 0.1,
         avgPoints: 0.1,
-        value: 0.2,
-        ownership: 0.0
+        value: 0.25,
+        ownership: 0.05
       },
       budget: 100,
       color: 'bg-green-500'
     },
     {
       id: 'differential',
-      name: 'Differential Focus',
-      description: 'Low ownership players for unique advantages and rank climbing',
+      name: 'Differential Team',
+      description: 'Low ownership players for unique advantages',
       icon: <Zap className="w-6 h-6" />,
       weights: {
-        form: 0.2,
+        form: 0.25,
         xg90: 0.2,
         xa90: 0.15,
-        expMin: 0.15,
+        expMin: 0.1,
         next3Ease: 0.15,
         avgPoints: 0.1,
         value: 0.03,
@@ -95,18 +99,18 @@ const GenerateTeamPage = () => {
     },
     {
       id: 'form',
-      name: 'Form & Fixtures',
-      description: 'Players in hot form with favorable upcoming fixture runs',
+      name: 'Form Team',
+      description: 'Players in hot form with favorable upcoming fixtures',
       icon: <TrendingUp className="w-6 h-6" />,
       weights: {
-        form: 0.25,
+        form: 0.4,
         xg90: 0.15,
         xa90: 0.1,
-        expMin: 0.15,
-        next3Ease: 0.25,
-        avgPoints: 0.05,
-        value: 0.03,
-        ownership: 0.02
+        expMin: 0.1,
+        next3Ease: 0.2,
+        avgPoints: 0.03,
+        value: 0.01,
+        ownership: 0.01
       },
       budget: 100,
       color: 'bg-red-500'
@@ -114,56 +118,20 @@ const GenerateTeamPage = () => {
     {
       id: 'template',
       name: 'Template Team',
-      description: 'Popular picks with high ownership for consistent, safe returns',
+      description: 'Popular picks with high ownership for safety',
       icon: <Users className="w-6 h-6" />,
       weights: {
         form: 0.1,
         xg90: 0.1,
         xa90: 0.1,
-        expMin: 0.25,
+        expMin: 0.2,
         next3Ease: 0.1,
         avgPoints: 0.2,
         value: 0.05,
-        ownership: 0.1
+        ownership: 0.15
       },
       budget: 100,
       color: 'bg-indigo-500'
-    },
-    {
-      id: 'setforget',
-      name: 'Set & Forget',
-      description: 'Stable team with minimal transfers - focus on season-long consistency',
-      icon: <Shield className="w-6 h-6" />,
-      weights: {
-        form: 0.05,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.3,
-        next3Ease: 0.05,
-        avgPoints: 0.25,
-        value: 0.03,
-        ownership: 0.02
-      },
-      budget: 100,
-      color: 'bg-gray-500'
-    },
-    {
-      id: 'wildcard',
-      name: 'Wildcard Strategy',
-      description: 'Aggressive approach for short-term gains with high-risk, high-reward players',
-      icon: <Zap className="w-6 h-6" />,
-      weights: {
-        form: 0.3,
-        xg90: 0.2,
-        xa90: 0.15,
-        expMin: 0.1,
-        next3Ease: 0.2,
-        avgPoints: 0.02,
-        value: 0.02,
-        ownership: 0.01
-      },
-      budget: 100,
-      color: 'bg-yellow-500'
     }
   ];
 
@@ -181,22 +149,25 @@ const GenerateTeamPage = () => {
       const response = await apiClient.generateTeam(selectedStrategy, strategy.budget);
       
       if (response.success && response.data) {
-        const { squad, strategy: strategyName, weights, budget } = response.data;
+        const { squad } = response.data;
         
-        
-        // Store the generated team data
-        const generatedData = {
-          squad,
-          strategy: strategyName,
-          weights,
-          budget
-        };
-        
-        // Store in session storage for the generated team page
-        sessionStorage.setItem('generated-team-data', JSON.stringify(generatedData));
+        // Set the generated squad in the squad state
+        squadState.clearSquad();
+        squad.startingXI.forEach(player => {
+          squadState.addPlayer(player, true);
+        });
+        squad.bench.forEach(player => {
+          squadState.addPlayer(player, false);
+        });
+        squadState.setBank(squad.bank);
 
-        // Navigate to the generated team page
-        navigate('/generated-team', { state: { generatedData } });
+        // Set the weights for this strategy
+        Object.entries(strategy.weights).forEach(([key, value]) => {
+          weightsState.updateWeight(key as keyof AnalysisWeights, value);
+        });
+
+        // Navigate to squad page to review the generated team
+        navigate('/squad');
       } else {
         setError(response.error || 'Failed to generate team. Please try again.');
       }

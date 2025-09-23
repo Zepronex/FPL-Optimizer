@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
-import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
-import { formatPrice, formatForm } from '../lib/format';
-import { ArrowLeft } from 'lucide-react';
-import PlayerStats from '../components/PlayerStats';
-import PlayerSuggestions from '../components/PlayerSuggestions';
+import { formatPrice, formatForm, formatXG, formatXA } from '../lib/format';
+import { ArrowLeft, TrendingUp, TrendingDown, Users, Target, Clock } from 'lucide-react';
+
+interface PlayerSuggestion {
+  id: number;
+  name: string;
+  teamShort: string;
+  price: number;
+  score: number;
+  form: number;
+  xg90: number;
+  xa90: number;
+  next3Ease: number;
+  delta: number;
+}
+
+interface SuggestionsResponse {
+  currentPlayer: {
+    id: number;
+    name: string;
+    score: number;
+  };
+  suggestions: PlayerSuggestion[];
+  count: number;
+}
 
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +72,7 @@ const PlayerDetailPage = () => {
         setError('Player not found');
       }
     } catch (error) {
+      console.error('Failed to load player:', error);
       setError('Failed to load player data');
     } finally {
       setIsLoading(false);
@@ -82,6 +103,7 @@ const PlayerDetailPage = () => {
         setSuggestions(data.data.suggestions);
       }
     } catch (error) {
+      console.error('Failed to load suggestions:', error);
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -194,16 +216,128 @@ const PlayerDetailPage = () => {
         </div>
 
         {/* Player Stats */}
-        <div className="mb-8">
-          <PlayerStats player={player} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Performance Stats */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <Target className="w-5 h-5 mr-2" />
+              Performance Stats
+            </h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Goals (xG/90)</span>
+                <span className="font-semibold">{formatXG(player.xg90)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Assists (xA/90)</span>
+                <span className="font-semibold">{formatXA(player.xa90)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Expected Minutes</span>
+                <span className="font-semibold">{player.expMin.toFixed(0)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Next 3 Fixture Ease</span>
+                <span className="font-semibold">{player.next3Ease.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* FPL Stats */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2" />
+              FPL Stats
+            </h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Average Points</span>
+                <span className="font-semibold">{player.avgPoints.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Value (Pts/£M)</span>
+                <span className="font-semibold">{player.value.toFixed(1)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Ownership</span>
+                <span className="font-semibold">{player.ownership.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Alternative Players */}
-        <PlayerSuggestions 
-          suggestions={suggestions}
-          isLoading={isLoadingSuggestions}
-          onLoadMore={() => {}} // Not implemented yet
-        />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <TrendingUp className="w-5 h-5 mr-2" />
+            Alternative Players
+          </h2>
+          
+          {isLoadingSuggestions ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fpl-green mx-auto mb-2"></div>
+              <p className="text-gray-600">Loading alternatives...</p>
+            </div>
+          ) : suggestions.length > 0 ? (
+            <div className="space-y-3">
+              {suggestions.map((suggestion) => (
+                <div
+                  key={suggestion.id}
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <span className={`badge ${getPositionColor(player.pos)}`}>
+                        {player.pos}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">{suggestion.name}</div>
+                      <div className="text-sm text-gray-600">
+                        {suggestion.teamShort} • {formatPrice(suggestion.price)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Score</div>
+                      <div className="font-semibold">{suggestion.score.toFixed(1)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Form</div>
+                      <div className="font-semibold">{formatForm(suggestion.form)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-500">Improvement</div>
+                      <div className={`font-semibold flex items-center ${
+                        suggestion.delta > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {suggestion.delta > 0 ? (
+                          <TrendingUp className="w-4 h-4 mr-1" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 mr-1" />
+                        )}
+                        {suggestion.delta > 0 ? '+' : ''}{suggestion.delta.toFixed(1)}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/player/${suggestion.id}`)}
+                      className="btn-primary text-sm px-4 py-2"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>No alternative players found for this position and budget.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
