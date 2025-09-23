@@ -19,7 +19,7 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Position:</span>
-            <span className="font-medium">{player.position}</span>
+            <span className="font-medium">{player.pos}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Price:</span>
@@ -48,16 +48,12 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Total Points:</span>
-            <span className="font-medium">{player.totalPoints}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-gray-600">Avg Points:</span>
             <span className="font-medium">{player.avgPoints.toFixed(1)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Minutes:</span>
-            <span className="font-medium">{player.minutes}</span>
+            <span className="text-gray-600">Value:</span>
+            <span className="font-medium">{player.value.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -98,3 +94,4 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
 };
 
 export default PlayerStats;
+

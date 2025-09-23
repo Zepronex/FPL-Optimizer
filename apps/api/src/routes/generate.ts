@@ -297,6 +297,10 @@ function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: str
     const position = currentPlayer.pos;
     const availableBudget = squad.bank + currentPlayer.price;
     
+    // Find the current player's score from the original data
+    const currentPlayerData = playersByPosition[position].find((p: any) => p.id === currentPlayer.id);
+    if (!currentPlayerData) continue; // Skip if current player not found
+    
     // Find better players in the same position
     const availablePlayers = playersByPosition[position].filter((p: any) => 
       !usedPlayerIds.has(p.id) && 
@@ -319,7 +323,7 @@ function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: str
         bestUpgrade = availablePlayers.sort((a: any, b: any) => b.score - a.score)[0];
       }
       
-      if (bestUpgrade && bestUpgrade.score > currentPlayer.price) { // Simple check for improvement
+      if (bestUpgrade && bestUpgrade.score > currentPlayerData.score) { // Check if upgrade has better score
         // Replace the player
         squad.bank = squad.bank + currentPlayer.price - bestUpgrade.price;
         squad.startingXI[i] = {
