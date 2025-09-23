@@ -1,16 +1,43 @@
 import { PlayerLabel } from './types';
 
 export const formatPrice = (price: number): string => {
-  return `£${price.toFixed(1)}m`;
+  // Round to avoid floating point precision issues
+  const rounded = Math.round(price * 10) / 10;
+  
+  // If the decimal part is 0, show as whole number
+  if (rounded % 1 === 0) {
+    return `£${rounded.toFixed(0)}m`;
+  }
+  
+  // Otherwise show with 1 decimal place
+  return `£${rounded.toFixed(1)}m`;
 };
 
 export const formatScore = (score: number): string => {
-  return score.toFixed(1);
+  // Round to avoid floating point precision issues
+  const rounded = Math.round(score * 10) / 10;
+  
+  // If the decimal part is 0, show as whole number
+  if (rounded % 1 === 0) {
+    return rounded.toFixed(0);
+  }
+  
+  // Otherwise show with 1 decimal place
+  return rounded.toFixed(1);
 };
 
 export const formatDelta = (delta: number): string => {
   const sign = delta >= 0 ? '+' : '';
-  return `${sign}${delta.toFixed(1)}`;
+  // Round to avoid floating point precision issues
+  const rounded = Math.round(delta * 10) / 10;
+  
+  // If the decimal part is 0, show as whole number
+  if (rounded % 1 === 0) {
+    return `${sign}${rounded.toFixed(0)}`;
+  }
+  
+  // Otherwise show with 1 decimal place
+  return `${sign}${rounded.toFixed(1)}`;
 };
 
 export const getLabelColor = (label: PlayerLabel): string => {

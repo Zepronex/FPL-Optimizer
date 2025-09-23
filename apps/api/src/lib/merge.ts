@@ -58,7 +58,8 @@ export class DataMerger {
   static async enrichPlayers(
     players: FPLPlayer[],
     teams: FPLTeam[],
-    fixtures: FPLFixture[]
+    fixtures: FPLFixture[],
+    currentGameweek: number = 1
   ): Promise<EnrichedPlayer[]> {
     // Create lookup map for team data to avoid O(n) searches for each player
     const teamMap = new Map(teams.map(team => [team.id, team]));
@@ -85,7 +86,7 @@ export class DataMerger {
         xg90: stats.xG90 || 0,
         xa90: stats.xA90 || 0,
         expMin: stats.expMin || 0,
-        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty),
+        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty, currentGameweek),
         // Additional metrics
         avgPoints: stats.avgPoints || 0,
         value: stats.value || 0,
@@ -97,24 +98,27 @@ export class DataMerger {
   private static calculateNext3Ease(
     teamId: number,
     fixtures: FPLFixture[],
-    fdr: Record<number, number>
+    fdr: Record<number, number>,
+    currentGameweek: number = 1
   ): number {
-    // Find next 3 fixtures for the team (home or away)
-    const teamFixtures = fixtures
+    // Find next 3 upcoming fixtures for the team (home or away)
+    // Only consider fixtures from current gameweek onwards
+    const upcomingFixtures = fixtures
+      .filter(f => f.event >= currentGameweek)
       .filter(f => f.team_h === teamId || f.team_a === teamId)
       .slice(0, 3);
 
-    if (teamFixtures.length === 0) return 3; // Default medium difficulty
+    if (upcomingFixtures.length === 0) return 3; // Default medium difficulty
 
     // Calculate average difficulty of next 3 fixtures
-    const totalDifficulty = teamFixtures.reduce((sum, fixture) => {
+    const totalDifficulty = upcomingFixtures.reduce((sum, fixture) => {
       const isHome = fixture.team_h === teamId;
       const opponentId = isHome ? fixture.team_a : fixture.team_h;
       const difficulty = isHome ? fixture.team_h_difficulty : fixture.team_a_difficulty;
       return sum + difficulty;
     }, 0);
 
-    return totalDifficulty / teamFixtures.length;
+    return totalDifficulty / upcomingFixtures.length;
   }
 
   static async getPlayerByName(name: string): Promise<EnrichedPlayer | null> {
@@ -208,13 +212,14 @@ export class DataMerger {
 
   static async getAllEnrichedPlayers(): Promise<EnrichedPlayer[]> {
     try {
-      const [players, teams, fixtures] = await Promise.all([
+      const [players, teams, fixtures, currentGameweek] = await Promise.all([
         import('./fetchers/fpl').then(m => m.FPLDataFetcher.getPlayers()),
         import('./fetchers/fpl').then(m => m.FPLDataFetcher.getTeams()),
-        import('./fetchers/fpl').then(m => m.FPLDataFetcher.getFixtures())
+        import('./fetchers/fpl').then(m => m.FPLDataFetcher.getFixtures()),
+        import('./fetchers/fpl').then(m => m.FPLDataFetcher.getCurrentGameweek()).catch(() => 1)
       ]);
 
-      return await this.enrichPlayers(players, teams, fixtures);
+      return await this.enrichPlayers(players, teams, fixtures, currentGameweek);
     } catch (error) {
       // Error getting enriched players
       throw error;

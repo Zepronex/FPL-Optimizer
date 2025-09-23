@@ -21,6 +21,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
     clearError
   } = squadState;
   
+  // add player to squad (starting xi or bench)
   const handleAddPlayer = (player: EnrichedPlayer, isStarting: boolean = true) => {
     addPlayer(player, isStarting);
   };
@@ -29,12 +30,12 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
 
   return (
     <div className="card">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Squad Builder</h2>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+        <h2 className="text-xl sm:text-2xl font-semibold">Squad Builder</h2>
         <div className="flex space-x-2">
           <button
             onClick={clearSquad}
-            className="flex items-center space-x-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200 w-full sm:w-auto justify-center"
           >
             <Trash2 className="w-4 h-4" />
             <span>Clear Squad</span>
