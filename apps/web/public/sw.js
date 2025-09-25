@@ -1,13 +1,13 @@
 // Enhanced service worker for better caching
-const CACHE_NAME = 'fpl-optimizer-v2';
-const STATIC_CACHE = 'fpl-static-v2';
-const DYNAMIC_CACHE = 'fpl-dynamic-v2';
+const CACHE_NAME = 'fpl-optimizer-v3';
+const STATIC_CACHE = 'fpl-static-v3';
+const DYNAMIC_CACHE = 'fpl-dynamic-v3';
 
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/index.html',
+  '/assets/index.css',
+  '/assets/index.js'
 ];
 
 // Install event - cache resources

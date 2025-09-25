@@ -37,17 +37,12 @@ The tool uses advanced metrics to score players:
 ├── apps/
 │   ├── api/          # Express.js backend
 │   └── web/          # React frontend
-├── docker-compose.yml
 └── README.md
 ```
 
 ## Deployment
 
-The application is containerized and ready for deployment:
-
-```bash
-docker-compose up -d
-```
+The application is deployed to Vercel and automatically builds from the main branch.
 
 ## License
 
