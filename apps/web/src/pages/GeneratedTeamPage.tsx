@@ -7,6 +7,7 @@ import { formatPrice } from '../lib/format';
 import FootballPitch from '../components/FootballPitch';
 import SquadSummary from '../components/SquadSummary';
 import BudgetDisplay from '../components/BudgetDisplay';
+import BenchDisplay from '../components/BenchDisplay';
 
 interface GeneratedTeamData {
   squad: Squad;
@@ -26,6 +27,7 @@ const GeneratedTeamPage = () => {
     // Get the generated team data from location state or session storage
     const data = location.state?.generatedData || JSON.parse(sessionStorage.getItem('generated-team-data') || 'null');
     
+    console.log('GeneratedTeamPage - Received data:', data);
     
     if (data) {
       setGeneratedData(data);
@@ -66,6 +68,7 @@ const GeneratedTeamPage = () => {
       premium: { name: 'Premium Heavy', color: 'bg-purple-500', description: 'Invest heavily in proven premium players with guaranteed minutes' },
       value: { name: 'Value Optimized', color: 'bg-green-500', description: 'Maximum points per million - focus on budget enablers and differentials' },
       differential: { name: 'Differential Focus', color: 'bg-orange-500', description: 'Low ownership players for unique advantages and rank climbing' },
+      ai: { name: 'AI Strategy', color: 'bg-gradient-to-r from-purple-500 to-pink-500', description: 'Machine learning optimized team selection using advanced algorithms' },
       form: { name: 'Form & Fixtures', color: 'bg-red-500', description: 'Players in hot form with favorable upcoming fixture runs' },
       template: { name: 'Template Team', color: 'bg-indigo-500', description: 'Popular picks with high ownership for consistent, safe returns' },
       setforget: { name: 'Set & Forget', color: 'bg-gray-500', description: 'Stable team with minimal transfers - focus on season-long consistency' },
@@ -108,6 +111,8 @@ const GeneratedTeamPage = () => {
   // Format startingXI for FootballPitch component (needs 11 slots with nulls)
   const formatStartingXI = (squad: Squad) => {
     const startingXI = [...squad.startingXI];
+    console.log('GeneratedTeamPage - Starting XI players:', startingXI.length, startingXI);
+    console.log('GeneratedTeamPage - Bench players:', squad.bench.length, squad.bench);
     // Pad with nulls to make it 11 slots
     while (startingXI.length < 11) {
       startingXI.push(null);
@@ -166,12 +171,49 @@ const GeneratedTeamPage = () => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Generated Team</h2>
               <FootballPitch startingXI={formatStartingXI(generatedData.squad)} isReadOnly={true} />
+              
+              {/* Bench Players */}
+              <div className="mt-6">
+                <BenchDisplay 
+                  bench={generatedData.squad.bench} 
+                  onRemovePlayer={() => {}} // Read-only mode
+                />
+              </div>
             </div>
           </div>
 
           {/* Team Summary */}
           <div className="lg:col-span-1 space-y-6">
             <SquadSummary squad={generatedData.squad} />
+            
+            {/* Team Statistics - Moved higher */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Statistics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.startingXI.length}</div>
+                  <div className="text-sm text-gray-600">Starting XI</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.bench.length}</div>
+                  <div className="text-sm text-gray-600">Bench Players</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">
+                    {formatPrice(generatedData.squad.startingXI.reduce((sum, player) => sum + player.price, 0) + 
+                     generatedData.squad.bench.reduce((sum, player) => sum + player.price, 0))}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Cost</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-fpl-dark">
+                    {new Set([...generatedData.squad.startingXI, ...generatedData.squad.bench].map(p => p.teamShort)).size}
+                  </div>
+                  <div className="text-sm text-gray-600">Different Teams</div>
+                </div>
+              </div>
+            </div>
+            
             {/* Budget Summary - Read Only */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
               <h3 className="text-lg font-semibold text-green-800 mb-4">Budget Summary</h3>
@@ -218,51 +260,39 @@ const GeneratedTeamPage = () => {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Key Focus Areas:</h4>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(generatedData.weights)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, 3)
-                    .map(([key, value]) => (
-                      <span
-                        key={key}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                      >
-                        {key === 'xg90' ? 'xG/90' :
-                         key === 'xa90' ? 'xA/90' :
-                         key === 'expMin' ? 'Minutes' :
-                         key === 'next3Ease' ? 'Fixtures' :
-                         key === 'avgPoints' ? 'Avg Points' :
-                         key === 'ownership' ? 'Ownership' :
-                         key.charAt(0).toUpperCase() + key.slice(1)}: {(value * 100).toFixed(0)}%
+                  {generatedData.strategy === 'ai' ? (
+                    // AI Strategy specific focus areas
+                    <>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                        ML Analysis: 100%
                       </span>
-                    ))}
-                </div>
-              </div>
-            </div>
-            
-            {/* Team Statistics */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Statistics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.startingXI.length}</div>
-                  <div className="text-sm text-gray-600">Starting XI</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-fpl-dark">{generatedData.squad.bench.length}</div>
-                  <div className="text-sm text-gray-600">Bench Players</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-fpl-dark">
-                    {formatPrice(generatedData.squad.startingXI.reduce((sum, player) => sum + player.price, 0) + 
-                     generatedData.squad.bench.reduce((sum, player) => sum + player.price, 0))}
-                  </div>
-                  <div className="text-sm text-gray-600">Total Cost</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-fpl-dark">
-                    {new Set([...generatedData.squad.startingXI, ...generatedData.squad.bench].map(p => p.teamShort)).size}
-                  </div>
-                  <div className="text-sm text-gray-600">Different Teams</div>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                        Historical Data
+                      </span>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                        Pattern Recognition
+                      </span>
+                    </>
+                  ) : (
+                    // Other strategies use weights
+                    Object.entries(generatedData.weights)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 3)
+                      .map(([key, value]) => (
+                        <span
+                          key={key}
+                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                        >
+                          {key === 'xg90' ? 'xG/90' :
+                           key === 'xa90' ? 'xA/90' :
+                           key === 'expMin' ? 'Minutes' :
+                           key === 'next3Ease' ? 'Fixtures' :
+                           key === 'avgPoints' ? 'Avg Points' :
+                           key === 'ownership' ? 'Ownership' :
+                           key.charAt(0).toUpperCase() + key.slice(1)}: {(value * 100).toFixed(0)}%
+                        </span>
+                      ))
+                  )}
                 </div>
               </div>
             </div>

@@ -10,10 +10,19 @@ interface FootballPitchProps {
 
 const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: FootballPitchProps) => {
   // organize players by position for display
+  console.log('FootballPitch - All startingXI players:', startingXI);
   const goalkeeper = startingXI.find(slot => slot?.pos === 'GK') || null;
   const defenders = startingXI.filter(slot => slot?.pos === 'DEF');
   const midfielders = startingXI.filter(slot => slot?.pos === 'MID');
   const forwards = startingXI.filter(slot => slot?.pos === 'FWD');
+  
+  console.log('FootballPitch - Position counts:', {
+    GK: goalkeeper ? 1 : 0,
+    DEF: defenders.length,
+    MID: midfielders.length,
+    FWD: forwards.length,
+    total: (goalkeeper ? 1 : 0) + defenders.length + midfielders.length + forwards.length
+  });
 
   const PlayerSlot = ({ slot, position, index }: { slot: SquadSlot | null; position: string; index: number }) => {
     // adjust text size based on name length for better fit

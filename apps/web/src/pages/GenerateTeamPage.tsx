@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wand2, Users, Target, DollarSign, TrendingUp, Shield, Zap } from 'lucide-react';
+import { Wand2, Users, Target, DollarSign, TrendingUp, Shield, Zap, Brain } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { AnalysisWeights } from '../lib/types';
 
@@ -21,6 +21,24 @@ const GenerateTeamPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const strategies: TeamGenerationStrategy[] = [
+    {
+      id: 'ai',
+      name: 'AI Strategy',
+      description: 'Machine learning optimized team selection using advanced algorithms and historical data patterns',
+      icon: <Brain className="w-6 h-6" />,
+      weights: {
+        form: 0.25, // Show some weights for display
+        xg90: 0.20,
+        xa90: 0.20,
+        expMin: 0.15,
+        next3Ease: 0.10,
+        avgPoints: 0.05,
+        value: 0.03,
+        ownership: 0.02
+      },
+      budget: 100,
+      color: 'bg-gradient-to-r from-purple-500 to-pink-500'
+    },
     {
       id: 'balanced',
       name: 'Balanced Approach',
@@ -181,8 +199,15 @@ const GenerateTeamPage = () => {
       const response = await apiClient.generateTeam(selectedStrategy, strategy.budget);
       
       if (response.success && response.data) {
-        const { squad, strategy: strategyName, weights, budget } = response.data;
+        const { squad, strategy: strategyName, weights, budget, fallback, error: apiError } = response.data;
         
+        console.log('GenerateTeamPage - API Response:', response.data);
+        
+        // Check if this was a fallback (ML service unavailable)
+        if (fallback && selectedStrategy === 'ai') {
+          setError(`AI Strategy unavailable: ${apiError || 'ML service not running'}. Please start the ML service or try a different strategy.`);
+          return;
+        }
         
         // Store the generated team data
         const generatedData = {
@@ -191,6 +216,8 @@ const GenerateTeamPage = () => {
           weights,
           budget
         };
+        
+        console.log('GenerateTeamPage - Generated data to store:', generatedData);
         
         // Store in session storage for the generated team page
         sessionStorage.setItem('generated-team-data', JSON.stringify(generatedData));
@@ -262,23 +289,37 @@ const GenerateTeamPage = () => {
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-gray-700">Key Focus Areas:</h4>
               <div className="flex flex-wrap gap-2">
-                {Object.entries(strategy.weights)
-                  .sort(([,a], [,b]) => b - a)
-                  .slice(0, 3)
-                  .map(([key, value]) => (
-                    <span
-                      key={key}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                    >
-                      {key === 'xg90' ? 'xG/90' :
-                       key === 'xa90' ? 'xA/90' :
-                       key === 'expMin' ? 'Minutes' :
-                       key === 'next3Ease' ? 'Fixtures' :
-                       key === 'avgPoints' ? 'Avg Points' :
-                       key === 'ownership' ? 'Ownership' :
-                       key.charAt(0).toUpperCase() + key.slice(1)}: {(value * 100).toFixed(0)}%
+                {strategy.id === 'ai' ? (
+                  <>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      ML Analysis: 100%
                     </span>
-                  ))}
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      Historical Data
+                    </span>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      Pattern Recognition
+                    </span>
+                  </>
+                ) : (
+                  Object.entries(strategy.weights)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 3)
+                    .map(([key, value]) => (
+                      <span
+                        key={key}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                      >
+                        {key === 'xg90' ? 'xG/90' :
+                         key === 'xa90' ? 'xA/90' :
+                         key === 'expMin' ? 'Minutes' :
+                         key === 'next3Ease' ? 'Fixtures' :
+                         key === 'avgPoints' ? 'Avg Points' :
+                         key === 'ownership' ? 'Ownership' :
+                         key.charAt(0).toUpperCase() + key.slice(1)}: {(value * 100).toFixed(0)}%
+                      </span>
+                    ))
+                )}
               </div>
             </div>
           </button>

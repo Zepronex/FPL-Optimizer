@@ -7,14 +7,17 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\"",
+    "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\" \"pnpm run dev:ml\"",
     "dev:api": "cd apps/api && pnpm run dev",
     "dev:web": "cd apps/web && pnpm run dev",
+    "dev:ml": "cd apps/ml && source venv/bin/activate && python -m uvicorn main:app --reload --port 3002",
     "build": "pnpm run build:api && pnpm run build:web",
     "build:api": "cd apps/api && pnpm run build",
     "build:web": "cd apps/web && pnpm run build",
     "install:all": "pnpm install",
-    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules"
+    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules",
+    "train:ml": "cd apps/ml && source venv/bin/activate && python3 fpl_predictor.py",
+    "predict:ml": "cd apps/ml && source venv/bin/activate && python3 test_predictions.py"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

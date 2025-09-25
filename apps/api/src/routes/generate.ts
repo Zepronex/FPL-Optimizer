@@ -8,7 +8,7 @@ const router = Router();
 
 // Validation schemas
 const generateRequestSchema = z.object({
-  strategy: z.enum(['balanced', 'premium', 'value', 'differential', 'form', 'template', 'setforget', 'wildcard']),
+  strategy: z.enum(['balanced', 'premium', 'value', 'differential', 'form', 'template', 'setforget', 'wildcard', 'ai']),
   budget: z.number().min(80).max(100).optional().default(100)
 });
 
@@ -103,6 +103,74 @@ router.post('/', async (req, res) => {
         ownership: 0.01
       }
     };
+
+    // Handle AI strategy separately
+    if (strategy === 'ai') {
+      try {
+        // Call ML service for AI strategy
+        const mlResponse = await fetch('http://localhost:3002/predict/ai-strategy', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            budget: budget,
+            formation: '3-4-3',
+            exclude_players: []
+          })
+        });
+
+        if (!mlResponse.ok) {
+          throw new Error(`ML service error: ${mlResponse.status}`);
+        }
+
+        const mlData = await mlResponse.json();
+        
+        // Convert ML response to our squad format
+        const aiSquad = await convertMLResponseToSquad(mlData, allPlayers);
+        
+        res.json({
+          success: true,
+          data: {
+            squad: aiSquad,
+            strategy: 'ai',
+            weights: {
+              form: 0.25,
+              xg90: 0.20,
+              xa90: 0.20,
+              expMin: 0.15,
+              next3Ease: 0.10,
+              avgPoints: 0.05,
+              value: 0.03,
+              ownership: 0.02
+            },
+            budget: budget,
+            totalCost: mlData.total_cost,
+            expectedPoints: mlData.expected_points,
+            mlPredictions: mlData.players
+          }
+        });
+        return;
+      } catch (error) {
+        console.error('AI strategy error:', error);
+        // Fallback to balanced strategy if ML service is unavailable
+        const weights = strategyWeights['balanced'];
+        const generatedSquad = await generateTeam(allPlayers, weights, budget, 'balanced');
+        
+        res.json({
+          success: true,
+          data: {
+            squad: generatedSquad,
+            strategy: 'balanced', // Fallback
+            weights,
+            budget,
+            fallback: true,
+            error: 'ML service unavailable, using balanced strategy'
+          }
+        });
+        return;
+      }
+    }
 
     const weights = strategyWeights[strategy];
     
@@ -340,6 +408,110 @@ function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: str
       }
     }
   }
+}
+
+// Helper function to convert ML response to squad format
+async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise<Squad> {
+  const squad: Squad = {
+    startingXI: [],
+    bench: [],
+    bank: 0
+  };
+
+  // Create a map of player IDs to player data
+  const playerMap = new Map();
+  allPlayers.forEach(player => {
+    playerMap.set(player.id, player);
+  });
+
+  // Process ML predictions and assign to positions
+  // First 11 players go to startingXI, next 4 go to bench
+  for (let i = 0; i < mlData.players.length; i++) {
+    const prediction = mlData.players[i];
+    const player = playerMap.get(prediction.player_id);
+    
+    let squadSlot;
+    
+    if (!player) {
+      // If player not found in allPlayers, create a basic player object from ML data
+      const playerData = {
+        id: prediction.player_id,
+        name: prediction.features?.name || `Player ${prediction.player_id}`,
+        position: prediction.features?.position || 3,
+        price: prediction.features?.price || 5.0,
+        team: prediction.features?.team || 1,
+        score: prediction.predicted_points,
+        mlConfidence: prediction.confidence,
+        form: 0,
+        total_points: 0,
+        points_per_game: 0,
+        selected_by_percent: 0,
+        transfers_in: 0,
+        transfers_out: 0,
+        value_form: 0,
+        value_season: 0,
+        influence: 0,
+        creativity: 0,
+        threat: 0,
+        ict_index: 0,
+        starts: 0,
+        expected_goals: 0,
+        expected_assists: 0,
+        expected_goal_involvements: 0,
+        expected_goals_conceded: 0,
+        goals_scored: 0,
+        assists: 0,
+        clean_sheets: 0,
+        goals_conceded: 0,
+        own_goals: 0,
+        penalties_saved: 0,
+        penalties_missed: 0,
+        yellow_cards: 0,
+        red_cards: 0,
+        saves: 0,
+        bonus: 0,
+        bps: 0,
+        influence_rank: 0,
+        creativity_rank: 0,
+        threat_rank: 0,
+        ict_index_rank: 0
+      };
+      
+      // Convert to SquadSlot format
+      squadSlot = {
+        id: playerData.id,
+        pos: playerData.position === 1 ? 'GK' : playerData.position === 2 ? 'DEF' : playerData.position === 3 ? 'MID' : 'FWD',
+        price: playerData.price,
+        name: playerData.name,
+        teamShort: `T${playerData.team}`
+      };
+    } else {
+      // Convert to SquadSlot format using position from ML prediction features
+      const mlPosition = prediction.features?.position || player.position;
+      squadSlot = {
+        id: player.id,
+        pos: mlPosition === 1 ? 'GK' : mlPosition === 2 ? 'DEF' : mlPosition === 3 ? 'MID' : 'FWD',
+        price: player.price,
+        name: player.name,
+        teamShort: player.teamShort || `T${player.teamId}`
+      };
+      
+      console.log(`API - Player ${player.name}: ML position=${mlPosition}, mapped to=${squadSlot.pos}`);
+    }
+    
+    // Assign to startingXI (first 11) or bench (next 4)
+    if (i < 11) {
+      squad.startingXI.push(squadSlot);
+    } else if (i < 15) {
+      squad.bench.push(squadSlot);
+    }
+  }
+
+  // Calculate remaining budget (bank)
+  const totalCost = [...squad.startingXI, ...squad.bench].reduce((sum, player) => sum + player.price, 0);
+  squad.bank = 100 - totalCost; // Assuming 100m budget
+
+  return squad;
 }
 
 export { router as generateRouter };

@@ -1,0 +1,14 @@
+{
+  "name": "@fpl-optimizer/ml",
+  "version": "1.0.0",
+  "description": "FPL Optimizer ML Service",
+  "main": "main.py",
+  "scripts": {
+    "dev": "uvicorn main:app --reload --port 3002",
+    "start": "uvicorn main:app --host 0.0.0.0 --port 3002",
+    "train": "python train_model.py",
+    "predict": "python predict.py"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

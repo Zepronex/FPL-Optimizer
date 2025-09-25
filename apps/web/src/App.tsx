@@ -16,6 +16,9 @@ const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
 const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
 const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
 
+// Import TopPlayersPage directly to avoid lazy loading issues
+import TopPlayersPage from './pages/TopPlayersPage';
+
 // lightweight loading spinner for page transitions
 const FastLoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-[200px]">
@@ -103,6 +106,12 @@ function App() {
                   Generate Team
                 </a>
                 <a 
+                  href="/top-players" 
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                >
+                  Top Players
+                </a>
+                <a 
                   href="/analyze" 
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
@@ -126,6 +135,7 @@ function App() {
               <Route path="/generate" element={<GenerateTeamPage />} />
               <Route path="/generated-team" element={<GeneratedTeamPage />} />
               <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
+              <Route path="/top-players" element={<TopPlayersPage />} />
               <Route path="/analyze" element={<AnalyzePage />} />
               <Route path="/player/:id" element={<PlayerDetailPage />} />
             </Routes>
