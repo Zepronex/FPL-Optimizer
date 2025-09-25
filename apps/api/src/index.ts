@@ -9,6 +9,7 @@ import { fixturesRouter } from './routes/fixtures';
 import { analyzeRouter } from './routes/analyze';
 import { suggestionsRouter } from './routes/suggestions';
 import { generateRouter } from './routes/generate';
+import { mlRouter } from './routes/ml';
 
 dotenv.config();
 
@@ -82,6 +83,7 @@ app.use('/api/fixtures', fixturesRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/suggestions', suggestionsRouter);
 app.use('/api/generate', generateRouter);
+app.use('/api/ml', mlRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

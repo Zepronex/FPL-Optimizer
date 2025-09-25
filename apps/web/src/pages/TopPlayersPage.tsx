@@ -4,17 +4,6 @@ import { apiClient } from '../lib/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
-interface PlayerPrediction {
-  player_id: number;
-  predicted_points: number;
-  confidence: number;
-  features: {
-    name?: string;
-    position: number;
-    price: number;
-    team: number;
-  };
-}
 
 interface TopPlayersData {
   top_players_by_position: {
@@ -57,23 +46,17 @@ const TopPlayersPage = () => {
       setLoading(true);
       setError(null);
       
-      // Call the new top players endpoint
-      const response = await fetch('http://localhost:3002/predict/top-players', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`ML service error: ${response.status}`);
+      // Call the API endpoint through apiClient
+      const response = await apiClient.getTopPlayers();
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch top players');
       }
 
-      const data = await response.json();
-      setTopPlayers(data);
+      setTopPlayers(response.data);
     } catch (err) {
       console.error('Error fetching top players:', err);
-      setError('Failed to load top players. Make sure the ML service is running on port 3002.');
+      setError('Failed to load top players. Make sure the ML service is running.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +101,10 @@ const TopPlayersPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <ErrorMessage 
           message={error}
-          onRetry={fetchTopPlayers}
+          action={{
+            label: 'Retry',
+            onClick: fetchTopPlayers
+          }}
         />
       </div>
     );

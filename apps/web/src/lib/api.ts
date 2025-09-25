@@ -100,6 +100,18 @@ export const apiClient = {
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
+  },
+
+  // ML API
+  async getTopPlayers(limit?: number) {
+    const params = limit ? `?limit=${limit}` : '';
+    const response = await api.get(`/ml/top-players${params}`);
+    return response.data;
+  },
+
+  async getMLHealth() {
+    const response = await api.get('/ml/health');
+    return response.data;
   }
 };
 
