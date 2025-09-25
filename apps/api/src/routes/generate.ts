@@ -496,7 +496,6 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
         teamShort: player.teamShort || `T${player.teamId}`
       };
       
-      console.log(`API - Player ${player.name}: ML position=${mlPosition}, mapped to=${squadSlot.pos}`);
     }
     
     // Assign to startingXI (first 11) or bench (next 4)

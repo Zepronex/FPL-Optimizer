@@ -297,14 +297,14 @@ def main():
         collector.save_data(df)
     
     # Train model
-    model = TrueFPLMLModel()
+    model = FPLPredictor()
     metrics = model.train_model(df, prediction_horizon=1)
     
     # Save model
     model.save_model()
     
-    print("✅ True ML model training complete!")
-    print(f"📊 Model performance: R² = {metrics['r2']:.4f}, RMSE = {metrics['rmse']:.4f}")
+    print("True ML model training complete!")
+    print(f"Model performance: R² = {metrics['r2']:.4f}, RMSE = {metrics['rmse']:.4f}")
 
 if __name__ == "__main__":
     main()

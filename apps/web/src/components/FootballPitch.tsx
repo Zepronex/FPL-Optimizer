@@ -10,21 +10,12 @@ interface FootballPitchProps {
 
 const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: FootballPitchProps) => {
   // organize players by position for display
-  console.log('FootballPitch - All startingXI players:', startingXI);
   const goalkeeper = startingXI.find(slot => slot?.pos === 'GK') || null;
   const defenders = startingXI.filter(slot => slot?.pos === 'DEF');
   const midfielders = startingXI.filter(slot => slot?.pos === 'MID');
   const forwards = startingXI.filter(slot => slot?.pos === 'FWD');
-  
-  console.log('FootballPitch - Position counts:', {
-    GK: goalkeeper ? 1 : 0,
-    DEF: defenders.length,
-    MID: midfielders.length,
-    FWD: forwards.length,
-    total: (goalkeeper ? 1 : 0) + defenders.length + midfielders.length + forwards.length
-  });
 
-  const PlayerSlot = ({ slot, position, index }: { slot: SquadSlot | null; position: string; index: number }) => {
+  const PlayerSlot = ({ slot, position }: { slot: SquadSlot | null; position: string }) => {
     // adjust text size based on name length for better fit
     const getTextSize = (name: string) => {
       if (name.length <= 10) return 'text-sm';
@@ -44,7 +35,7 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
           {slot ? (
             <div className="text-center p-1 w-full h-full flex flex-col justify-center">
-              <div className={`font-semibold ${getTextSize(slot.name)} break-words overflow-hidden`} title={slot.name}>
+              <div className={`font-semibold ${getTextSize(slot.name || '')} break-words overflow-hidden`} title={slot.name}>
                 {truncateName(slot.name || `Player ${slot.id}`)}
               </div>
               <div className="text-xs text-gray-600 mt-1">{slot.teamShort}</div>
@@ -81,7 +72,7 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
         <div>
           <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Goalkeeper</h4>
           <div className="flex justify-center">
-            <PlayerSlot slot={goalkeeper} position="GK" index={0} />
+            <PlayerSlot slot={goalkeeper} position="GK" />
           </div>
         </div>
         
@@ -90,10 +81,10 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
           <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Defenders</h4>
           <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {defenders.map((slot, i) => (
-              <PlayerSlot key={i} slot={slot} position="DEF" index={i} />
+              <PlayerSlot key={i} slot={slot} position="DEF" />
             ))}
             {defenders.length === 0 && (
-              <PlayerSlot slot={null} position="DEF" index={0} />
+              <PlayerSlot slot={null} position="DEF" />
             )}
           </div>
         </div>
@@ -103,10 +94,10 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
           <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Midfielders</h4>
           <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {midfielders.map((slot, i) => (
-              <PlayerSlot key={i} slot={slot} position="MID" index={i} />
+              <PlayerSlot key={i} slot={slot} position="MID" />
             ))}
             {midfielders.length === 0 && (
-              <PlayerSlot slot={null} position="MID" index={0} />
+              <PlayerSlot slot={null} position="MID" />
             )}
           </div>
         </div>
@@ -116,10 +107,10 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
           <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2 text-center">Forwards</h4>
           <div className="flex justify-center space-x-1 sm:space-x-3 overflow-x-auto pb-2">
             {forwards.map((slot, i) => (
-              <PlayerSlot key={i} slot={slot} position="FWD" index={i} />
+              <PlayerSlot key={i} slot={slot} position="FWD" />
             ))}
             {forwards.length === 0 && (
-              <PlayerSlot slot={null} position="FWD" index={0} />
+              <PlayerSlot slot={null} position="FWD" />
             )}
           </div>
         </div>

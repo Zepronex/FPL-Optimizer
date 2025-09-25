@@ -95,7 +95,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
                 Analyzing Squad...
               </>
             ) : (
-              '🚀 Analyze My Squad'
+              'Analyze My Squad'
             )}
           </button>
           
@@ -115,7 +115,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
             
             {squad.startingXI.length === 11 && squad.bench.length === 4 && (
               <p className="text-sm text-green-600 font-medium">
-                ✅ Squad complete! Ready to analyze
+                Squad complete! Ready to analyze
               </p>
             )}
           </div>

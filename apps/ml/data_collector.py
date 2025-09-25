@@ -231,11 +231,11 @@ def main():
     # Save the data
     filename = collector.save_data(df)
     
-    print(f"✅ Historical data collection complete!")
-    print(f"📊 Collected {len(df)} player-gameweek records")
-    print(f"💾 Data saved to: {filename}")
-    print(f"📈 Gameweeks covered: {df['gameweek'].min()} to {df['gameweek'].max()}")
-    print(f"👥 Unique players: {df['player_id'].nunique()}")
+    print(f"Historical data collection complete!")
+    print(f"Collected {len(df)} player-gameweek records")
+    print(f"Data saved to: {filename}")
+    print(f"Gameweeks covered: {df['gameweek'].min()} to {df['gameweek'].max()}")
+    print(f"Unique players: {df['player_id'].nunique()}")
 
 if __name__ == "__main__":
     main()

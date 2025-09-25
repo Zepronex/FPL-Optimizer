@@ -27,8 +27,6 @@ const GeneratedTeamPage = () => {
     // Get the generated team data from location state or session storage
     const data = location.state?.generatedData || JSON.parse(sessionStorage.getItem('generated-team-data') || 'null');
     
-    console.log('GeneratedTeamPage - Received data:', data);
-    
     if (data) {
       setGeneratedData(data);
       setIsLoading(false);
@@ -111,8 +109,6 @@ const GeneratedTeamPage = () => {
   // Format startingXI for FootballPitch component (needs 11 slots with nulls)
   const formatStartingXI = (squad: Squad) => {
     const startingXI = [...squad.startingXI];
-    console.log('GeneratedTeamPage - Starting XI players:', startingXI.length, startingXI);
-    console.log('GeneratedTeamPage - Bench players:', squad.bench.length, squad.bench);
     // Pad with nulls to make it 11 slots
     while (startingXI.length < 11) {
       startingXI.push(null);

@@ -83,6 +83,9 @@ async def get_current_players():
         response.raise_for_status()
         data = response.json()
         
+        # Create team ID to name mapping
+        team_map = {team["id"]: team["name"] for team in data["teams"]}
+        
         players = []
         for player in data["elements"]:
             players.append({
@@ -90,6 +93,7 @@ async def get_current_players():
                 "name": f"{player['first_name']} {player['second_name']}",
                 "position": player["element_type"],
                 "team": player["team"],
+                "team_name": team_map.get(player["team"], "Unknown"),
                 "price": player["now_cost"] / 10,
                 "form": player["form"],
                 "total_points": player["total_points"],
@@ -139,7 +143,7 @@ async def get_current_players():
 async def get_top_players_by_position():
     """Get top players by position for display purposes"""
     if fpl_predictor is None or fpl_predictor.model is None:
-        raise HTTPException(status_code=503, detail="True ML model not loaded. Please train the model first.")
+        raise HTTPException(status_code=503, detail="ML model not loaded. Please train the model first.")
     
     try:
         # Load historical data
@@ -169,7 +173,7 @@ async def get_top_players_by_position():
             lambda pid: current_players.get(pid, {}).get('name', f'Player {pid}')
         )
         predictions_df['team_name'] = predictions_df['player_id'].map(
-            lambda pid: current_players.get(pid, {}).get('team', 0)
+            lambda pid: current_players.get(pid, {}).get('team_name', 'Unknown')
         )
         
         # Group by position and get top 5 for each
@@ -207,7 +211,7 @@ async def get_top_players_by_position():
 async def generate_ai_strategy(request: AIStrategyRequest):
     """Generate AI-optimized team using True ML predictions"""
     if fpl_predictor is None or fpl_predictor.model is None:
-        raise HTTPException(status_code=503, detail="True ML model not loaded. Please train the model first.")
+        raise HTTPException(status_code=503, detail="ML model not loaded. Please train the model first.")
     
     try:
         # Load historical data
@@ -237,7 +241,7 @@ async def generate_ai_strategy(request: AIStrategyRequest):
             lambda pid: current_players.get(pid, {}).get('name', f'Player {pid}')
         )
         predictions_df['team_name'] = predictions_df['player_id'].map(
-            lambda pid: current_players.get(pid, {}).get('team', 0)
+            lambda pid: current_players.get(pid, {}).get('team_name', 'Unknown')
         )
         # Override position with current FPL position data to ensure accuracy
         predictions_df['position'] = predictions_df['player_id'].map(
@@ -270,7 +274,7 @@ async def generate_ai_strategy(request: AIStrategyRequest):
                     'position': int(row['position']),
                     'price': float(row['price']),
                     'team': int(row['team']),
-                    'team_name': int(row['team_name'])
+                    'team_name': str(row['team_name'])
                 }
             ))
         
