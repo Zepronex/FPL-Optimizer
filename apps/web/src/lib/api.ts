@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Squad, AnalysisWeights, SquadAnalysis, EnrichedPlayer, PlayersResponse, PlayerSearchResult } from './types';
+import { Squad, AnalysisWeights, SquadAnalysis, PlayersResponse, PlayerSearchResult } from './types';
 
 const API_BASE_URL = '/api';
 

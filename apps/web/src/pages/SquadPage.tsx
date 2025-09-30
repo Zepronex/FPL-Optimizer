@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import WeightsPanel from '../components/WeightsPanel';
 import { apiClient } from '../lib/api';
-import { Squad } from '../lib/types';
+import { Squad, EnrichedPlayer } from '../lib/types';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -26,10 +26,46 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         
         // Clear current squad and load the generated team
         squadState.clearSquad();
-        generatedSquad.startingXI.forEach(player => {
+        generatedSquad.startingXI.forEach(slot => {
+          // Convert SquadSlot to minimal EnrichedPlayer for squad state
+          const player: EnrichedPlayer = {
+            id: slot.id,
+            name: slot.name || `Player ${slot.id}`,
+            teamId: 0,
+            teamShort: slot.teamShort || 'TBD',
+            pos: slot.pos,
+            price: slot.price,
+            form: 0,
+            status: 'a',
+            xg90: 0,
+            xa90: 0,
+            expMin: 0,
+            next3Ease: 0,
+            avgPoints: 0,
+            value: 0,
+            ownership: 0
+          };
           squadState.addPlayer(player, true);
         });
-        generatedSquad.bench.forEach(player => {
+        generatedSquad.bench.forEach(slot => {
+          // Convert SquadSlot to minimal EnrichedPlayer for squad state
+          const player: EnrichedPlayer = {
+            id: slot.id,
+            name: slot.name || `Player ${slot.id}`,
+            teamId: 0,
+            teamShort: slot.teamShort || 'TBD',
+            pos: slot.pos,
+            price: slot.price,
+            form: 0,
+            status: 'a',
+            xg90: 0,
+            xa90: 0,
+            expMin: 0,
+            next3Ease: 0,
+            avgPoints: 0,
+            value: 0,
+            ownership: 0
+          };
           squadState.addPlayer(player, false);
         });
         squadState.setBank(generatedSquad.bank);

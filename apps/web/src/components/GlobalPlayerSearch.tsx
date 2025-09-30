@@ -12,7 +12,7 @@ interface GlobalPlayerSearchProps {
   className?: string;
 }
 
-const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any player...", className = "" }: GlobalPlayerSearchProps) => {
+const GlobalPlayerSearch = ({ onPlayerSelect: _onPlayerSelect, placeholder = "Search for any player...", className = "" }: GlobalPlayerSearchProps) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');

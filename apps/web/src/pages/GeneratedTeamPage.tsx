@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Edit3, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Edit3, BarChart3 } from 'lucide-react';
 import { Squad, AnalysisWeights } from '../lib/types';
 import { apiClient } from '../lib/api';
 import { formatPrice } from '../lib/format';
 import FootballPitch from '../components/FootballPitch';
 import SquadSummary from '../components/SquadSummary';
-import BudgetDisplay from '../components/BudgetDisplay';
+// import BudgetDisplay from '../components/BudgetDisplay';
 import BenchDisplay from '../components/BenchDisplay';
 
 interface GeneratedTeamData {
@@ -111,7 +111,7 @@ const GeneratedTeamPage = () => {
     const startingXI = [...squad.startingXI];
     // Pad with nulls to make it 11 slots
     while (startingXI.length < 11) {
-      startingXI.push(null);
+      startingXI.push({ id: 0, pos: 'GK' as const, price: 0 });
     }
     return startingXI;
   };

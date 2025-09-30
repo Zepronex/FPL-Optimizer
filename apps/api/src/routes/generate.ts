@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { DataMerger } from '../lib/merge';
 import { ScoringService } from '../lib/scoring';
-import { Squad, AnalysisWeights } from '../types';
+import { Squad, AnalysisWeights, Pos } from '../types';
 
 const router = Router();
 
@@ -145,9 +145,9 @@ router.post('/', async (req, res) => {
               ownership: 0.02
             },
             budget: budget,
-            totalCost: mlData.total_cost,
-            expectedPoints: mlData.expected_points,
-            mlPredictions: mlData.players
+            totalCost: (mlData as any).total_cost,
+            expectedPoints: (mlData as any).expected_points,
+            mlPredictions: (mlData as any).players
           }
         });
         return;
@@ -480,7 +480,7 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
       // Convert to SquadSlot format
       squadSlot = {
         id: playerData.id,
-        pos: playerData.position === 1 ? 'GK' : playerData.position === 2 ? 'DEF' : playerData.position === 3 ? 'MID' : 'FWD',
+        pos: (playerData.position === 1 ? 'GK' : playerData.position === 2 ? 'DEF' : playerData.position === 3 ? 'MID' : 'FWD') as Pos,
         price: playerData.price,
         name: playerData.name,
         teamShort: `T${playerData.team}`
@@ -490,10 +490,10 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
       const mlPosition = prediction.features?.position || player.position;
       squadSlot = {
         id: player.id,
-        pos: mlPosition === 1 ? 'GK' : mlPosition === 2 ? 'DEF' : mlPosition === 3 ? 'MID' : 'FWD',
+        pos: (mlPosition === 1 ? 'GK' : mlPosition === 2 ? 'DEF' : mlPosition === 3 ? 'MID' : 'FWD') as Pos,
         price: player.price,
         name: player.name,
-        teamShort: player.teamShort || `T${player.teamId}`
+        teamShort: player.teamShort
       };
       
     }

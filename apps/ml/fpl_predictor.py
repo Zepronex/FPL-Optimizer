@@ -213,11 +213,12 @@ class FPLPredictor:
         if self.model is None:
             raise ValueError("Model not trained. Call train_model() first.")
         
-        # Get latest data for each player
-        latest_data = df[df['gameweek'] == gameweek].copy()
+        # Get the latest available gameweek data (not the target gameweek)
+        max_gameweek = df['gameweek'].max()
+        latest_data = df[df['gameweek'] == max_gameweek].copy()
         
         if len(latest_data) == 0:
-            raise ValueError(f"No data found for gameweek {gameweek}")
+            raise ValueError(f"No data found for latest gameweek {max_gameweek}")
         
         # Create time-based features
         latest_data = self.create_time_features(latest_data)

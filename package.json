@@ -10,7 +10,7 @@
     "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\" \"pnpm run dev:ml\"",
     "dev:api": "cd apps/api && pnpm run dev",
     "dev:web": "cd apps/web && pnpm run dev",
-    "dev:ml": "cd apps/ml && source venv/bin/activate && python -m uvicorn main:app --reload --port 3002",
+    "dev:ml": "cd apps/ml && source venv/bin/activate && python3 -m uvicorn main:app --reload --port 3002",
     "build": "pnpm run build:api && pnpm run build:web",
     "build:api": "cd apps/api && pnpm run build",
     "build:web": "cd apps/web && pnpm run build",

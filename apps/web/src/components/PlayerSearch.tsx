@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
-import { formatPrice } from '../lib/format';
+// import { formatPrice } from '../lib/format';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface PlayerSearchProps {

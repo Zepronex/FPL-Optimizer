@@ -147,7 +147,7 @@ const PlayerRow = ({ result, isBench = false }: PlayerRowProps) => {
               </div>
               
               <div className="space-y-2">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion, _index) => (
                   <div
                     key={suggestion.id}
                     className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"

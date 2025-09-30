@@ -159,14 +159,14 @@ async def get_top_players_by_position():
         df = data_collector.load_data(latest_file)
         
         # Get current gameweek
-        current_gw = data_collector.get_current_gameweek()
+        max_gameweek = df['gameweek'].max()
         
         # Get current player data to include names
         current_players_response = await get_current_players()
         current_players = {p['id']: p for p in current_players_response['players']}
         
         # Make predictions using true ML model
-        predictions_df = fpl_predictor.predict_next_gameweek(df, current_gw)
+        predictions_df = fpl_predictor.predict_next_gameweek(df, max_gameweek + 1)
         
         # Add player names and team names to predictions
         predictions_df['name'] = predictions_df['player_id'].map(
@@ -227,14 +227,14 @@ async def generate_ai_strategy(request: AIStrategyRequest):
         df = data_collector.load_data(latest_file)
         
         # Get current gameweek
-        current_gw = data_collector.get_current_gameweek()
+        max_gameweek = df['gameweek'].max()
         
         # Get current player data to include names
         current_players_response = await get_current_players()
         current_players = {p['id']: p for p in current_players_response['players']}
         
         # Make predictions using true ML model
-        predictions_df = fpl_predictor.predict_next_gameweek(df, current_gw)
+        predictions_df = fpl_predictor.predict_next_gameweek(df, max_gameweek + 1)
         
         # Add player names, team names, and current position data to predictions
         predictions_df['name'] = predictions_df['player_id'].map(

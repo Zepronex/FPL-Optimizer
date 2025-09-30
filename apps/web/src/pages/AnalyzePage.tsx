@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SquadAnalysis, AnalysisResult, Squad, AnalysisWeights, WeightPreset } from '../lib/types';
+import { SquadAnalysis, Squad } from '../lib/types';
 import PlayerRow from '../components/PlayerRow';
 import WeightsPanel from '../components/WeightsPanel';
 import { formatScore, formatPrice, getFormationString } from '../lib/format';
@@ -69,7 +69,7 @@ const AnalyzePage = () => {
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
       
       // Extract the actual analysis data from the API response
-      const analysisData = response.success ? response.data : response;
+      const analysisData = response.success && response.data ? response.data : null;
       setAnalysis(analysisData);
     } catch (error) {
       setError('Re-analysis failed. Please try again.');
@@ -249,7 +249,7 @@ const AnalyzePage = () => {
               Starting XI ({getFormationString(startingXIResults.map(r => ({ pos: r.player.pos })))})
             </h2>
             <div className="space-y-3">
-              {startingXIResults.map((result, index) => (
+              {startingXIResults.map((result, _index) => (
                 <PlayerRow
                   key={result.player.id}
                   result={result}

@@ -58,6 +58,8 @@ importers:
         specifier: ^5.3.3
         version: 5.9.2
 
+  apps/ml: {}
+
   apps/web:
     dependencies:
       axios:

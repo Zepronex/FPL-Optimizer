@@ -1,4 +1,4 @@
-import NodeCache from 'node-cache';
+const NodeCache = require('node-cache');
 
 // Cache configuration
 const cache = new NodeCache({
@@ -17,7 +17,7 @@ export const CACHE_KEYS = {
 
 export class CacheService {
   static get<T>(key: string): T | undefined {
-    return cache.get<T>(key);
+    return cache.get(key);
   }
 
   static set<T>(key: string, value: T, ttl?: number): boolean {

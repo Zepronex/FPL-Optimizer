@@ -32,14 +32,13 @@ const PlayerScoring = ({ player, onClose, onScoreCalculated }: PlayerScoringProp
     
     try {
       const response = await apiClient.analyzeSquad({
-        players: [player],
-        formation: '3-4-3',
-        captain: player.id,
-        viceCaptain: player.id
+        startingXI: [{ id: player.id, pos: player.pos, price: player.price, name: player.name, teamShort: player.teamShort }],
+        bench: [],
+        bank: 0
       }, defaultWeights);
 
       if (response.success && response.data) {
-        const playerScore = response.data.players.find(p => p.id === player.id)?.score || 0;
+        const playerScore = response.data.results.find((p: any) => p.player.id === player.id)?.score || 0;
         setScore(playerScore);
         onScoreCalculated(playerScore);
       } else {

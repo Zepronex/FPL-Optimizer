@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
+import { EnrichedPlayer } from '../lib/types';
 import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
@@ -17,17 +17,6 @@ const PlayerDetailPage = () => {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Default weights for scoring
-  const defaultWeights: AnalysisWeights = {
-    form: 0.2,
-    xg90: 0.15,
-    xa90: 0.15,
-    expMin: 0.15,
-    next3Ease: 0.1,
-    avgPoints: 0.15,
-    value: 0.05,
-    ownership: 0.05
-  };
 
   useEffect(() => {
     if (id) {

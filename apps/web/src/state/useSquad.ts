@@ -23,7 +23,7 @@ const sortPlayersByPosition = (players: SquadSlot[]): SquadSlot[] => {
 
 export const useSquad = () => {
   const [squad, setSquad] = useState<Squad>(initialSquad);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const addPlayer = useCallback((player: EnrichedPlayer, isStarting: boolean = true) => {
