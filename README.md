@@ -54,10 +54,6 @@ The tool uses advanced metrics to score players:
 └── README.md
 ```
 
-## Deployment
-
-The application is deployed to Vercel and automatically builds from the main branch.
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
