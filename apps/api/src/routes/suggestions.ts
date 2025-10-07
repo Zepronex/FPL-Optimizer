@@ -4,7 +4,7 @@ import { DataMerger } from '../lib/merge';
 import { ScoringService } from '../lib/scoring';
 import { SquadAnalyzer } from '../lib/squad';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const suggestionRequestSchema = z.object({
@@ -42,14 +42,28 @@ router.post('/', async (req, res) => {
     );
     
     // Calculate scores for candidates
+    const currentPlayerScore = ScoringService.calculatePlayerScore(currentPlayer);
     const scoredCandidates = candidates.map(player => ({
       ...player,
-      score: ScoringService.calculatePlayerScore(player)
+      score: ScoringService.calculatePlayerScore(player),
+      delta: ScoringService.calculatePlayerScore(player) - currentPlayerScore
     }));
     
-    // Sort by score and take top suggestions
-    const suggestions = scoredCandidates
-      .sort((a, b) => b.score - a.score)
+    // Separate better and worse players
+    const betterPlayers = scoredCandidates.filter(p => p.delta > 0);
+    const worsePlayers = scoredCandidates.filter(p => p.delta <= 0 && p.delta >= -2);
+    
+    // Sort better players by delta (highest improvement first)
+    betterPlayers.sort((a, b) => b.delta - a.delta);
+    
+    // Sort worse players by delta (least worse first)
+    worsePlayers.sort((a, b) => b.delta - a.delta);
+    
+    // Combine: better players first, then worse players if needed
+    const allSuggestions = [...betterPlayers, ...worsePlayers];
+    
+    // Take top suggestions and format
+    const suggestions = allSuggestions
       .slice(0, limit)
       .map(player => ({
         id: player.id,
@@ -61,7 +75,7 @@ router.post('/', async (req, res) => {
         xg90: player.xg90,
         xa90: player.xa90,
         next3Ease: player.next3Ease,
-        delta: Math.round((player.score - currentPlayer.score!) * 100) / 100
+        delta: Math.round(player.delta * 100) / 100
       }));
     
     res.json({
@@ -178,13 +192,27 @@ async function getSuggestionsForPlayer(
     !excludeIds.includes(player.id)
   );
   
+  const currentPlayerScore = ScoringService.calculatePlayerScore(currentPlayer, weights);
   const scoredCandidates = candidates.map(player => ({
     ...player,
-    score: ScoringService.calculatePlayerScore(player, weights)
+    score: ScoringService.calculatePlayerScore(player, weights),
+    delta: ScoringService.calculatePlayerScore(player, weights) - currentPlayerScore
   }));
   
-  return scoredCandidates
-    .sort((a, b) => b.score - a.score)
+  // Separate better and worse players
+  const betterPlayers = scoredCandidates.filter(p => p.delta > 0);
+  const worsePlayers = scoredCandidates.filter(p => p.delta <= 0 && p.delta >= -2);
+  
+  // Sort better players by delta (highest improvement first)
+  betterPlayers.sort((a, b) => b.delta - a.delta);
+  
+  // Sort worse players by delta (least worse first)
+  worsePlayers.sort((a, b) => b.delta - a.delta);
+  
+  // Combine: better players first, then worse players if needed
+  const allSuggestions = [...betterPlayers, ...worsePlayers];
+  
+  return allSuggestions
     .slice(0, 3)
     .map(player => ({
       id: player.id,
@@ -192,7 +220,7 @@ async function getSuggestionsForPlayer(
       teamShort: player.teamShort,
       price: player.price,
       score: player.score,
-      delta: Math.round((player.score - currentPlayer.score!) * 100) / 100
+      delta: Math.round(player.delta * 100) / 100
     }));
 }
 

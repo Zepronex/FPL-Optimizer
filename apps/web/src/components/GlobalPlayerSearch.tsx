@@ -102,8 +102,6 @@ const GlobalPlayerSearch = ({ onPlayerSelect: _onPlayerSelect, placeholder = "Se
           results={results}
           isLoading={isLoading}
           onPlayerSelect={handlePlayerClick}
-          onPlayerScore={() => {}} // placeholder function
-          isScoring={false}
         />
       )}
     </div>

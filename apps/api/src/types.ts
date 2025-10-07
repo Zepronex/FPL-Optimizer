@@ -20,6 +20,7 @@ export type EnrichedPlayer = {
   value: number; // Points per million (value metric)
   ownership: number; // Ownership percentage (0-100)
   score?: number;
+  imageUrl?: string; // Player headshot image URL
 };
 
 export type SquadSlot = {
@@ -92,6 +93,7 @@ export type FPLPlayer = {
   expected_goal_involvements: string;
   expected_goals_conceded: string;
   minutes: number;
+  photo: string; // Player photo filename
 };
 
 export type FPLTeam = {

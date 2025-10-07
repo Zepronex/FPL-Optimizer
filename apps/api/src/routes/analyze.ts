@@ -4,7 +4,7 @@ import { SquadAnalyzer } from '../lib/squad';
 import { ScoringService } from '../lib/scoring';
 import { AnalysisWeights } from '../types';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const squadSlotSchema = z.object({
@@ -40,8 +40,8 @@ router.post('/', async (req, res) => {
   try {
     const { squad, weights } = analyzeRequestSchema.parse(req.body);
     
-    // Validate squad formation and constraints
-    const validation = SquadAnalyzer.validateSquad(squad);
+    // Validate squad formation and constraints (no budget limits for analysis)
+    const validation = SquadAnalyzer.validateSquadForAnalysis(squad);
     if (!validation.valid) {
       return res.status(400).json({
         success: false,
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
     }
     
     // Error analyzing squad
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to analyze squad'
     });

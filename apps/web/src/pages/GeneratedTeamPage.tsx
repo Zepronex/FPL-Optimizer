@@ -48,7 +48,11 @@ const GeneratedTeamPage = () => {
     if (!generatedData) return;
 
     try {
+      console.log('Analyzing team with data:', { squad: generatedData.squad, weights: generatedData.weights });
+      
       const response = await apiClient.analyzeSquad(generatedData.squad, generatedData.weights);
+      
+      console.log('Analysis response:', response);
       
       // Store results and original squad in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
@@ -56,7 +60,21 @@ const GeneratedTeamPage = () => {
       
       // Navigate to analyze page
       navigate('/analyze');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Analysis failed:', error);
+      if (error.response) {
+        // Server responded with error status
+        console.error('Error response:', error.response.data);
+        setError(`Analysis failed: ${error.response.data.error || error.response.data.message || 'Unknown server error'}`);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('No response received:', error.request);
+        setError('No response from server. Please check if the API is running.');
+      } else {
+        // Something else happened
+        console.error('Error:', error.message);
+        setError(`Analysis failed: ${error.message}`);
+      }
     }
   };
 

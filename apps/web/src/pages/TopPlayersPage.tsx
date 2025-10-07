@@ -19,6 +19,7 @@ interface TopPlayersData {
   };
   total_players_analyzed: number;
   gameweek: number;
+  fallback?: boolean; // Indicates if this is using fallback scoring instead of ML
 }
 
 const TopPlayersPage = () => {
@@ -122,7 +123,10 @@ const TopPlayersPage = () => {
                 Top Players
               </h1>
               <p className="mt-2 text-gray-600">
-                AI-powered predictions for the next gameweek based on machine learning analysis
+                {topPlayers?.fallback 
+                  ? 'Player rankings based on scoring system (ML service unavailable)'
+                  : 'AI-powered predictions for the next gameweek based on machine learning analysis'
+                }
               </p>
             </div>
             <button
@@ -167,9 +171,9 @@ const TopPlayersPage = () => {
         </div>
       )}
 
-      {/* Position Filter */}
+      {/* Position Filter and Score Legend */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => setSelectedPosition('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -194,6 +198,29 @@ const TopPlayersPage = () => {
               {name}
             </button>
           ))}
+        </div>
+        
+        {/* Score Legend */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-800 mb-2">Score Scale (0-10)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              <span><strong>8.0-10.0:</strong> Excellent</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <span><strong>6.0-7.9:</strong> Good</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+              <span><strong>4.0-5.9:</strong> Average</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded"></div>
+              <span><strong>0.0-3.9:</strong> Poor</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -230,7 +257,7 @@ const TopPlayersPage = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-bold text-purple-600">
-                              {player.predicted_points.toFixed(1)} pts
+                              {player.predicted_points.toFixed(1)}/10
                             </p>
                             <p className="text-xs text-gray-500">
                               {Math.round(player.confidence * 100)}% confidence
@@ -271,7 +298,7 @@ const TopPlayersPage = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-purple-600">
-                        {player.predicted_points.toFixed(1)} pts
+                        {player.predicted_points.toFixed(1)}/10
                       </p>
                       <p className="text-xs text-gray-500">
                         {Math.round(player.confidence * 100)}% confidence
@@ -291,9 +318,10 @@ const TopPlayersPage = () => {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">About These Predictions</h3>
             <p className="text-gray-600 mb-4">
-              These predictions are generated using machine learning algorithms trained on historical FPL data. 
-              The model analyzes player form, fixture difficulty, expected goals/assists, and other key metrics 
-              to predict performance for the next gameweek.
+              {topPlayers?.fallback 
+                ? 'These rankings are generated using our scoring system that analyzes player form, expected goals/assists, fixture difficulty, and other key metrics. Scores are based on a 0-10 scale where 8.0+ is excellent, 6.0-7.9 is good, 4.0-5.9 is average, and below 4.0 is poor. For AI-powered predictions, start the ML service.'
+                : 'These predictions are generated using machine learning algorithms trained on historical FPL data. The model analyzes player form, fixture difficulty, expected goals/assists, and other key metrics to predict performance for the next gameweek. Scores are based on a 0-10 scale where 8.0+ is excellent, 6.0-7.9 is good, 4.0-5.9 is average, and below 4.0 is poor.'
+              }
             </p>
             <div className="flex justify-center gap-4 text-sm text-gray-500">
               <span>• Analyzed {topPlayers?.total_players_analyzed || 0} players</span>

@@ -1,9 +1,9 @@
+import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import SquadSummary from './SquadSummary';
-import PlayerSearch from './PlayerSearch';
+import PlayerSearchModal from './PlayerSearchModal';
 import FootballPitch from './FootballPitch';
 import BenchDisplay from './BenchDisplay';
-import BudgetDisplay from './BudgetDisplay';
 import { EnrichedPlayer } from '../lib/types';
 
 interface SquadFormProps {
@@ -15,15 +15,35 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
     squad, 
     addPlayer, 
     removePlayer, 
-    setBank, 
     clearSquad, 
     error,
     clearError
   } = squadState;
   
+  const [positionFilter, setPositionFilter] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalIsStartingXI, setModalIsStartingXI] = useState(true);
+  
   // add player to squad (starting xi or bench)
   const handleAddPlayer = (player: EnrichedPlayer, isStarting: boolean = true) => {
     addPlayer(player, isStarting);
+  };
+  
+  const handleSlotClick = (position: string) => {
+    setPositionFilter(position);
+    setModalIsStartingXI(true);
+    setIsModalOpen(true);
+  };
+  
+  const handleBenchSlotClick = () => {
+    setPositionFilter(null); // no filter for bench, any position can go on bench
+    setModalIsStartingXI(false);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setPositionFilter(null);
   };
 
 
@@ -61,13 +81,27 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
 
       <SquadSummary squad={squad} />
 
-      <PlayerSearch onAddPlayer={handleAddPlayer} />
+      <FootballPitch 
+        startingXI={squad.startingXI} 
+        onRemovePlayer={removePlayer}
+        onSlotClick={handleSlotClick}
+      />
 
-      <BudgetDisplay squad={squad} onSetBank={setBank} />
+      <BenchDisplay 
+        bench={squad.bench} 
+        onRemovePlayer={removePlayer}
+        onSlotClick={handleBenchSlotClick}
+      />
 
-      <FootballPitch startingXI={squad.startingXI} onRemovePlayer={removePlayer} />
 
-      <BenchDisplay bench={squad.bench} onRemovePlayer={removePlayer} />
+      {/* Player Search Modal */}
+      <PlayerSearchModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onAddPlayer={handleAddPlayer}
+        positionFilter={positionFilter}
+        isStartingXI={modalIsStartingXI}
+      />
     </div>
   );
 };

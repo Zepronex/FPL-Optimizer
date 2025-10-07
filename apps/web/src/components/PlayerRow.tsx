@@ -143,7 +143,7 @@ const PlayerRow = ({ result, isBench = false }: PlayerRowProps) => {
           {hasSuggestions && (
             <div className="p-4 border-t border-gray-200">
               <div className="mb-3">
-                <h4 className="font-semibold text-gray-900">Suggested Replacements</h4>
+                <h4 className="font-semibold text-gray-900">Possible Replacements</h4>
               </div>
               
               <div className="space-y-2">

@@ -4,7 +4,7 @@ import { DataMerger } from '../lib/merge';
 import { ScoringService } from '../lib/scoring';
 import { Squad, AnalysisWeights, Pos } from '../types';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const generateRequestSchema = z.object({
@@ -23,84 +23,84 @@ router.post('/', async (req, res) => {
     // Define strategy weights - Updated with realistic FPL strategies
     const strategyWeights: Record<string, AnalysisWeights> = {
       balanced: {
-        form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.2,
-        next3Ease: 0.15,
-        avgPoints: 0.15,
-        value: 0.05,
+        form: 0.4,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.3,
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
         ownership: 0.0
       },
       premium: {
-        form: 0.15,
-        xg90: 0.25,
-        xa90: 0.25,
-        expMin: 0.2,
-        next3Ease: 0.05,
-        avgPoints: 0.05,
-        value: 0.0, // No value consideration for premium
-        ownership: 0.05
+        form: 0.3,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.4,
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
+        ownership: 0.0
       },
       value: {
-        form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.15,
-        next3Ease: 0.1,
-        avgPoints: 0.1,
-        value: 0.2,
+        form: 0.5,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.2,
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
         ownership: 0.0
       },
       differential: {
-        form: 0.2,
-        xg90: 0.2,
-        xa90: 0.15,
-        expMin: 0.15,
-        next3Ease: 0.15,
-        avgPoints: 0.1,
-        value: 0.03,
-        ownership: 0.02
+        form: 0.6,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.2,
+        next3Ease: 0.0,
+        avgPoints: 0.2,
+        value: 0.0,
+        ownership: 0.0
       },
       form: {
-        form: 0.25,
-        xg90: 0.15,
-        xa90: 0.1,
-        expMin: 0.15,
-        next3Ease: 0.25,
-        avgPoints: 0.05,
-        value: 0.03,
-        ownership: 0.02
+        form: 0.6,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.2,
+        next3Ease: 0.0,
+        avgPoints: 0.2,
+        value: 0.0,
+        ownership: 0.0
       },
       template: {
-        form: 0.1,
-        xg90: 0.1,
-        xa90: 0.1,
-        expMin: 0.25,
-        next3Ease: 0.1,
-        avgPoints: 0.2,
-        value: 0.05,
-        ownership: 0.1
+        form: 0.3,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.4,
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
+        ownership: 0.0
       },
       setforget: {
-        form: 0.05,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.3,
-        next3Ease: 0.05,
-        avgPoints: 0.25,
-        value: 0.03,
-        ownership: 0.02
+        form: 0.2,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.4,
+        next3Ease: 0.0,
+        avgPoints: 0.4,
+        value: 0.0,
+        ownership: 0.0
       },
       wildcard: {
-        form: 0.3,
-        xg90: 0.2,
-        xa90: 0.15,
-        expMin: 0.1,
-        next3Ease: 0.2,
-        avgPoints: 0.02,
-        value: 0.02,
-        ownership: 0.01
+        form: 0.7,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.15,
+        next3Ease: 0.0,
+        avgPoints: 0.15,
+        value: 0.0,
+        ownership: 0.0
       }
     };
 
@@ -135,14 +135,14 @@ router.post('/', async (req, res) => {
             squad: aiSquad,
             strategy: 'ai',
             weights: {
-              form: 0.25,
-              xg90: 0.20,
-              xa90: 0.20,
-              expMin: 0.15,
-              next3Ease: 0.10,
-              avgPoints: 0.05,
-              value: 0.03,
-              ownership: 0.02
+              form: 0.4,
+              xg90: 0.0,
+              xa90: 0.0,
+              expMin: 0.3,
+              next3Ease: 0.0,
+              avgPoints: 0.3,
+              value: 0.0,
+              ownership: 0.0
             },
             budget: budget,
             totalCost: (mlData as any).total_cost,
@@ -258,22 +258,40 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
     }
   }
 
-  // Fill remaining starting XI positions (flexible)
+  // Fill remaining starting XI positions (flexible) with formation constraints
   const remainingSlots = 11 - squad.startingXI.length;
-  const flexiblePositions = ['DEF', 'MID', 'FWD'];
+  
+  // Count current players by position
+  const getPositionCounts = (squad: Squad) => {
+    const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+    squad.startingXI.forEach(player => {
+      counts[player.pos as keyof typeof counts]++;
+    });
+    return counts;
+  };
   
   for (let i = 0; i < remainingSlots; i++) {
     let bestPlayer = null;
     let bestScore = -1;
     let bestPos = '';
+    
+    const currentCounts = getPositionCounts(squad);
+    const flexiblePositions = ['DEF', 'MID', 'FWD'];
 
-    // Find the best available player across flexible positions
+    // Find the best available player across flexible positions that respects formation limits
     for (const pos of flexiblePositions) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
-      if (player && player.score > bestScore) {
-        bestPlayer = player;
-        bestScore = player.score;
-        bestPos = pos;
+      // Check formation constraints: max 5 DEF/MID, max 3 FWD
+      const canAddToPosition = (pos === 'DEF' && currentCounts.DEF < 5) ||
+                              (pos === 'MID' && currentCounts.MID < 5) ||
+                              (pos === 'FWD' && currentCounts.FWD < 3);
+      
+      if (canAddToPosition) {
+        const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
+        if (player && player.score > bestScore) {
+          bestPlayer = player;
+          bestScore = player.score;
+          bestPos = pos;
+        }
       }
     }
 

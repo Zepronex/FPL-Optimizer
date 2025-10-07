@@ -193,16 +193,16 @@ const AnalyzePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="card text-center">
               <div className="text-3xl font-bold text-fpl-green mb-2">
-                {formatScore(analysis.averageScore)}
+                {formatScore(analysis.averageScore)}/10
               </div>
-              <div className="text-sm text-gray-600">Average Score</div>
+              <div className="text-sm text-gray-600">Average Player Score</div>
             </div>
             
             <div className="card text-center">
               <div className="text-3xl font-bold text-fpl-dark mb-2">
-                {formatScore(analysis.totalScore)}
+                {formatScore(analysis.totalScore)}/110
               </div>
-              <div className="text-sm text-gray-600">Total Score</div>
+              <div className="text-sm text-gray-600">Total Team Score</div>
             </div>
             
             <div className="card text-center">

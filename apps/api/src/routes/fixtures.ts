@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { FPLDataFetcher } from '../lib/fetchers/fpl';
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/fixtures - Get all fixtures
 router.get('/', async (req, res) => {

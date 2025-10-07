@@ -27,7 +27,7 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Ownership:</span>
-            <span className="font-medium">{player.ownership}%</span>
+            <span className="font-medium">{player.ownership.toFixed(1)}%</span>
           </div>
         </div>
       </div>

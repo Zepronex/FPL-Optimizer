@@ -160,12 +160,66 @@ export class SquadAnalyzer {
       errors.push('Invalid formation - must have 1 GK and valid DEF/MID/FWD distribution');
     }
     
-    // Check total cost
+    // Check total cost - allow negative bank for existing squads where player values have increased
     const totalCost = [...squad.startingXI, ...squad.bench]
       .reduce((sum, slot) => sum + slot.price, 0);
     
-    if (totalCost + squad.bank > 100) {
+    // Only enforce 100M limit if bank is positive (new squad building)
+    // If bank is negative, it means players have increased in value since squad was created
+    if (squad.bank >= 0 && totalCost + squad.bank > 100) {
       errors.push('Total squad value cannot exceed 100.0');
+    }
+    
+    // Check for duplicate players
+    const allPlayerIds = [...squad.startingXI, ...squad.bench].map(slot => slot.id);
+    const uniqueIds = new Set(allPlayerIds);
+    if (uniqueIds.size !== allPlayerIds.length) {
+      errors.push('Cannot have duplicate players in squad');
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  // Validation for analysis - no budget constraints
+  static validateSquadForAnalysis(squad: Squad): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    // Check formation (must have exactly 11 starting players)
+    if (squad.startingXI.length !== 11) {
+      errors.push('Starting XI must have exactly 11 players');
+    }
+    
+    // Check bench (must have exactly 4 bench players)
+    if (squad.bench.length !== 4) {
+      errors.push('Bench must have exactly 4 players');
+    }
+    
+    // Check position distribution in starting XI
+    const positionCounts = squad.startingXI.reduce((counts, slot) => {
+      counts[slot.pos] = (counts[slot.pos] || 0) + 1;
+      return counts;
+    }, {} as Record<string, number>);
+    
+    // Valid formations: 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1
+    const validFormations = [
+      { GK: 1, DEF: 3, MID: 4, FWD: 3 },
+      { GK: 1, DEF: 3, MID: 5, FWD: 2 },
+      { GK: 1, DEF: 4, MID: 3, FWD: 3 },
+      { GK: 1, DEF: 4, MID: 4, FWD: 2 },
+      { GK: 1, DEF: 4, MID: 5, FWD: 1 },
+      { GK: 1, DEF: 5, MID: 3, FWD: 2 },
+      { GK: 1, DEF: 5, MID: 4, FWD: 1 }
+    ];
+    
+    const isValidFormation = validFormations.some(formation =>
+      Object.entries(formation).every(([pos, count]) => positionCounts[pos] === count)
+    );
+    
+    if (!isValidFormation) {
+      errors.push('Invalid formation - must have 1 GK and valid DEF/MID/FWD distribution');
     }
     
     // Check for duplicate players

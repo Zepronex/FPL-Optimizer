@@ -1,16 +1,15 @@
 import { EnrichedPlayer } from '../lib/types';
 import { formatPrice } from '../lib/format';
-import { User, TrendingUp, DollarSign } from 'lucide-react';
+import { User, DollarSign } from 'lucide-react';
+import PlayerImage from './PlayerImage';
 
 interface SearchResultsProps {
   results: EnrichedPlayer[];
   isLoading: boolean;
   onPlayerSelect: (player: EnrichedPlayer) => void;
-  onPlayerScore: (player: EnrichedPlayer) => void;
-  isScoring: boolean;
 }
 
-const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isScoring }: SearchResultsProps) => {
+const SearchResults = ({ results, isLoading, onPlayerSelect }: SearchResultsProps) => {
   if (isLoading) {
     return (
       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-80 overflow-y-auto z-50">
@@ -42,27 +41,20 @@ const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isSc
         >
           <div className="flex items-center space-x-3 flex-1">
             <div className="flex-shrink-0">
-              <span className={`badge ${getPositionColor(player.pos)}`}>
-                {player.pos}
-              </span>
+              <PlayerImage player={player} size="sm" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-900 truncate">{player.name}</div>
               <div className="text-sm text-gray-600">
+                <span className={`badge ${getPositionColor(player.pos)} mr-2`}>
+                  {player.pos}
+                </span>
                 {player.teamShort} • {formatPrice(player.price)}
               </div>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onPlayerScore(player)}
-              disabled={isScoring}
-              className="flex items-center space-x-1 text-xs bg-fpl-green text-white px-2 py-1 rounded hover:bg-green-600 transition-colors disabled:opacity-50"
-            >
-              <TrendingUp className="w-3 h-3" />
-              <span>Score</span>
-            </button>
             <button
               onClick={() => onPlayerSelect(player)}
               className="flex items-center space-x-1 text-xs bg-fpl-dark text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"

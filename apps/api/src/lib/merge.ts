@@ -90,7 +90,9 @@ export class DataMerger {
         // Additional metrics
         avgPoints: stats.avgPoints || 0,
         value: stats.value || 0,
-        ownership: stats.ownership || 0
+        ownership: stats.ownership || 0,
+        // Player image URL from FPL API
+        imageUrl: player.photo ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo}` : undefined
       };
     });
   }

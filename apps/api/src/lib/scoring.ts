@@ -7,90 +7,61 @@ import { EnrichedPlayer, AnalysisWeights, PlayerLabel, WeightPreset } from '../t
  */
 export class ScoringService {
   /**
-   * Default weight configuration for player scoring
-   * These weights determine how much each metric contributes to the final score
-   * All weights should sum to 1.0 for proper normalization
+   * Simplified weight configuration for player scoring
+   * Focus on the most important and reliable FPL metrics
    */
   static readonly DEFAULT_WEIGHTS: AnalysisWeights = {
-    form: 0.2,        // Recent performance (last 5 games)
-    xg90: 0.15,       // Expected goals per 90 minutes
-    xa90: 0.15,       // Expected assists per 90 minutes
-    expMin: 0.15,     // Expected minutes (playing time likelihood)
-    next3Ease: 0.1,   // Fixture difficulty for next 3 games
-    avgPoints: 0.15,  // Historical FPL points average
-    value: 0.05,      // Points per million (value for money)
-    ownership: 0.05   // Ownership percentage (differential factor)
+    form: 0.4,        // Recent performance (most important)
+    xg90: 0.0,        // Disabled - using mock data
+    xa90: 0.0,        // Disabled - using mock data
+    expMin: 0.3,      // Expected minutes (playing time likelihood)
+    next3Ease: 0.0,   // Disabled - using mock data
+    avgPoints: 0.3,   // Historical FPL points average
+    value: 0.0,       // Disabled - using mock data
+    ownership: 0.0    // Disabled - using mock data
   };
 
   static readonly WEIGHT_PRESETS: WeightPreset[] = [
     {
-      name: 'Balanced Approach',
-      description: 'Well-rounded team focusing on consistent performers across all positions',
+      name: 'Form Focused',
+      description: 'Prioritize players in good form - perfect for short-term gains',
       weights: {
-        form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
+        form: 0.6,
+        xg90: 0.0,
+        xa90: 0.0,
         expMin: 0.2,
-        next3Ease: 0.15,
-        avgPoints: 0.15,
-        value: 0.05,
+        next3Ease: 0.0,
+        avgPoints: 0.2,
+        value: 0.0,
         ownership: 0.0
       }
     },
     {
-      name: 'Premium Heavy',
-      description: 'Invest heavily in proven premium players with guaranteed minutes',
+      name: 'Consistent Performers',
+      description: 'Focus on reliable players with good average points and minutes',
       weights: {
-        form: 0.1,
-        xg90: 0.2,
-        xa90: 0.2,
-        expMin: 0.25,
-        next3Ease: 0.1,
-        avgPoints: 0.1,
-        value: 0.02,
-        ownership: 0.03
-      }
-    },
-    {
-      name: 'Value Optimized',
-      description: 'Maximum points per million - focus on budget enablers and differentials',
-      weights: {
-        form: 0.15,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.15,
-        next3Ease: 0.1,
-        avgPoints: 0.1,
-        value: 0.2,
+        form: 0.3,
+        xg90: 0.0,
+        xa90: 0.0,
+        expMin: 0.4,
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
         ownership: 0.0
       }
     },
     {
-      name: 'Form & Fixtures',
-      description: 'Players in hot form with favorable upcoming fixture runs',
+      name: 'Balanced',
+      description: 'Equal weight on form, minutes, and average points',
       weights: {
-        form: 0.25,
-        xg90: 0.15,
-        xa90: 0.1,
-        expMin: 0.15,
-        next3Ease: 0.25,
-        avgPoints: 0.05,
-        value: 0.03,
-        ownership: 0.02
-      }
-    },
-    {
-      name: 'Set & Forget',
-      description: 'Stable team with minimal transfers - focus on season-long consistency',
-      weights: {
-        form: 0.05,
-        xg90: 0.15,
-        xa90: 0.15,
+        form: 0.4,
+        xg90: 0.0,
+        xa90: 0.0,
         expMin: 0.3,
-        next3Ease: 0.05,
-        avgPoints: 0.25,
-        value: 0.03,
-        ownership: 0.02
+        next3Ease: 0.0,
+        avgPoints: 0.3,
+        value: 0.0,
+        ownership: 0.0
       }
     }
   ];
@@ -107,32 +78,51 @@ export class ScoringService {
     player: EnrichedPlayer,
     weights: AnalysisWeights = this.DEFAULT_WEIGHTS
   ): number {
-    // Normalize each metric to 0-10 scale for consistent comparison
-    // This ensures all metrics contribute equally regardless of their original scale
-    const normalizedForm = Math.min(player.form * 2, 10); // Form is typically 0-5, scale to 0-10
-    const normalizedXG = Math.min(player.xg90 * 20, 10); // Scale xG90 (0-0.5 -> 0-10)
-    const normalizedXA = Math.min(player.xa90 * 25, 10); // Scale xA90 (0-0.4 -> 0-10)
-    const normalizedMinutes = (player.expMin / 90) * 10; // Minutes as percentage of 90
-    const normalizedEase = (6 - player.next3Ease) * 2; // Invert difficulty (1-5 -> 10-2)
+    // Use only real FPL data - ignore mock advanced stats
+    // Form is the most reliable metric from FPL (0-10 scale)
+    const formScore = Math.min(player.form * 2, 10); // FPL form is 0-5, scale to 0-10
     
-    // Additional metrics normalization for enhanced scoring
-    const normalizedAvgPoints = Math.min(player.avgPoints * 0.5, 10); // Scale avg points (typically 0-20)
-    const normalizedValue = Math.min(player.value * 2, 10); // Scale value metric (points per million)
-    const normalizedOwnership = (player.ownership / 10); // Scale ownership % (0-100 -> 0-10)
-
-    // Apply weights and calculate weighted score
-    // Each metric is multiplied by its weight and summed for the final score
+    // Expected minutes based on player status and position
+    let minutesScore = 5; // Default average
+    if (player.status === 'a') {
+      minutesScore = 8; // Available players get high minutes
+    } else if (player.status === 'd') {
+      minutesScore = 3; // Doubtful players get lower minutes
+    } else if (player.status === 'i' || player.status === 's') {
+      minutesScore = 0; // Injured/suspended get no minutes
+    }
+    
+    // Average points from FPL (if available, otherwise estimate from form)
+    let avgPointsScore = 5; // Default average
+    if (player.avgPoints > 0) {
+      avgPointsScore = Math.min(player.avgPoints * 0.5, 10); // Scale avg points
+    } else {
+      // Estimate from form if no avg points data
+      avgPointsScore = formScore;
+    }
+    
+    // Position-based adjustments
+    let positionBonus = 0;
+    if (player.pos === 'GK') {
+      // Goalkeepers are more consistent, less volatile
+      positionBonus = 0.5;
+    } else if (player.pos === 'DEF') {
+      // Defenders get clean sheet potential
+      positionBonus = 0.3;
+    } else if (player.pos === 'FWD') {
+      // Forwards are more volatile but higher ceiling
+      positionBonus = 0.2;
+    }
+    
+    // Calculate final score using only reliable metrics
     const score = 
-      normalizedForm * weights.form +
-      normalizedXG * weights.xg90 +
-      normalizedXA * weights.xa90 +
-      normalizedMinutes * weights.expMin +
-      normalizedEase * weights.next3Ease +
-      normalizedAvgPoints * weights.avgPoints +
-      normalizedValue * weights.value +
-      normalizedOwnership * weights.ownership;
+      formScore * weights.form +
+      minutesScore * weights.expMin +
+      avgPointsScore * weights.avgPoints +
+      positionBonus;
 
-    return Math.round(score * 100) / 100; // Round to 2 decimal places for precision
+    // Ensure score is between 0-10
+    return Math.max(0, Math.min(10, Math.round(score * 100) / 100));
   }
 
   static getPlayerLabel(score: number, player: EnrichedPlayer): PlayerLabel {
