@@ -6,10 +6,8 @@ import slowDown from 'express-slow-down';
 import dotenv from 'dotenv';
 import { playersRouter } from './routes/players';
 import { fixturesRouter } from './routes/fixtures';
-import { analyzeRouter } from './routes/analyze';
-import { suggestionsRouter } from './routes/suggestions';
-import { generateRouter } from './routes/generate';
 import { mlRouter } from './routes/ml';
+import { optimizeRouter } from './routes/optimize';
 
 dotenv.config();
 
@@ -62,28 +60,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(limiter);
 app.use(speedLimiter);
 
-// Stricter rate limiting for expensive operations
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Only 10 team generations per 15 minutes per IP
-  message: {
-    error: 'Too many team generations. Please wait before generating another team.',
-    retryAfter: '15 minutes'
-  },
-  skipSuccessfulRequests: true, // Don't count successful requests
-});
-
-// Apply strict rate limiting to expensive endpoints
-app.use('/api/generate', strictLimiter);
-app.use('/api/analyze', strictLimiter);
-
 // Routes
 app.use('/api/players', playersRouter);
 app.use('/api/fixtures', fixturesRouter);
-app.use('/api/analyze', analyzeRouter);
-app.use('/api/suggestions', suggestionsRouter);
-app.use('/api/generate', generateRouter);
 app.use('/api/ml', mlRouter);
+app.use('/api/optimize', optimizeRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

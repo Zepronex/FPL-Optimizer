@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Squad, AnalysisWeights, SquadAnalysis, PlayersResponse, PlayerSearchResult } from './types';
+import { PlayersResponse, PlayerSearchResult, OptimizeRequest, OptimizeResponse } from './types';
 
 const API_BASE_URL = '/api';
 
@@ -47,44 +47,6 @@ export const apiClient = {
     return response.data;
   },
 
-  // Analysis API
-  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<{ success: boolean; data?: SquadAnalysis; error?: string }> {
-    const response = await api.post('/analyze', { squad, weights });
-    return response.data;
-  },
-
-  async validateSquad(squad: Squad): Promise<{ success: boolean; data?: { valid: boolean; errors: string[] }; error?: string }> {
-    const response = await api.post('/analyze/validate', { squad });
-    return response.data;
-  },
-
-  async getDefaultWeights(): Promise<{ success: boolean; data?: AnalysisWeights; error?: string }> {
-    const response = await api.get('/analyze/weights');
-    return response.data;
-  },
-
-  async getWeightPresets(): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    const response = await api.get('/analyze/presets');
-    return response.data;
-  },
-
-  async generateTeam(strategy: string, budget: number = 100): Promise<{ success: boolean; data?: any; error?: string }> {
-    const response = await api.post('/generate', { strategy, budget });
-    return response.data;
-  },
-
-  // Suggestions API
-  async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
-    const response = await api.post('/suggestions', {
-      playerId,
-      position,
-      maxPrice,
-      excludeIds,
-      limit
-    });
-    return response.data;
-  },
-
   // Fixtures API
   async getFixtures() {
     const response = await api.get('/fixtures');
@@ -111,6 +73,11 @@ export const apiClient = {
 
   async getMLHealth() {
     const response = await api.get('/ml/health');
+    return response.data;
+  },
+
+  async optimizeTransfers(payload: OptimizeRequest): Promise<OptimizeResponse> {
+    const response = await api.post('/optimize', payload);
     return response.data;
   }
 };

@@ -15,11 +15,6 @@ export type EnrichedPlayer = {
   xa90: number;
   expMin: number;
   next3Ease: number;
-  // Additional metrics for enhanced scoring
-  avgPoints: number; // Average FPL points per game
-  value: number; // Points per million (value metric)
-  ownership: number; // Ownership percentage (0-100)
-  score?: number;
   imageUrl?: string; // Player headshot image URL
 };
 
@@ -35,49 +30,6 @@ export type Squad = {
   startingXI: SquadSlot[];
   bench: SquadSlot[];
   bank: number;
-};
-
-export type Suggestion = {
-  id: number;
-  name: string;
-  price: number;
-  delta: number;
-};
-
-export type AnalysisWeights = {
-  form: number;
-  xg90: number;
-  xa90: number;
-  expMin: number;
-  next3Ease: number;
-  avgPoints: number;
-  value: number;
-  ownership: number;
-};
-
-export type WeightPreset = {
-  name: string;
-  description: string;
-  weights: AnalysisWeights;
-};
-
-export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent' | 'not-playing';
-
-export type AnalysisResult = {
-  player: EnrichedPlayer;
-  score: number;
-  label: PlayerLabel;
-  suggestions: Suggestion[];
-};
-
-export type SquadAnalysis = {
-  results: AnalysisResult[];
-  averageScore: number;
-  flaggedPlayers: number;
-  bankLeft: number;
-  totalScore: number;
-  weights: AnalysisWeights;
-  timestamp: string;
 };
 
 export type ApiResponse<T> = {
@@ -98,4 +50,33 @@ export type PlayersResponse = {
   data?: EnrichedPlayer[];
   count?: number;
   error?: string;
+};
+
+export type OptimizeRequest = {
+  squad_player_ids: number[];
+  bank: number;
+  free_transfers: number;
+  horizon: number;
+  allow_hits?: boolean;
+  max_extra_transfers?: number;
+};
+
+export type TransferPick = {
+  player_id: number;
+  name: string;
+  price: number;
+};
+
+export type OptimizeResponse = {
+  transfers_out: TransferPick[];
+  transfers_in: TransferPick[];
+  projected_points: {
+    horizon: number;
+    before: number;
+    after: number;
+    delta: number;
+    hit_cost: number;
+  };
+  starting_xi_next_gw?: number[];
+  meta?: Record<string, any>;
 };

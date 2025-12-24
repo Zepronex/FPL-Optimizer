@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { DataMerger } from '../lib/merge';
 import { FPLDataFetcher } from '../lib/fetchers/fpl';
-import { ScoringService } from '../lib/scoring';
 
 const router: Router = Router();
 
@@ -86,15 +85,9 @@ router.get('/:id', async (req, res) => {
       });
     }
     
-    // Calculate player score for individual player view
-    const playerWithScore = {
-      ...player,
-      score: ScoringService.calculatePlayerScore(player)
-    };
-    
     res.json({
       success: true,
-      data: playerWithScore
+      data: player
     });
   } catch (error) {
     // Error fetching player

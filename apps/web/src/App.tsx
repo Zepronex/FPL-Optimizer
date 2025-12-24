@@ -4,16 +4,13 @@ import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
-import { useWeights } from './state/useWeights';
 
 // main pages loaded directly for instant navigation
 import HomePage from './pages/HomePage';
 import SquadPage from './pages/SquadPage';
-import GenerateTeamPage from './pages/GenerateTeamPage';
+import OptimizeTransfersPage from './pages/OptimizeTransfersPage';
 
 // secondary pages lazy loaded to reduce initial bundle size
-const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
-const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
 const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
 
 // Import TopPlayersPage directly to avoid lazy loading issues
@@ -29,7 +26,6 @@ const FastLoadingSpinner = () => (
 function App() {
   const [isApiConnected, setIsApiConnected] = useState<boolean | null>(null);
   const squadState = useSquad();
-  const weightsState = useWeights();
 
   // check api connection on app startup
   useEffect(() => {
@@ -100,22 +96,16 @@ function App() {
                   Squad Builder
                 </a>
                 <a 
-                  href="/generate" 
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
-                >
-                  Generate Team
-                </a>
-                <a 
                   href="/top-players" 
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Top Players
                 </a>
-                <a 
-                  href="/analyze" 
+                <a
+                  href="/optimize"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
-                  Team Analysis
+                  Optimize Transfers
                 </a>
                 <a 
                   href="/" 
@@ -132,11 +122,9 @@ function App() {
           <Suspense fallback={<FastLoadingSpinner />}>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/generate" element={<GenerateTeamPage />} />
-              <Route path="/generated-team" element={<GeneratedTeamPage />} />
-              <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
+              <Route path="/squad" element={<SquadPage squadState={squadState} />} />
+              <Route path="/optimize" element={<OptimizeTransfersPage squadState={squadState} />} />
               <Route path="/top-players" element={<TopPlayersPage />} />
-              <Route path="/analyze" element={<AnalyzePage />} />
               <Route path="/player/:id" element={<PlayerDetailPage />} />
             </Routes>
           </Suspense>

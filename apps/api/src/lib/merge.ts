@@ -1,5 +1,4 @@
 import { FPLPlayer, FPLTeam, FPLFixture, EnrichedPlayer, Pos } from '../types';
-import { AdvancedStatsFetcher } from './fetchers/advanced';
 
 // Cache for enriched players data to avoid repeated API calls
 let enrichedPlayersCache: EnrichedPlayer[] | null = null;
@@ -47,13 +46,7 @@ export class DataMerger {
   }
 
   /**
-   * Enriches FPL player data with advanced statistics and team information
-   * This is the core data processing function that combines multiple data sources
-   * 
-   * @param players - Raw FPL player data from the official API
-   * @param teams - Team information for mapping team IDs to names
-   * @param fixtures - Fixture data for calculating difficulty ratings
-   * @returns Promise<EnrichedPlayer[]> - Players with enhanced statistics
+   * Enriches FPL player data with team information.
    */
   static async enrichPlayers(
     players: FPLPlayer[],
@@ -63,17 +56,10 @@ export class DataMerger {
   ): Promise<EnrichedPlayer[]> {
     // Create lookup map for team data to avoid O(n) searches for each player
     const teamMap = new Map(teams.map(team => [team.id, team]));
-    const playerIds = players.map(p => p.id);
-    
-    // Fetch advanced statistics and fixture difficulty data in parallel
-    // This includes xG, xA, expected minutes, and fixture difficulty ratings
-    const advancedStats = await AdvancedStatsFetcher.getAdvancedStats(playerIds);
-    const fixtureDifficulty = await AdvancedStatsFetcher.getFixtureDifficulty();
 
     return players.map(player => {
       const team = teamMap.get(player.team);
-      const stats = advancedStats[player.id] || {};
-      
+
       return {
         id: player.id,
         name: `${player.first_name} ${player.second_name}`,
@@ -83,14 +69,10 @@ export class DataMerger {
         price: player.now_cost / 10, // Convert from FPL format (prices stored as integers * 10)
         form: parseFloat(player.form) || 0,
         status: player.status as 'a' | 'd' | 'i' | 's',
-        xg90: stats.xG90 || 0,
-        xa90: stats.xA90 || 0,
-        expMin: stats.expMin || 0,
-        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty, currentGameweek),
-        // Additional metrics
-        avgPoints: stats.avgPoints || 0,
-        value: stats.value || 0,
-        ownership: stats.ownership || 0,
+        xg90: parseFloat(player.expected_goals) || 0,
+        xa90: parseFloat(player.expected_assists) || 0,
+        expMin: player.minutes || 0,
+        next3Ease: this.calculateNext3Ease(player.team, fixtures, currentGameweek),
         // Player image URL from FPL API
         imageUrl: player.photo ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo}` : undefined
       };
@@ -100,7 +82,6 @@ export class DataMerger {
   private static calculateNext3Ease(
     teamId: number,
     fixtures: FPLFixture[],
-    fdr: Record<number, number>,
     currentGameweek: number = 1
   ): number {
     // Find next 3 upcoming fixtures for the team (home or away)
@@ -115,7 +96,6 @@ export class DataMerger {
     // Calculate average difficulty of next 3 fixtures
     const totalDifficulty = upcomingFixtures.reduce((sum, fixture) => {
       const isHome = fixture.team_h === teamId;
-      const opponentId = isHome ? fixture.team_a : fixture.team_h;
       const difficulty = isHome ? fixture.team_h_difficulty : fixture.team_a_difficulty;
       return sum + difficulty;
     }, 0);

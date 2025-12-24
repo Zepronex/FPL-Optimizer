@@ -1,6 +1,6 @@
 import { EnrichedPlayer } from '../lib/types';
 import { formatPrice, formatForm, formatXG, formatXA } from '../lib/format';
-import { TrendingUp, TrendingDown, Users, Target, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Target, Clock, ShieldCheck } from 'lucide-react';
 
 interface PlayerStatsProps {
   player: EnrichedPlayer;
@@ -26,8 +26,11 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
             <span className="font-medium text-fpl-dark">{formatPrice(player.price)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Ownership:</span>
-            <span className="font-medium">{player.ownership.toFixed(1)}%</span>
+            <span className="text-gray-600 flex items-center">
+              <ShieldCheck className="w-4 h-4 mr-1" />
+              Status:
+            </span>
+            <span className="font-medium capitalize">{player.status === 'a' ? 'Available' : 'Unavailable'}</span>
           </div>
         </div>
       </div>
@@ -48,12 +51,11 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Avg Points:</span>
-            <span className="font-medium">{player.avgPoints.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Value:</span>
-            <span className="font-medium">{player.value.toFixed(2)}</span>
+            <span className="text-gray-600 flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              Expected Minutes:
+            </span>
+            <span className="font-medium">{player.expMin.toFixed(0)}</span>
           </div>
         </div>
       </div>
@@ -75,13 +77,6 @@ const PlayerStats = ({ player }: PlayerStatsProps) => {
               xA/90:
             </span>
             <span className="font-medium">{formatXA(player.xa90)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              Expected Minutes:
-            </span>
-            <span className="font-medium">{player.expMin.toFixed(1)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Next 3 Ease:</span>

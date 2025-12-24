@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EnrichedPlayer } from '../lib/types';
-import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
 import { ArrowLeft } from 'lucide-react';
 import PlayerStats from '../components/PlayerStats';
-import PlayerSuggestions from '../components/PlayerSuggestions';
 
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [player, setPlayer] = useState<EnrichedPlayer | null>(null);
-  const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
 
@@ -35,8 +31,6 @@ const PlayerDetailPage = () => {
       const playerResponse = await apiClient.getPlayerById(parseInt(id));
       if (playerResponse.success && playerResponse.data) {
         setPlayer(playerResponse.data);
-        // Load suggestions after player data is loaded
-        loadSuggestions(playerResponse.data);
       } else {
         setError('Player not found');
       }
@@ -45,42 +39,6 @@ const PlayerDetailPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const loadSuggestions = async (playerData: EnrichedPlayer) => {
-    setIsLoadingSuggestions(true);
-
-    try {
-      const response = await fetch('/api/suggestions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId: playerData.id,
-          position: playerData.pos,
-          maxPrice: playerData.price + 2, // Allow some flexibility in price
-          excludeIds: [],
-          limit: 5
-        }),
-      });
-
-      const data: { success: boolean; data?: SuggestionsResponse; error?: string } = await response.json();
-
-      if (data.success && data.data) {
-        setSuggestions(data.data.suggestions);
-      }
-    } catch (error) {
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
-
-  const getScoreLabel = (score: number): { label: string; color: string } => {
-    if (score >= 8) return { label: 'Perfect', color: 'text-green-600 bg-green-100' };
-    if (score >= 6) return { label: 'Good', color: 'text-blue-600 bg-blue-100' };
-    if (score >= 4) return { label: 'Poor', color: 'text-yellow-600 bg-yellow-100' };
-    return { label: 'Urgent', color: 'text-red-600 bg-red-100' };
   };
 
   const getPositionColor = (pos: string): string => {
@@ -122,8 +80,6 @@ const PlayerDetailPage = () => {
     );
   }
 
-  const scoreInfo = getScoreLabel(player.score || 0);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -146,7 +102,7 @@ const PlayerDetailPage = () => {
                   </span>
                   <h1 className="text-3xl font-bold text-gray-900">{player.name}</h1>
                 </div>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <div className="text-gray-500">Team</div>
@@ -168,16 +124,6 @@ const PlayerDetailPage = () => {
                   </div>
                 </div>
               </div>
-              
-              <div className="text-right">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${scoreInfo.color}`}>
-                  {scoreInfo.label}
-                </div>
-                <div className="text-2xl font-bold text-gray-900 mt-2">
-                  {(player.score || 0).toFixed(1)}
-                </div>
-                <div className="text-sm text-gray-500">Score</div>
-              </div>
             </div>
           </div>
         </div>
@@ -186,13 +132,6 @@ const PlayerDetailPage = () => {
         <div className="mb-8">
           <PlayerStats player={player} />
         </div>
-
-        {/* Alternative Players */}
-        <PlayerSuggestions 
-          suggestions={suggestions}
-          isLoading={isLoadingSuggestions}
-          onLoadMore={() => {}} // Not implemented yet
-        />
       </div>
     </div>
   );

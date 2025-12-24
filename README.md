@@ -1,141 +1,87 @@
-# FPL Optimizer
+# FPL Transfer Optimizer
 
-An intelligent Fantasy Premier League (FPL) team optimization tool that analyzes player performance and suggests optimal team compositions.
+Machine-learning–powered Fantasy Premier League transfer recommendations. Provide your current 15-player squad, bank, and free transfers; the system returns the best transfer plan to maximize expected points over the next 3–5 gameweeks while respecting FPL rules (positions, formation, team limits, and budget) and optional hit limits.
 
----
+## Features
 
-## 🚀 Features
+- **Transfer optimization**: Multi-week ILP optimizer (via OR-Tools) that balances expected points and hit costs.
+- **ML-driven projections**: LightGBM-based xPts predictions per player per future gameweek sourced from FPL data (and optionally Understat).
+- **Starting XI suggestions**: Recommended XI for the next gameweek alongside transfer ins/outs and projected deltas.
+- **Thin API proxy**: Express API forwards optimization requests to the Python ML service.
+- **Web UI**: Squad builder plus an Optimize Transfers page for submitting squads and viewing recommendations.
 
-- **Team Generation** – Generate optimized squads using different strategies (Premium, Balanced, Value, etc.)
-- **Squad Analysis** – Analyze your current team with configurable scoring weights
-- **Player Suggestions** – Get replacement recommendations based on performance metrics
-- **Real-time Data** – Uses the official FPL API for up-to-date player and fixture information
+## Project structure
 
----
+```
+apps/
+  api/   # Express proxy for players, fixtures, and /api/optimize
+  ml/    # FastAPI service for xPts prediction and transfer optimization
+  web/   # React frontend (Squad Builder + Optimize Transfers)
+```
 
-## ⚙️ Quick Start (for Developers)
+## Quick start (development)
 
 ```bash
-# Install dependencies
+# Install JS dependencies
 pnpm install
 
-# Setup ML service (optional, for AI Strategy)
+# Set up the Python ML environment
 ./setup_ml.sh
 
-# Start development servers
+# Start API + web + ML services
 pnpm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+The dev script starts the web app on http://localhost:3000, the API on http://localhost:3001, and the ML service on http://localhost:3002.
 
----
+## API contract
 
-## 🧠 AI Strategy Setup
+### POST /api/optimize
 
-The **AI Strategy** uses machine learning to optimize team selection. To use it:
+Request body:
 
-1. **Setup ML service**
-   ```bash
-   ./setup_ml.sh
-   ```
-2. **Train the model**
-   ```bash
-   pnpm run train:ml
-   ```
-3. **Start all services**
-   ```bash
-   pnpm run dev
-   ```
-4. **Use AI Strategy**
-   In the web app, select **“AI Strategy”** under the team generation page.
-
-The AI Strategy predicts optimal player selections for the next 3 gameweeks using historical data and advanced algorithms.
-
----
-
-## 📊 How It Works
-
-The optimizer scores and ranks players based on advanced performance metrics:
-
-- **Form** – Recent consistency and performance
-- **Expected Goals/Assists (xG/xA)** – Statistical indicators
-- **Expected Minutes** – Predicted playing time
-- **Fixture Difficulty** – Rating of upcoming matches
-- **Average Points** – Historical FPL performance trends
-
----
-
-## 🗂 Project Structure
-
-```
-├── apps/
-│   ├── api/          # Express.js backend
-│   └── web/          # React frontend
-└── README.md
+```json
+{
+  "squad_player_ids": [15],
+  "bank": 0.5,
+  "free_transfers": 1,
+  "horizon": 3,
+  "allow_hits": true,
+  "max_extra_transfers": 2
+}
 ```
 
----
+Response body:
 
-## 🧭 Setup Guide for Non-Developers (Windows)
-
-This guide walks you through installing and running the app step-by-step — no developer experience required.
-
-### Step 1: Install PNPM
-
-Open **Windows PowerShell** and run the following command:
-
-```powershell
-Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
+```json
+{
+  "transfers_out": [{ "player_id": 1, "name": "Player A", "price": 7.5 }],
+  "transfers_in": [{ "player_id": 2, "name": "Player B", "price": 7.4 }],
+  "projected_points": {
+    "horizon": 3,
+    "before": 16.2,
+    "after": 22.7,
+    "delta": 6.5,
+    "hit_cost": 4
+  },
+  "starting_xi_next_gw": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  "meta": { "current_gw": 25, "timestamp": "2024-01-01T00:00:00Z" }
+}
 ```
 
-This installs **pnpm**, a package manager used to run the app.
+## Usage
 
----
+1. Build your squad in the Squad Builder (or load an existing squad if available).
+2. Open **Optimize Transfers**, set `free_transfers`, `bank`, `horizon` (3–5), and optionally toggle hit limits.
+3. Submit to see transfer ins/outs, projected points before/after, and the suggested XI for the next gameweek.
 
-### Step 2: Create a Folder and Download the App
+## Testing
 
-1. Choose a location on your computer where you want to install the app.
-2. Open **PowerShell** and type:
+- API type-check: `pnpm --filter @fpl-optimizer/api build`
+- Web type-check: `pnpm --filter @fpl-optimizer/web build`
 
-   ```powershell
-   mkdir FPL-Optimizer
-   cd FPL-Optimizer
-   ```
+These commands ensure the TypeScript surfaces compile.
 
-   You can replace `FPL-Optimizer` with any name you prefer for your folder.
+## License
 
-3. Now, download the app from GitHub by running:
-
-   ```powershell
-   git clone https://github.com/Zepronex/FPL-Optimizer.git
-   ```
-
----
-
-### Step 3: Set Up and Start the App
-
-Once the repository is downloaded, make sure you’re inside the folder in PowerShell, then run these commands one by one:
-
-```powershell
-pnpm install
-./setup_ml.sh
-pnpm run dev
-```
-
-This will install all required files, set up the machine learning service, and start the application.
-
----
-
-### Step 4: Open the App
-
-When setup is complete, open your web browser and go to:
-
-👉 [http://localhost:3000](http://localhost:3000)
-
-You’ll now see the **FPL Optimizer** web app running locally on your computer.
-
----
-
-## 🪪 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).

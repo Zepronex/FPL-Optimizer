@@ -1,5 +1,3 @@
-import { PlayerLabel } from './types';
-
 export const formatPrice = (price: number): string => {
   // Round to avoid floating point precision issues
   const rounded = Math.round(price * 10) / 10;
@@ -38,40 +36,6 @@ export const formatDelta = (delta: number): string => {
   
   // Otherwise show with 1 decimal place
   return `${sign}${rounded.toFixed(1)}`;
-};
-
-export const getLabelColor = (label: PlayerLabel): string => {
-  switch (label) {
-    case 'perfect':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'good':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'poor':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'urgent':
-      return 'bg-red-100 text-red-800 border-red-200';
-    case 'not-playing':
-      return 'bg-red-900 text-red-100 border-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
-export const getLabelText = (label: PlayerLabel): string => {
-  switch (label) {
-    case 'perfect':
-      return 'Perfect';
-    case 'good':
-      return 'Good';
-    case 'poor':
-      return 'Poor';
-    case 'urgent':
-      return 'Urgent';
-    case 'not-playing':
-      return 'Not Playing';
-    default:
-      return 'Unknown';
-  }
 };
 
 export const getPositionColor = (position: string): string => {
