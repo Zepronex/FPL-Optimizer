@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
+import { EnrichedPlayer } from '../lib/types';
 import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
@@ -16,18 +16,6 @@ const PlayerDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Default weights for scoring
-  const defaultWeights: AnalysisWeights = {
-    form: 0.2,
-    xg90: 0.15,
-    xa90: 0.15,
-    expMin: 0.15,
-    next3Ease: 0.1,
-    avgPoints: 0.15,
-    value: 0.05,
-    ownership: 0.05
-  };
 
   useEffect(() => {
     if (id) {
@@ -51,7 +39,7 @@ const PlayerDetailPage = () => {
       } else {
         setError('Player not found');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to load player data');
     } finally {
       setIsLoading(false);
@@ -81,7 +69,7 @@ const PlayerDetailPage = () => {
       if (data.success && data.data) {
         setSuggestions(data.data.suggestions);
       }
-    } catch (error) {
+    } catch {
     } finally {
       setIsLoadingSuggestions(false);
     }

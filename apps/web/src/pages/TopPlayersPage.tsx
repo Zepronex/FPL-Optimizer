@@ -7,18 +7,20 @@ import ErrorMessage from '../components/ErrorMessage';
 
 interface TopPlayersData {
   top_players_by_position: {
-    [position: number]: Array<{
-      player_id: number;
-      name: string;
-      position: number;
-      price: number;
-      team: number;
-      predicted_points: number;
-      confidence: number;
-    }>;
+    [position: number]: TopPlayerPrediction[];
   };
   total_players_analyzed: number;
   gameweek: number;
+}
+
+interface TopPlayerPrediction {
+  player_id: number;
+  name: string;
+  position: number;
+  price: number;
+  team: number;
+  predicted_points: number;
+  confidence: number;
 }
 
 const TopPlayersPage = () => {
@@ -71,9 +73,9 @@ const TopPlayersPage = () => {
     
     if (selectedPosition === 'all') {
       // Return all players from all positions
-      const allPlayers = [];
+      const allPlayers: TopPlayerPrediction[] = [];
       for (const position in topPlayers.top_players_by_position) {
-        allPlayers.push(...topPlayers.top_players_by_position[position]);
+        allPlayers.push(...topPlayers.top_players_by_position[Number(position)]);
       }
       return allPlayers.sort((a, b) => b.predicted_points - a.predicted_points);
     }

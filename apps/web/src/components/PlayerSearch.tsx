@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
-import { formatPrice } from '../lib/format';
 import { useDebounce } from '../hooks/useDebounce';
 
 interface PlayerSearchProps {
@@ -33,7 +32,7 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
       } else {
         setSearchResults([]);
       }
-    } catch (error) {
+    } catch {
       setSearchResults([]);
     } finally {
       setIsSearching(false);

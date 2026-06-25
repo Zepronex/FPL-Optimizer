@@ -12,11 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // Register service worker for caching
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-      })
-      .catch((registrationError) => {
-      });
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
 

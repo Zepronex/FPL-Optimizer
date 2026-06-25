@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
-import { apiClient } from '../lib/api';
 import { TrendingUp, X } from 'lucide-react';
 
 interface PlayerScoringProps {
@@ -31,25 +30,37 @@ const PlayerScoring = ({ player, onClose, onScoreCalculated }: PlayerScoringProp
     setError(null);
     
     try {
-      const response = await apiClient.analyzeSquad({
-        players: [player],
-        formation: '3-4-3',
-        captain: player.id,
-        viceCaptain: player.id
-      }, defaultWeights);
-
-      if (response.success && response.data) {
-        const playerScore = response.data.players.find(p => p.id === player.id)?.score || 0;
-        setScore(playerScore);
-        onScoreCalculated(playerScore);
-      } else {
-        setError('Failed to calculate score');
-      }
-    } catch (err) {
+      const playerScore = calculatePlayerScore(player, defaultWeights);
+      setScore(playerScore);
+      onScoreCalculated(playerScore);
+    } catch {
       setError('Error calculating score');
     } finally {
       setIsScoring(false);
     }
+  };
+
+  const calculatePlayerScore = (playerToScore: EnrichedPlayer, weights: AnalysisWeights): number => {
+    const normalizedForm = Math.min(playerToScore.form * 2, 10);
+    const normalizedXG = Math.min(playerToScore.xg90 * 20, 10);
+    const normalizedXA = Math.min(playerToScore.xa90 * 25, 10);
+    const normalizedMinutes = (playerToScore.expMin / 90) * 10;
+    const normalizedEase = (6 - playerToScore.next3Ease) * 2;
+    const normalizedAvgPoints = Math.min(playerToScore.avgPoints * 0.5, 10);
+    const normalizedValue = Math.min(playerToScore.value * 2, 10);
+    const normalizedOwnership = playerToScore.ownership / 10;
+
+    const calculatedScore =
+      normalizedForm * weights.form +
+      normalizedXG * weights.xg90 +
+      normalizedXA * weights.xa90 +
+      normalizedMinutes * weights.expMin +
+      normalizedEase * weights.next3Ease +
+      normalizedAvgPoints * weights.avgPoints +
+      normalizedValue * weights.value +
+      normalizedOwnership * weights.ownership;
+
+    return Math.round(calculatedScore * 100) / 100;
   };
 
   const getScoreLabel = (score: number) => {

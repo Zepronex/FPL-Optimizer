@@ -1,5 +1,14 @@
 import axios from 'axios';
-import { Squad, AnalysisWeights, SquadAnalysis, EnrichedPlayer, PlayersResponse, PlayerSearchResult } from './types';
+import {
+  ApiResponse,
+  GeneratedTeamData,
+  Squad,
+  AnalysisWeights,
+  SquadAnalysis,
+  PlayersResponse,
+  PlayerSearchResult,
+  WeightPreset
+} from './types';
 
 const API_BASE_URL = '/api';
 
@@ -48,27 +57,27 @@ export const apiClient = {
   },
 
   // Analysis API
-  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<{ success: boolean; data?: SquadAnalysis; error?: string }> {
+  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<ApiResponse<SquadAnalysis>> {
     const response = await api.post('/analyze', { squad, weights });
     return response.data;
   },
 
-  async validateSquad(squad: Squad): Promise<{ success: boolean; data?: { valid: boolean; errors: string[] }; error?: string }> {
+  async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
     const response = await api.post('/analyze/validate', { squad });
     return response.data;
   },
 
-  async getDefaultWeights(): Promise<{ success: boolean; data?: AnalysisWeights; error?: string }> {
+  async getDefaultWeights(): Promise<ApiResponse<AnalysisWeights>> {
     const response = await api.get('/analyze/weights');
     return response.data;
   },
 
-  async getWeightPresets(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  async getWeightPresets(): Promise<ApiResponse<WeightPreset[]>> {
     const response = await api.get('/analyze/presets');
     return response.data;
   },
 
-  async generateTeam(strategy: string, budget: number = 100): Promise<{ success: boolean; data?: any; error?: string }> {
+  async generateTeam(strategy: string, budget: number = 100): Promise<ApiResponse<GeneratedTeamData>> {
     const response = await api.post('/generate', { strategy, budget });
     return response.data;
   },

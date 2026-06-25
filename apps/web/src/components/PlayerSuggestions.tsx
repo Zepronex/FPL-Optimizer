@@ -9,7 +9,7 @@ interface PlayerSuggestionsProps {
   onLoadMore: () => void;
 }
 
-const PlayerSuggestions = ({ suggestions, isLoading, onLoadMore }: PlayerSuggestionsProps) => {
+const PlayerSuggestions = ({ suggestions, isLoading }: PlayerSuggestionsProps) => {
   const [showAll, setShowAll] = useState(false);
   const displayedSuggestions = showAll ? suggestions : suggestions.slice(0, 5);
 

@@ -26,7 +26,7 @@ export const useWeights = () => {
       try {
         const parsed = JSON.parse(savedWeights);
         setWeights(parsed);
-      } catch (err) {
+      } catch {
         // Failed to parse saved weights, using defaults
       }
     }
@@ -40,7 +40,7 @@ export const useWeights = () => {
         if (response.success && response.data) {
           setPresets(response.data);
         }
-      } catch (err) {
+      } catch {
         // Failed to load presets
       }
     };
@@ -70,7 +70,7 @@ export const useWeights = () => {
       } else {
         setWeights(defaultWeights);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load default weights');
       setWeights(defaultWeights);
     } finally {
