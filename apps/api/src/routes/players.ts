@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { DataMerger } from '../lib/merge';
 import { FPLDataFetcher } from '../lib/fetchers/fpl';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Validation schemas
 const searchSchema = z.object({

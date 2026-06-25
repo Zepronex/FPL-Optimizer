@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { SquadAnalyzer } from '../lib/squad';
 import { ScoringService } from '../lib/scoring';
 import { AnalysisWeights } from '../types';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Validation schemas
 const squadSlotSchema = z.object({

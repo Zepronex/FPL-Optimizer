@@ -1,10 +1,81 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { DataMerger } from '../lib/merge';
 import { ScoringService } from '../lib/scoring';
-import { Squad, AnalysisWeights } from '../types';
+import { Squad, AnalysisWeights, EnrichedPlayer, Pos, SquadSlot } from '../types';
 
-const router = Router();
+const router: ExpressRouter = Router();
+
+type ScoredPlayer = EnrichedPlayer & { score: number };
+type PlayersByPosition = Record<Pos, ScoredPlayer[]>;
+type RosterPlayer = EnrichedPlayer & { position?: number };
+
+interface MLPlayerFeatures {
+  name?: string;
+  position?: number;
+  price?: number;
+  team?: number;
+  team_name?: string;
+}
+
+interface MLPlayerPrediction {
+  player_id: number;
+  predicted_points: number;
+  confidence: number;
+  features?: MLPlayerFeatures;
+}
+
+interface MLStrategyResponse {
+  players: MLPlayerPrediction[];
+  total_cost: number;
+  expected_points: number;
+  strategy_name?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isMLPlayerFeatures(value: unknown): value is MLPlayerFeatures {
+  if (value === undefined) return true;
+  if (!isRecord(value)) return false;
+
+  return (
+    (value.name === undefined || typeof value.name === 'string') &&
+    (value.position === undefined || typeof value.position === 'number') &&
+    (value.price === undefined || typeof value.price === 'number') &&
+    (value.team === undefined || typeof value.team === 'number') &&
+    (value.team_name === undefined || typeof value.team_name === 'string')
+  );
+}
+
+function isMLPlayerPrediction(value: unknown): value is MLPlayerPrediction {
+  return (
+    isRecord(value) &&
+    typeof value.player_id === 'number' &&
+    typeof value.predicted_points === 'number' &&
+    typeof value.confidence === 'number' &&
+    isMLPlayerFeatures(value.features)
+  );
+}
+
+function isMLStrategyResponse(value: unknown): value is MLStrategyResponse {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.players) &&
+    value.players.every(isMLPlayerPrediction) &&
+    typeof value.total_cost === 'number' &&
+    typeof value.expected_points === 'number' &&
+    (value.strategy_name === undefined || typeof value.strategy_name === 'string')
+  );
+}
+
+function fplPositionToPos(position: number | undefined): Pos {
+  if (position === 1) return 'GK';
+  if (position === 2) return 'DEF';
+  if (position === 3) return 'MID';
+  return 'FWD';
+}
 
 // Validation schemas
 const generateRequestSchema = z.object({
@@ -124,7 +195,11 @@ router.post('/', async (req, res) => {
           throw new Error(`ML service error: ${mlResponse.status}`);
         }
 
-        const mlData = await mlResponse.json();
+        const mlDataJson: unknown = await mlResponse.json();
+        if (!isMLStrategyResponse(mlDataJson)) {
+          throw new Error('Invalid ML service response');
+        }
+        const mlData = mlDataJson;
         
         // Convert ML response to our squad format
         const aiSquad = await convertMLResponseToSquad(mlData, allPlayers);
@@ -203,7 +278,7 @@ router.post('/', async (req, res) => {
 });
 
 // Team generation algorithm
-async function generateTeam(players: any[], weights: AnalysisWeights, budget: number, strategy: string): Promise<Squad> {
+async function generateTeam(players: EnrichedPlayer[], weights: AnalysisWeights, budget: number, strategy: string): Promise<Squad> {
   // Score all players
   const scoredPlayers = players.map(player => ({
     ...player,
@@ -214,7 +289,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
   const availablePlayers = scoredPlayers.filter(p => p.status === 'a');
 
   // Group by position
-  const playersByPosition = {
+  const playersByPosition: PlayersByPosition = {
     GK: availablePlayers.filter(p => p.pos === 'GK'),
     DEF: availablePlayers.filter(p => p.pos === 'DEF'),
     MID: availablePlayers.filter(p => p.pos === 'MID'),
@@ -234,7 +309,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
   };
 
   // Required positions for starting XI
-  const requiredPositions = [
+  const requiredPositions: Array<{ pos: Pos; count: number }> = [
     { pos: 'GK', count: 1 },
     { pos: 'DEF', count: 3 },
     { pos: 'MID', count: 3 },
@@ -244,7 +319,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
   // Add required positions first
   for (const { pos, count } of requiredPositions) {
     for (let i = 0; i < count; i++) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
+      const player = findBestPlayer(playersByPosition[pos], squad, squad.bank, strategy);
       if (player) {
         squad.startingXI.push({
           id: player.id,
@@ -260,20 +335,18 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
 
   // Fill remaining starting XI positions (flexible)
   const remainingSlots = 11 - squad.startingXI.length;
-  const flexiblePositions = ['DEF', 'MID', 'FWD'];
+  const flexiblePositions: Pos[] = ['DEF', 'MID', 'FWD'];
   
   for (let i = 0; i < remainingSlots; i++) {
-    let bestPlayer = null;
+    let bestPlayer: ScoredPlayer | null = null;
     let bestScore = -1;
-    let bestPos = '';
 
     // Find the best available player across flexible positions
     for (const pos of flexiblePositions) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
+      const player = findBestPlayer(playersByPosition[pos], squad, squad.bank, strategy);
       if (player && player.score > bestScore) {
         bestPlayer = player;
         bestScore = player.score;
-        bestPos = pos;
       }
     }
 
@@ -290,7 +363,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
   }
 
   // Add bench players (1 GK, 1 DEF, 1 MID, 1 FWD)
-  const benchPositions = [
+  const benchPositions: Array<{ pos: Pos; count: number }> = [
     { pos: 'GK', count: 1 },
     { pos: 'DEF', count: 1 },
     { pos: 'MID', count: 1 },
@@ -299,7 +372,7 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
 
   for (const { pos, count } of benchPositions) {
     for (let i = 0; i < count; i++) {
-      const player = findBestPlayer(playersByPosition[pos as keyof typeof playersByPosition], squad, squad.bank, strategy);
+      const player = findBestPlayer(playersByPosition[pos], squad, squad.bank, strategy);
       if (player) {
         squad.bench.push({
           id: player.id,
@@ -322,7 +395,12 @@ async function generateTeam(players: any[], weights: AnalysisWeights, budget: nu
 }
 
 // Helper function to find the best available player
-function findBestPlayer(players: any[], squad: Squad, availableBudget: number, strategy: string = 'balanced') {
+function findBestPlayer(
+  players: ScoredPlayer[],
+  squad: Squad,
+  availableBudget: number,
+  strategy: string = 'balanced'
+): ScoredPlayer | null {
   const usedPlayerIds = new Set([...squad.startingXI, ...squad.bench].map(p => p.id));
   
   // Filter available players
@@ -356,7 +434,7 @@ function findBestPlayer(players: any[], squad: Squad, availableBudget: number, s
 }
 
 // Budget optimization function to use remaining budget more effectively
-function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: string) {
+function optimizeBudgetUsage(squad: Squad, playersByPosition: PlayersByPosition, strategy: string) {
   const usedPlayerIds = new Set([...squad.startingXI, ...squad.bench].map(p => p.id));
   
   // Try to upgrade players in starting XI first
@@ -366,29 +444,29 @@ function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: str
     const availableBudget = squad.bank + currentPlayer.price;
     
     // Find the current player's score from the original data
-    const currentPlayerData = playersByPosition[position].find((p: any) => p.id === currentPlayer.id);
+    const currentPlayerData = playersByPosition[position].find((p) => p.id === currentPlayer.id);
     if (!currentPlayerData) continue; // Skip if current player not found
     
     // Find better players in the same position
-    const availablePlayers = playersByPosition[position].filter((p: any) => 
+    const availablePlayers = playersByPosition[position].filter((p) =>
       !usedPlayerIds.has(p.id) && 
       p.price <= availableBudget && 
       p.price > currentPlayer.price // Only consider more expensive players
     );
     
     if (availablePlayers.length > 0) {
-      let bestUpgrade = null;
+      let bestUpgrade: ScoredPlayer | null = null;
       
       if (strategy === 'premium') {
         // For premium, prioritize higher-priced players with good scores
-        bestUpgrade = availablePlayers.sort((a: any, b: any) => {
+        bestUpgrade = availablePlayers.sort((a, b) => {
           const scoreA = a.score * (1 + a.price * 0.1);
           const scoreB = b.score * (1 + b.price * 0.1);
           return scoreB - scoreA;
         })[0];
       } else {
         // For other strategies, prioritize score improvement
-        bestUpgrade = availablePlayers.sort((a: any, b: any) => b.score - a.score)[0];
+        bestUpgrade = availablePlayers.sort((a, b) => b.score - a.score)[0];
       }
       
       if (bestUpgrade && bestUpgrade.score > currentPlayerData.score) { // Check if upgrade has better score
@@ -411,7 +489,7 @@ function optimizeBudgetUsage(squad: Squad, playersByPosition: any, strategy: str
 }
 
 // Helper function to convert ML response to squad format
-async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise<Squad> {
+async function convertMLResponseToSquad(mlData: MLStrategyResponse, allPlayers: RosterPlayer[]): Promise<Squad> {
   const squad: Squad = {
     startingXI: [],
     bench: [],
@@ -419,7 +497,7 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
   };
 
   // Create a map of player IDs to player data
-  const playerMap = new Map();
+  const playerMap = new Map<number, RosterPlayer>();
   allPlayers.forEach(player => {
     playerMap.set(player.id, player);
   });
@@ -430,7 +508,7 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
     const prediction = mlData.players[i];
     const player = playerMap.get(prediction.player_id);
     
-    let squadSlot;
+    let squadSlot: SquadSlot;
     
     if (!player) {
       // If player not found in allPlayers, create a basic player object from ML data
@@ -480,7 +558,7 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
       // Convert to SquadSlot format
       squadSlot = {
         id: playerData.id,
-        pos: playerData.position === 1 ? 'GK' : playerData.position === 2 ? 'DEF' : playerData.position === 3 ? 'MID' : 'FWD',
+        pos: fplPositionToPos(playerData.position),
         price: playerData.price,
         name: playerData.name,
         teamShort: `T${playerData.team}`
@@ -490,7 +568,7 @@ async function convertMLResponseToSquad(mlData: any, allPlayers: any[]): Promise
       const mlPosition = prediction.features?.position || player.position;
       squadSlot = {
         id: player.id,
-        pos: mlPosition === 1 ? 'GK' : mlPosition === 2 ? 'DEF' : mlPosition === 3 ? 'MID' : 'FWD',
+        pos: fplPositionToPos(mlPosition),
         price: player.price,
         name: player.name,
         teamShort: player.teamShort || `T${player.teamId}`
