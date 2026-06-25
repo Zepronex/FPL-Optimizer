@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Squad, SquadSlot, EnrichedPlayer, Pos } from '../lib/types';
+import { Squad, SquadSlot, Pos } from '../lib/types';
 
 // Default empty squad state
 const initialSquad: Squad = {
@@ -23,10 +23,10 @@ const sortPlayersByPosition = (players: SquadSlot[]): SquadSlot[] => {
 
 export const useSquad = () => {
   const [squad, setSquad] = useState<Squad>(initialSquad);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const addPlayer = useCallback((player: EnrichedPlayer, isStarting: boolean = true) => {
+  const addPlayer = useCallback((player: SquadSlot, isStarting: boolean = true) => {
     // Clear any existing errors before attempting to add player
     setError(null);
     
@@ -141,7 +141,7 @@ export const useSquad = () => {
 
       setSquad(parsedSquad);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('Invalid JSON format');
     }
   }, []);

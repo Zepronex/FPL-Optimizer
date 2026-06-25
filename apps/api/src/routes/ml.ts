@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // Validation schemas
 const topPlayersRequestSchema = z.object({

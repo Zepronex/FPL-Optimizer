@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SquadAnalysis, AnalysisResult, Squad, AnalysisWeights, WeightPreset } from '../lib/types';
+import { AnalysisWeights, Pos, SquadAnalysis, Squad, SquadSlot } from '../lib/types';
 import PlayerRow from '../components/PlayerRow';
 import WeightsPanel from '../components/WeightsPanel';
 import { formatScore, formatPrice, getFormationString } from '../lib/format';
@@ -16,6 +16,63 @@ const AnalyzePage = () => {
   const [error, setError] = useState<string | null>(null);
   const weightsState = useWeights();
 
+  const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === 'object' && value !== null;
+  };
+
+  const isAnalysisWeights = (value: unknown): value is AnalysisWeights => {
+    if (!isRecord(value)) return false;
+    return ['form', 'xg90', 'xa90', 'expMin', 'next3Ease', 'avgPoints', 'value', 'ownership']
+      .every((key) => typeof value[key] === 'number');
+  };
+
+  const isPos = (value: unknown): value is Pos => {
+    return value === 'GK' || value === 'DEF' || value === 'MID' || value === 'FWD';
+  };
+
+  const isSquadSlot = (value: unknown): value is SquadSlot => {
+    return (
+      isRecord(value) &&
+      typeof value.id === 'number' &&
+      isPos(value.pos) &&
+      typeof value.price === 'number' &&
+      (value.name === undefined || typeof value.name === 'string') &&
+      (value.teamShort === undefined || typeof value.teamShort === 'string')
+    );
+  };
+
+  const isSquad = (value: unknown): value is Squad => {
+    return (
+      isRecord(value) &&
+      Array.isArray(value.startingXI) &&
+      value.startingXI.every(isSquadSlot) &&
+      Array.isArray(value.bench) &&
+      value.bench.every(isSquadSlot) &&
+      typeof value.bank === 'number'
+    );
+  };
+
+  const isSquadAnalysis = (value: unknown): value is SquadAnalysis => {
+    if (!isRecord(value)) return false;
+    return (
+      Array.isArray(value.results) &&
+      typeof value.averageScore === 'number' &&
+      typeof value.flaggedPlayers === 'number' &&
+      typeof value.bankLeft === 'number' &&
+      typeof value.totalScore === 'number' &&
+      typeof value.timestamp === 'string' &&
+      isAnalysisWeights(value.weights)
+    );
+  };
+
+  const extractSquadAnalysis = (value: unknown): SquadAnalysis | null => {
+    if (isSquadAnalysis(value)) return value;
+    if (isRecord(value) && value.success === true && isSquadAnalysis(value.data)) {
+      return value.data;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const loadAnalysis = () => {
       try {
@@ -23,11 +80,19 @@ const AnalyzePage = () => {
         const storedSquad = sessionStorage.getItem('fpl-original-squad');
         
         if (storedAnalysis && storedSquad) {
-          const parsed = JSON.parse(storedAnalysis);
-          const squadData = JSON.parse(storedSquad);
+          const parsed: unknown = JSON.parse(storedAnalysis);
+          const squadData: unknown = JSON.parse(storedSquad);
           
           // Extract the actual analysis data from the API response
-          const analysisData = parsed.success ? parsed.data : parsed;
+          const analysisData = extractSquadAnalysis(parsed);
+          if (!analysisData) {
+            setError('Failed to load analysis results.');
+            return;
+          }
+          if (!isSquad(squadData)) {
+            setError('Failed to load original squad.');
+            return;
+          }
           setAnalysis(analysisData);
           setOriginalSquad(squadData);
           
@@ -39,7 +104,7 @@ const AnalyzePage = () => {
         } else {
           setError('No analysis results found. Please analyze your squad first.');
         }
-      } catch (err) {
+      } catch {
         // Error loading analysis
         setError('Failed to load analysis results.');
       } finally {
@@ -68,10 +133,12 @@ const AnalyzePage = () => {
       // Store results in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
       
-      // Extract the actual analysis data from the API response
-      const analysisData = response.success ? response.data : response;
-      setAnalysis(analysisData);
-    } catch (error) {
+      if (response.success && response.data) {
+        setAnalysis(response.data);
+      } else {
+        setError(response.error || 'Re-analysis failed. Please try again.');
+      }
+    } catch {
       setError('Re-analysis failed. Please try again.');
     } finally {
       setIsReAnalyzing(false);
@@ -249,7 +316,7 @@ const AnalyzePage = () => {
               Starting XI ({getFormationString(startingXIResults.map(r => ({ pos: r.player.pos })))})
             </h2>
             <div className="space-y-3">
-              {startingXIResults.map((result, index) => (
+              {startingXIResults.map((result) => (
                 <PlayerRow
                   key={result.player.id}
                   result={result}

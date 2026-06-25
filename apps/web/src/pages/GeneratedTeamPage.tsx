@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Edit3, BarChart3 } from 'lucide-react';
-import { Squad, AnalysisWeights } from '../lib/types';
+import { ArrowLeft, Edit3, BarChart3 } from 'lucide-react';
+import { Squad, AnalysisWeights, SquadSlot } from '../lib/types';
 import { apiClient } from '../lib/api';
 import { formatPrice } from '../lib/format';
 import FootballPitch from '../components/FootballPitch';
 import SquadSummary from '../components/SquadSummary';
-import BudgetDisplay from '../components/BudgetDisplay';
 import BenchDisplay from '../components/BenchDisplay';
 
 interface GeneratedTeamData {
@@ -56,7 +55,7 @@ const GeneratedTeamPage = () => {
       
       // Navigate to analyze page
       navigate('/analyze');
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -107,8 +106,8 @@ const GeneratedTeamPage = () => {
   const strategyInfo = getStrategyInfo(generatedData.strategy);
 
   // Format startingXI for FootballPitch component (needs 11 slots with nulls)
-  const formatStartingXI = (squad: Squad) => {
-    const startingXI = [...squad.startingXI];
+  const formatStartingXI = (squad: Squad): (SquadSlot | null)[] => {
+    const startingXI: (SquadSlot | null)[] = [...squad.startingXI];
     // Pad with nulls to make it 11 slots
     while (startingXI.length < 11) {
       startingXI.push(null);

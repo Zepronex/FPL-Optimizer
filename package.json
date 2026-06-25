@@ -7,17 +7,17 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"pnpm run dev:api\" \"pnpm run dev:web\" \"pnpm run dev:ml\"",
-    "dev:api": "cd apps/api && pnpm run dev",
-    "dev:web": "cd apps/web && pnpm run dev",
-    "dev:ml": "cd apps/ml && source venv/bin/activate && python -m uvicorn main:app --reload --port 3002",
-    "build": "pnpm run build:api && pnpm run build:web",
-    "build:api": "cd apps/api && pnpm run build",
-    "build:web": "cd apps/web && pnpm run build",
+    "dev": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\" \"pnpm --filter @fpl-optimizer/ml run dev\"",
+    "dev:api": "pnpm --filter @fpl-optimizer/api run dev",
+    "dev:web": "pnpm --filter @fpl-optimizer/web run dev",
+    "dev:ml": "pnpm --filter @fpl-optimizer/ml run dev",
+    "build": "pnpm --filter @fpl-optimizer/api --filter @fpl-optimizer/web run build",
+    "build:api": "pnpm --filter @fpl-optimizer/api run build",
+    "build:web": "pnpm --filter @fpl-optimizer/web run build",
     "install:all": "pnpm install",
-    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules",
-    "train:ml": "cd apps/ml && source venv/bin/activate && python3 fpl_predictor.py",
-    "predict:ml": "cd apps/ml && source venv/bin/activate && python3 test_predictions.py"
+    "clean": "node -e \"const fs=require('fs'); for (const p of ['node_modules','apps/api/node_modules','apps/web/node_modules','apps/ml/node_modules','apps/api/dist','apps/web/dist','apps/web/.vite']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "train:ml": "pnpm --filter @fpl-optimizer/ml run train",
+    "predict:ml": "pnpm --filter @fpl-optimizer/ml run predict"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

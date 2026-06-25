@@ -227,7 +227,7 @@ const GenerateTeamPage = () => {
       } else {
         setError(response.error || 'Failed to generate team. Please try again.');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to generate team. Please try again.');
     } finally {
       setIsGenerating(false);

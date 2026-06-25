@@ -83,7 +83,19 @@ export type ApiResponse<T> = {
   success: boolean;
   data?: T;
   error?: string;
-  details?: any;
+  details?: unknown;
+};
+
+export type GeneratedTeamData = {
+  squad: Squad;
+  strategy: string;
+  weights: AnalysisWeights;
+  budget: number;
+  totalCost?: number;
+  expectedPoints?: number;
+  mlPredictions?: unknown[];
+  fallback?: boolean;
+  error?: string;
 };
 
 export type PlayerSearchResult = {

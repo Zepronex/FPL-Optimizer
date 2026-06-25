@@ -37,7 +37,7 @@ function App() {
       try {
         await apiClient.healthCheck();
         setIsApiConnected(true);
-      } catch (error) {
+      } catch {
         setIsApiConnected(false);
       }
     };

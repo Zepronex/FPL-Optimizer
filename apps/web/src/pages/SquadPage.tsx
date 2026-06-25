@@ -36,7 +36,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
         
         // Clear the session storage
         sessionStorage.removeItem('edit-generated-team');
-      } catch (error) {
+      } catch {
       }
     }
   }, [squadState]);
@@ -59,7 +59,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       
       // Navigate to analyze page
       navigate('/analyze');
-    } catch (error) {
+    } catch {
       // Analysis failed
       setAnalysisError('Analysis failed. Please try again.');
     } finally {

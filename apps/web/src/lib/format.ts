@@ -1,4 +1,4 @@
-import { PlayerLabel } from './types';
+import { PlayerLabel, Pos } from './types';
 
 export const formatPrice = (price: number): string => {
   // Round to avoid floating point precision issues
@@ -117,13 +117,16 @@ export const formatMinutes = (minutes: number): string => {
   return `${minutes}min`;
 };
 
-export const calculateTotalSquadValue = (squad: { startingXI: any[]; bench: any[]; bank: number }): number => {
+type PricedSlot = { price: number };
+type FormationSlot = { pos: Pos };
+
+export const calculateTotalSquadValue = (squad: { startingXI: PricedSlot[]; bench: PricedSlot[]; bank: number }): number => {
   const totalPlayerValue = [...squad.startingXI, ...squad.bench]
     .reduce((sum, slot) => sum + slot.price, 0);
   return totalPlayerValue + squad.bank;
 };
 
-export const isValidFormation = (startingXI: any[]): boolean => {
+export const isValidFormation = (startingXI: FormationSlot[]): boolean => {
   if (startingXI.length !== 11) return false;
   
   const positionCounts = startingXI.reduce((counts, slot) => {
@@ -144,7 +147,7 @@ export const isValidFormation = (startingXI: any[]): boolean => {
          fwdCount >= 1 && fwdCount <= 3;
 };
 
-export const getFormationString = (startingXI: any[]): string => {
+export const getFormationString = (startingXI: FormationSlot[]): string => {
   if (!isValidFormation(startingXI)) return 'Invalid';
   
   const positionCounts = startingXI.reduce((counts, slot) => {

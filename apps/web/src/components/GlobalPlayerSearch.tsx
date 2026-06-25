@@ -12,7 +12,7 @@ interface GlobalPlayerSearchProps {
   className?: string;
 }
 
-const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any player...", className = "" }: GlobalPlayerSearchProps) => {
+const GlobalPlayerSearch = ({ placeholder = "Search for any player...", className = "" }: GlobalPlayerSearchProps) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -52,7 +52,7 @@ const GlobalPlayerSearch = ({ onPlayerSelect, placeholder = "Search for any play
       if (response.success && response.data) {
         setResults(response.data.slice(0, 8)); // Limit to 8 results
       }
-    } catch (error) {
+    } catch {
     } finally {
       setIsLoading(false);
     }
