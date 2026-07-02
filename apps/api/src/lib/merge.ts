@@ -1,5 +1,4 @@
 import { FPLPlayer, FPLTeam, FPLFixture, EnrichedPlayer, Pos } from '../types';
-import { AdvancedStatsFetcher } from './fetchers/advanced';
 
 // Cache for enriched players data to avoid repeated API calls
 let enrichedPlayersCache: EnrichedPlayer[] | null = null;
@@ -25,13 +24,14 @@ export class DataMerger {
     }
     
     // Fetch fresh data
-    const [players, teams, fixtures] = await Promise.all([
+    const [players, teams, fixtures, currentGameweek] = await Promise.all([
       import('./fetchers/fpl').then(m => m.FPLDataFetcher.getPlayers()),
       import('./fetchers/fpl').then(m => m.FPLDataFetcher.getTeams()),
-      import('./fetchers/fpl').then(m => m.FPLDataFetcher.getFixtures())
+      import('./fetchers/fpl').then(m => m.FPLDataFetcher.getFixtures()),
+      import('./fetchers/fpl').then(m => m.FPLDataFetcher.getCurrentGameweek())
     ]);
 
-    const enrichedPlayers = await this.enrichPlayers(players, teams, fixtures);
+    const enrichedPlayers = await this.enrichPlayers(players, teams, fixtures, currentGameweek);
     
     // Update cache
     enrichedPlayersCache = enrichedPlayers;
@@ -47,32 +47,29 @@ export class DataMerger {
   }
 
   /**
-   * Enriches FPL player data with advanced statistics and team information
-   * This is the core data processing function that combines multiple data sources
+   * Enriches official FPL player data with team and fixture context.
    * 
    * @param players - Raw FPL player data from the official API
    * @param teams - Team information for mapping team IDs to names
    * @param fixtures - Fixture data for calculating difficulty ratings
-   * @returns Promise<EnrichedPlayer[]> - Players with enhanced statistics
+   * @returns Promise<EnrichedPlayer[]> - Players with official metrics and fixture context
    */
   static async enrichPlayers(
     players: FPLPlayer[],
     teams: FPLTeam[],
     fixtures: FPLFixture[],
-    currentGameweek: number = 1
+    currentGameweek: number
   ): Promise<EnrichedPlayer[]> {
     // Create lookup map for team data to avoid O(n) searches for each player
     const teamMap = new Map(teams.map(team => [team.id, team]));
-    const playerIds = players.map(p => p.id);
-    
-    // Fetch advanced statistics and fixture difficulty data in parallel
-    // This includes xG, xA, expected minutes, and fixture difficulty ratings
-    const advancedStats = await AdvancedStatsFetcher.getAdvancedStats(playerIds);
-    const fixtureDifficulty = await AdvancedStatsFetcher.getFixtureDifficulty();
 
     return players.map(player => {
       const team = teamMap.get(player.team);
-      const stats = advancedStats[player.id] || {};
+      const expectedGoals = parseMetric(player.expected_goals);
+      const expectedAssists = parseMetric(player.expected_assists);
+      const pointsPerGame = parseMetric(player.points_per_game);
+      const valueSeason = parseMetric(player.value_season);
+      const selectedByPercent = parseMetric(player.selected_by_percent);
       
       return {
         id: player.id,
@@ -81,16 +78,16 @@ export class DataMerger {
         teamShort: team?.short_name || 'UNK',
         pos: POSITION_MAP[player.element_type] || 'MID',
         price: player.now_cost / 10, // Convert from FPL format (prices stored as integers * 10)
-        form: parseFloat(player.form) || 0,
-        status: player.status as 'a' | 'd' | 'i' | 's',
-        xg90: stats.xG90 || 0,
-        xa90: stats.xA90 || 0,
-        expMin: stats.expMin || 0,
-        next3Ease: this.calculateNext3Ease(player.team, fixtures, fixtureDifficulty, currentGameweek),
+        form: parseMetric(player.form),
+        status: player.status,
+        xg90: per90(expectedGoals, player.minutes),
+        xa90: per90(expectedAssists, player.minutes),
+        expMin: averageMinutesPerStart(player.minutes, player.starts),
+        next3Ease: this.calculateNext3Ease(player.team, fixtures, currentGameweek),
         // Additional metrics
-        avgPoints: stats.avgPoints || 0,
-        value: stats.value || 0,
-        ownership: stats.ownership || 0
+        avgPoints: pointsPerGame,
+        value: valueSeason,
+        ownership: selectedByPercent
       };
     });
   }
@@ -98,22 +95,20 @@ export class DataMerger {
   private static calculateNext3Ease(
     teamId: number,
     fixtures: FPLFixture[],
-    fdr: Record<number, number>,
-    currentGameweek: number = 1
+    currentGameweek: number
   ): number {
     // Find next 3 upcoming fixtures for the team (home or away)
     // Only consider fixtures from current gameweek onwards
     const upcomingFixtures = fixtures
-      .filter(f => f.event >= currentGameweek)
+      .filter(f => f.event !== null && f.event >= currentGameweek)
       .filter(f => f.team_h === teamId || f.team_a === teamId)
       .slice(0, 3);
 
-    if (upcomingFixtures.length === 0) return 3; // Default medium difficulty
+    if (upcomingFixtures.length === 0) return 0;
 
     // Calculate average difficulty of next 3 fixtures
     const totalDifficulty = upcomingFixtures.reduce((sum, fixture) => {
       const isHome = fixture.team_h === teamId;
-      const opponentId = isHome ? fixture.team_a : fixture.team_h;
       const difficulty = isHome ? fixture.team_h_difficulty : fixture.team_a_difficulty;
       return sum + difficulty;
     }, 0);
@@ -216,7 +211,7 @@ export class DataMerger {
         import('./fetchers/fpl').then(m => m.FPLDataFetcher.getPlayers()),
         import('./fetchers/fpl').then(m => m.FPLDataFetcher.getTeams()),
         import('./fetchers/fpl').then(m => m.FPLDataFetcher.getFixtures()),
-        import('./fetchers/fpl').then(m => m.FPLDataFetcher.getCurrentGameweek()).catch(() => 1)
+        import('./fetchers/fpl').then(m => m.FPLDataFetcher.getCurrentGameweek())
       ]);
 
       return await this.enrichPlayers(players, teams, fixtures, currentGameweek);
@@ -225,4 +220,20 @@ export class DataMerger {
       throw error;
     }
   }
+}
+
+function parseMetric(value: string | undefined): number {
+  if (!value) return 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function per90(value: number, minutes: number): number {
+  if (minutes <= 0) return 0;
+  return Math.round((value / minutes) * 90 * 100) / 100;
+}
+
+function averageMinutesPerStart(minutes: number, starts: number | undefined): number {
+  if (!starts || starts <= 0) return 0;
+  return Math.min(90, Math.round((minutes / starts) * 100) / 100);
 }
