@@ -19,6 +19,17 @@ By default, ingestion writes these local files:
 
 The `data/` directory is gitignored. The manifest records source URLs, fetch timestamps, HTTP cache metadata when present, season, current event, schema version, and record counts.
 
+## Database Load
+
+After running migrations, the normalized output can be loaded into PostgreSQL:
+
+```powershell
+pnpm.cmd run db:migrate
+pnpm.cmd run db:load:fpl
+```
+
+The loader reads the normalized JSON files, records an ingestion run with source metadata and a deterministic snapshot hash, then upserts teams, players, gameweeks, and fixtures. See `docs/DATABASE.md` for the full local Postgres workflow and verification commands.
+
 ## Commands
 
 From the repository root:
