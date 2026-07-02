@@ -10,7 +10,7 @@ export type EnrichedPlayer = {
   pos: Pos;
   price: number;
   form: number;
-  status: 'a' | 'd' | 'i' | 's';
+  status: FPLStatus;
   xg90: number;
   xa90: number;
   expMin: number;
@@ -79,6 +79,7 @@ export type SquadAnalysis = {
 
 export type FPLPlayer = {
   id: number;
+  code?: number;
   first_name: string;
   second_name: string;
   web_name: string;
@@ -86,7 +87,14 @@ export type FPLPlayer = {
   element_type: number;
   now_cost: number;
   form: string;
-  status: string;
+  status: FPLStatus;
+  chance_of_playing_next_round?: number | null;
+  chance_of_playing_this_round?: number | null;
+  selected_by_percent?: string;
+  points_per_game?: string;
+  value_season?: string;
+  total_points?: number;
+  starts?: number;
   expected_goals: string;
   expected_assists: string;
   expected_goal_involvements: string;
@@ -96,16 +104,25 @@ export type FPLPlayer = {
 
 export type FPLTeam = {
   id: number;
+  code?: number;
   name: string;
   short_name: string;
 };
 
 export type FPLFixture = {
   id: number;
+  code?: number;
   team_h: number;
   team_a: number;
   team_h_difficulty: number;
   team_a_difficulty: number;
-  event: number;
+  team_h_score?: number | null;
+  team_a_score?: number | null;
+  event: number | null;
+  kickoff_time?: string | null;
+  started?: boolean;
+  finished?: boolean;
 };
+
+export type FPLStatus = 'a' | 'd' | 'i' | 'n' | 's' | 'u';
 

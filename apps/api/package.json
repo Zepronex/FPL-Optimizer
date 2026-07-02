@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "ingest:fpl": "tsx src/ingestion/run.ts",
+    "test": "tsx --test src/**/*.test.ts",
     "start": "node dist/index.js"
   },
   "dependencies": {

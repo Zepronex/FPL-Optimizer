@@ -113,7 +113,7 @@ export class ScoringService {
     const normalizedXG = Math.min(player.xg90 * 20, 10); // Scale xG90 (0-0.5 -> 0-10)
     const normalizedXA = Math.min(player.xa90 * 25, 10); // Scale xA90 (0-0.4 -> 0-10)
     const normalizedMinutes = (player.expMin / 90) * 10; // Minutes as percentage of 90
-    const normalizedEase = (6 - player.next3Ease) * 2; // Invert difficulty (1-5 -> 10-2)
+    const normalizedEase = player.next3Ease > 0 ? (6 - player.next3Ease) * 2 : 0; // Invert difficulty (1-5 -> 10-2)
     
     // Additional metrics normalization for enhanced scoring
     const normalizedAvgPoints = Math.min(player.avgPoints * 0.5, 10); // Scale avg points (typically 0-20)
@@ -137,7 +137,7 @@ export class ScoringService {
 
   static getPlayerLabel(score: number, player: EnrichedPlayer): PlayerLabel {
     // Check if player is injured, suspended, or doubtful
-    if (player.status === 'i' || player.status === 's' || player.status === 'd') {
+    if (player.status !== 'a') {
       return 'not-playing';
     }
     

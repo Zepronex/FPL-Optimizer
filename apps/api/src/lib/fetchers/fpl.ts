@@ -77,11 +77,14 @@ export class FPLDataFetcher {
     try {
       const data = await makeRequest(`${FPL_API_BASE}/bootstrap-static/`);
       const currentGw = data.current_event;
+      if (typeof currentGw !== 'number') {
+        throw new Error('Current gameweek missing from FPL bootstrap data');
+      }
       CacheService.setCurrentGameweek(currentGw);
       return currentGw;
     } catch (error) {
       // Failed to fetch current gameweek
-      return 1; // Fallback
+      throw new Error('Failed to fetch current gameweek');
     }
   }
 
