@@ -62,6 +62,12 @@ htmlcov/
 
 # ML and local data artifacts
 data/
+data/lakehouse/
+**/_spark_metadata/
+**/_delta_log/
+**/checkpoint/
+**/checkpoints/
+**/.spark-staging/
 models/
 **/models/
 *.pkl
