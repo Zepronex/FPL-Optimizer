@@ -66,11 +66,18 @@ class DatabricksPipelineTransformTests(unittest.TestCase):
         self.assertEqual(len(gold['player_gameweek_features']), 2)
         alpha = gold['player_gameweek_features'][0]
         self.assertEqual(alpha['player_id'], 1)
+        self.assertEqual(alpha['team_name'], 'Arsenal')
         self.assertEqual(alpha['upcoming_gameweek_id'], 2)
         self.assertEqual(alpha['home_away'], 'H')
         self.assertEqual(alpha['fixture_difficulty'], 2)
+        self.assertEqual(alpha['recent_points_average'], 6.2)
+        self.assertEqual(alpha['season_points_average'], 7.1)
+        self.assertEqual(alpha['season_minutes_average'], 0.0)
+        self.assertEqual(alpha['rolling_points_average'], 6.2)
+        self.assertEqual(alpha['rolling_minutes_average'], 0.0)
         self.assertNotIn('team_h_score', alpha)
         self.assertNotIn('team_a_score', alpha)
+        self.assertNotIn('target_points', alpha)
 
     def test_validation_rejects_manifest_count_mismatch(self) -> None:
         dataset = sample_dataset()
