@@ -9,6 +9,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:load:fpl": "tsx src/db/load-fpl.ts",
     "ingest:fpl": "tsx src/ingestion/run.ts",
+    "ingest:fpl:history": "tsx src/ingestion/run-history.ts",
     "test": "tsx --test src/**/*.test.ts",
     "start": "node dist/index.js"
   },
