@@ -10,6 +10,8 @@ import { analyzeRouter } from './routes/analyze';
 import { suggestionsRouter } from './routes/suggestions';
 import { generateRouter } from './routes/generate';
 import { mlRouter } from './routes/ml';
+import { predictionsRouter } from './routes/predictions';
+import { modelRouter } from './routes/model';
 
 dotenv.config();
 
@@ -84,6 +86,8 @@ app.use('/api/analyze', analyzeRouter);
 app.use('/api/suggestions', suggestionsRouter);
 app.use('/api/generate', generateRouter);
 app.use('/api/ml', mlRouter);
+app.use('/api/predictions', predictionsRouter);
+app.use('/api/model', modelRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
