@@ -158,7 +158,7 @@ def status_availability_factor(row: JsonObject) -> float:
     chance = row.get('chance_of_playing_next_round')
     if isinstance(chance, (int, float)):
         return max(0.0, min(1.0, float(chance) / 100))
-    if row['availability_status'] == 'a':
+    if row['availability_status'] in {'a', 'unknown'}:
         return 1.0
     return 0.70
 

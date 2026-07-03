@@ -7,6 +7,11 @@ from pipelines.databricks.cli import resolve_repo_path
 from pipelines.expected_points.evaluation import walk_forward_backtest
 from pipelines.expected_points.io import read_jsonl, write_json, write_jsonl
 
+TRAINING_ROWS_HELP = (
+    'Expected non-empty training rows at {path}. '
+    'Run pnpm.cmd run ingest:fpl:history, then pnpm.cmd run pipeline:features.'
+)
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
@@ -14,7 +19,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     output_path = resolve_repo_path(args.output)
     predictions_output_path = resolve_repo_path(args.predictions_output)
 
+    if not input_path.exists():
+        raise FileNotFoundError(TRAINING_ROWS_HELP.format(path=input_path))
+
     rows = read_jsonl(input_path)
+    if not rows:
+        raise ValueError(TRAINING_ROWS_HELP.format(path=input_path))
+
     report = walk_forward_backtest(rows, min_training_gameweeks=args.min_training_gameweeks)
     predictions = list(report.pop('predictions'))
 

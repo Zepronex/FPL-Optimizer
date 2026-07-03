@@ -8,13 +8,24 @@ from pipelines.expected_points.baseline import RuleBasedExpectedPointsModel
 from pipelines.expected_points.features import validate_training_feature_row
 from pipelines.expected_points.io import read_jsonl, write_json
 
+TRAINING_ROWS_HELP = (
+    'Expected non-empty training rows at {path}. '
+    'Run pnpm.cmd run ingest:fpl:history, then pnpm.cmd run pipeline:features.'
+)
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     input_path = resolve_repo_path(args.input)
     output_path = resolve_repo_path(args.output)
 
+    if not input_path.exists():
+        raise FileNotFoundError(TRAINING_ROWS_HELP.format(path=input_path))
+
     rows = read_jsonl(input_path)
+    if not rows:
+        raise ValueError(TRAINING_ROWS_HELP.format(path=input_path))
+
     for row in rows:
         validate_training_feature_row(row)
 
