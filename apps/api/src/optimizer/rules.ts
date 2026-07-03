@@ -18,6 +18,16 @@ export const SQUAD_POSITION_COUNTS: Record<Pos, number> = {
   FWD: 3
 };
 
+export const VALID_FORMATION_ORDER: readonly Formation[] = [
+  '3-4-3',
+  '3-5-2',
+  '4-4-2',
+  '4-3-3',
+  '4-5-1',
+  '5-3-2',
+  '5-4-1'
+];
+
 export const VALID_FORMATIONS: Record<Formation, Record<Pos, number>> = {
   '3-4-3': { GK: 1, DEF: 3, MID: 4, FWD: 3 },
   '3-5-2': { GK: 1, DEF: 3, MID: 5, FWD: 2 },
