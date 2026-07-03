@@ -28,9 +28,9 @@ Bronze writes a source-preserving landing area under `data/lakehouse/bronze`. It
 
 Silver writes clean typed player, team, fixture and gameweek tables under `data/lakehouse/silver`. It keeps the normalized fixture contract in a typed shape for historical analysis while Gold is responsible for excluding result columns from feature rows.
 
-Gold writes feature-ready tables under `data/lakehouse/gold`. The first table, `team_fixture_features`, contains upcoming fixture context. The second table, `player_gameweek_features`, joins players to their next gameweek fixture context with columns such as player id, player name, position, team, price, availability status, total points, form, selected-by percentage, minutes, fixture difficulty, home/away and source snapshot hash.
+Gold writes feature-ready tables under `data/lakehouse/gold`. The first table, `team_fixture_features`, contains upcoming fixture context. The second table, `player_gameweek_features`, joins players to their next gameweek fixture context with columns such as player id, player name, position, team name, price, availability status, total points, form, selected-by percentage, minutes, pre-deadline season averages, fixture difficulty, home/away and source snapshot hash.
 
-Gold is a feature preparation layer only. Future expected-points prediction and backtesting can consume these rows while keeping the snapshot hash available for reproducibility and leakage checks.
+Gold prediction rows do not include target points, fixture scores, or other post-gameweek outcomes. Expected-points training and backtesting consume these rows through the separate baseline pipeline documented in [Expected-Points Baseline](EXPECTED_POINTS_BASELINE.md), keeping the snapshot hash available for reproducibility and leakage checks.
 
 ## Local Commands
 
@@ -40,6 +40,7 @@ Default local execution uses Python only and writes JSONL files. It is intended 
 pnpm.cmd run pipeline:bronze
 pnpm.cmd run pipeline:silver
 pnpm.cmd run pipeline:gold
+pnpm.cmd run pipeline:features
 pnpm.cmd run pipeline:all
 ```
 

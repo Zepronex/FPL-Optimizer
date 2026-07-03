@@ -45,6 +45,14 @@ The tool uses advanced metrics to score players:
 - **Fixture Difficulty**: Upcoming match difficulty
 - **Average Points**: Historical FPL performance
 
+## ScoutIQ Data Pipeline
+
+The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature preparation, and a simple expected-points baseline. See:
+
+- [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
+- [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
+- [PostgreSQL Foundation](docs/DATABASE.md)
+
 ## Project Structure
 
 ```
