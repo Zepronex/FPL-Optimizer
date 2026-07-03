@@ -8,6 +8,9 @@ export type DatabaseConfig = {
   workspaceRoot: string;
   migrationsDir: string;
   defaultFplDataDir: string;
+  defaultPredictionOutputPath: string;
+  defaultExpectedPointsModelPath: string;
+  defaultExpectedPointsEvaluationPath: string;
 };
 
 let envFilesLoaded = false;
@@ -27,7 +30,25 @@ export function readDatabaseConfig(
     ssl: parseBoolean(env.DATABASE_SSL),
     workspaceRoot,
     migrationsDir: path.join(workspaceRoot, 'db', 'migrations'),
-    defaultFplDataDir: path.join(workspaceRoot, 'data', 'fpl', 'latest')
+    defaultFplDataDir: path.join(workspaceRoot, 'data', 'fpl', 'latest'),
+    defaultPredictionOutputPath: path.join(
+      workspaceRoot,
+      'data',
+      'predictions',
+      'expected_points_latest.jsonl'
+    ),
+    defaultExpectedPointsModelPath: path.join(
+      workspaceRoot,
+      'data',
+      'models',
+      'expected_points_baseline.json'
+    ),
+    defaultExpectedPointsEvaluationPath: path.join(
+      workspaceRoot,
+      'data',
+      'evaluation',
+      'expected_points_backtest.json'
+    )
   };
 }
 
