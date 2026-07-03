@@ -9,11 +9,14 @@ from pipelines.expected_points.baseline import RuleBasedExpectedPointsModel
 from pipelines.expected_points.evaluation import calculate_prediction_metrics, split_train_test_for_gameweek
 from pipelines.expected_points.features import (
     PREDICTION_FEATURE_COLUMNS,
+    build_expected_points_feature_files,
     build_historical_training_rows,
     build_prediction_feature_rows,
     discover_snapshot_dirs,
     validate_prediction_feature_row
 )
+from pipelines.expected_points.backtest import main as backtest_main
+from pipelines.expected_points.train import main as train_main
 
 
 class ExpectedPointsFoundationTests(unittest.TestCase):
@@ -41,6 +44,24 @@ class ExpectedPointsFoundationTests(unittest.TestCase):
         self.assertEqual(rows[0]['rolling_points_average'], 6.2)
         self.assertEqual(rows[1]['rolling_points_average'], 7.0)
         self.assertEqual(rows[2]['rolling_points_average'], 4.5)
+
+    def test_official_history_rows_build_training_and_latest_prediction_features(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            input_dir = root / 'latest'
+            write_dataset(input_dir, history_feature_dataset())
+            history_path = root / 'history.json'
+            history_path.write_text(f'{json.dumps(history_payload(), indent=2)}\n', encoding='utf-8')
+
+            result = build_expected_points_feature_files(input_dir, history_path)
+
+        self.assertEqual([row['upcoming_gameweek_id'] for row in result.training_rows], [1, 2, 3])
+        self.assertEqual([row['target_points'] for row in result.training_rows], [5, 7, 2])
+        self.assertEqual(result.training_rows[1]['total_points'], 5)
+        self.assertEqual(result.training_rows[1]['rolling_points_average'], 5.0)
+        self.assertEqual(result.prediction_source, 'latest-historical-gameweek')
+        self.assertEqual(len(result.prediction_rows), 1)
+        self.assertNotIn('target_points', result.prediction_rows[0])
 
     def test_train_test_split_excludes_target_and_future_gameweeks(self) -> None:
         rows = [
@@ -81,6 +102,15 @@ class ExpectedPointsFoundationTests(unittest.TestCase):
         self.assertEqual(metrics['mae'], 2.0)
         self.assertAlmostEqual(metrics['rmse'], 2.2361)
 
+    def test_missing_training_rows_have_actionable_train_and_backtest_errors(self) -> None:
+        missing_path = 'missing-training-rows.jsonl'
+
+        with self.assertRaisesRegex(FileNotFoundError, 'Run pnpm.cmd run ingest:fpl:history, then pnpm.cmd run pipeline:features'):
+            train_main(['--input', missing_path])
+
+        with self.assertRaisesRegex(FileNotFoundError, 'Run pnpm.cmd run ingest:fpl:history, then pnpm.cmd run pipeline:features'):
+            backtest_main(['--input', missing_path])
+
 
 def training_row(gameweek: int, *, target_points: int) -> dict[str, object]:
     row = build_prediction_feature_rows(snapshot_dataset(gameweek - 1, gameweek, total_points=10, minutes=180))[0]
@@ -95,6 +125,10 @@ def training_row(gameweek: int, *, target_points: int) -> dict[str, object]:
 
 def write_snapshot(path: Path, *, checked_gameweek: int, target_gameweek: int, total_points: int, minutes: int) -> None:
     dataset = snapshot_dataset(checked_gameweek, target_gameweek, total_points=total_points, minutes=minutes)
+    write_dataset(path, dataset)
+
+
+def write_dataset(path: Path, dataset: dict[str, object]) -> None:
     path.mkdir(parents=True)
     for file_name, value in {
         'manifest.json': dataset['manifest'],
@@ -104,6 +138,99 @@ def write_snapshot(path: Path, *, checked_gameweek: int, target_gameweek: int, t
         'fixtures.json': dataset['fixtures']
     }.items():
         (path / file_name).write_text(f'{json.dumps(value, indent=2)}\n', encoding='utf-8')
+
+
+def history_payload() -> dict[str, object]:
+    return {
+        'schemaVersion': 1,
+        'generatedAt': '2026-08-14T18:00:00.000Z',
+        'source': {
+            'name': 'element-summary',
+            'urlTemplate': 'https://fantasy.premierleague.com/api/element-summary/{player_id}/',
+            'fetchedAt': '2026-08-14T17:55:00.000Z'
+        },
+        'playerCount': 1,
+        'rowCount': 3,
+        'rows': [
+            {
+                'playerId': 1,
+                'fixtureId': 101,
+                'gameweekId': 1,
+                'opponentTeamId': 20,
+                'wasHome': True,
+                'kickoffTime': '2026-08-11T11:30:00.000Z',
+                'totalPoints': 5,
+                'minutes': 90,
+                'price': 12.5,
+                'selected': 1000000
+            },
+            {
+                'playerId': 1,
+                'fixtureId': 102,
+                'gameweekId': 2,
+                'opponentTeamId': 20,
+                'wasHome': True,
+                'kickoffTime': '2026-08-12T11:30:00.000Z',
+                'totalPoints': 7,
+                'minutes': 80,
+                'price': 12.6,
+                'selected': 1100000
+            },
+            {
+                'playerId': 1,
+                'fixtureId': 103,
+                'gameweekId': 3,
+                'opponentTeamId': 20,
+                'wasHome': True,
+                'kickoffTime': '2026-08-13T11:30:00.000Z',
+                'totalPoints': 2,
+                'minutes': 70,
+                'price': 12.6,
+                'selected': 1200000
+            }
+        ]
+    }
+
+
+def history_feature_dataset() -> dict[str, object]:
+    dataset = snapshot_dataset(checked_gameweek=3, target_gameweek=4, total_points=14, minutes=240)
+    dataset['events'] = [
+        {
+            **event,
+            'finished': True,
+            'dataChecked': True,
+            'isCurrent': event['id'] == 3,
+            'isNext': False
+        }
+        for event in dataset['events']
+    ]
+    dataset['fixtures'] = [
+        {
+            'id': fixture_id,
+            'code': fixture_id,
+            'eventId': gameweek_id,
+            'kickoffTime': f'2026-08-{10 + gameweek_id:02d}T11:30:00.000Z',
+            'teamHId': 1,
+            'teamAId': 20,
+            'teamHScore': 1,
+            'teamAScore': 0,
+            'teamHDifficulty': 2,
+            'teamADifficulty': 4,
+            'started': True,
+            'finished': True
+        }
+        for fixture_id, gameweek_id in ((101, 1), (102, 2), (103, 3))
+    ]
+    dataset['manifest'] = {
+        **dataset['manifest'],
+        'recordCounts': {
+            'players': 1,
+            'teams': 2,
+            'events': len(dataset['events']),
+            'fixtures': len(dataset['fixtures'])
+        }
+    }
+    return dataset
 
 
 def snapshot_dataset(
