@@ -80,6 +80,17 @@ pnpm.cmd run db:load:fpl -- --input data/fpl/2026-27
 
 The loader validates the normalized files, records an `ingestion_runs` row with source metadata and a deterministic snapshot hash, then upserts teams, players, gameweeks, and fixtures. Re-running the same input updates existing rows instead of creating duplicates.
 
+## Expected-Points Tables
+
+Migration `002_expected_points_foundation.sql` adds serving tables for baseline model run metadata and player expected-points outputs:
+
+```text
+expected_points_model_runs
+player_expected_points
+```
+
+The local Day 5 training and backtesting scripts still write artifacts under gitignored `data/` paths. A later serving loader can insert trained model run metadata and predictions into these tables while preserving `source_snapshot_hash` for reproducibility.
+
 ## Verify The Result
 
 The loader prints the loaded counts and snapshot hash. The counts should match `data/fpl/latest/manifest.json`.

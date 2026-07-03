@@ -62,6 +62,12 @@ htmlcov/
 
 # ML and local data artifacts
 data/
+data/evaluation/
+data/features/
+data/fpl/history/
+data/models/
+data/predictions/
+data/tmp/
 data/lakehouse/
 **/_spark_metadata/
 **/_delta_log/
