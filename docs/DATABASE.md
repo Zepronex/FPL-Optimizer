@@ -89,7 +89,22 @@ expected_points_model_runs
 player_expected_points
 ```
 
-The local Day 5 training and backtesting scripts still write artifacts under gitignored `data/` paths. A later serving loader can insert trained model run metadata and predictions into these tables while preserving `source_snapshot_hash` for reproducibility.
+Migration `003_prediction_serving.sql` adds the Day 6 serving tables used by the backend API:
+
+```text
+prediction_runs
+player_predictions
+model_evaluations
+```
+
+The local Day 5 training and backtesting scripts still write artifacts under gitignored `data/` paths. Load those outputs into PostgreSQL with:
+
+```powershell
+pnpm.cmd run db:load:predictions
+.\scripts\load-predictions-db.ps1
+```
+
+See `docs/PREDICTION_SERVING.md` for the prediction loader, table contracts, and API endpoints.
 
 ## Verify The Result
 

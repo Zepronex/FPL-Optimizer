@@ -16,6 +16,7 @@
     "build:web": "pnpm --filter @fpl-optimizer/web run build",
     "db:migrate": "pnpm --filter @fpl-optimizer/api run db:migrate",
     "db:load:fpl": "pnpm --filter @fpl-optimizer/api run db:load:fpl",
+    "db:load:predictions": "pnpm --filter @fpl-optimizer/api run db:load:predictions",
     "ingest:fpl": "pnpm --filter @fpl-optimizer/api run ingest:fpl",
     "ingest:fpl:history": "pnpm --filter @fpl-optimizer/api run ingest:fpl:history",
     "ingest:fpl:windows": "powershell -ExecutionPolicy Bypass -File ./scripts/ingest-fpl.ps1",

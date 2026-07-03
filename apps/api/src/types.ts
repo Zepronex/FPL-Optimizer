@@ -126,3 +126,67 @@ export type FPLFixture = {
 
 export type FPLStatus = 'a' | 'd' | 'i' | 'n' | 's' | 'u';
 
+export type PredictionRun = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionFileHash: string;
+  modelArtifactHash: string | null;
+  featureSnapshotHash: string | null;
+  sourceSnapshotHash: string | null;
+  sourceGeneratedAt: string | null;
+  sourceRunId: number | null;
+  predictionCount: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PlayerPrediction = {
+  id: number;
+  predictionRunId: number;
+  playerId: number;
+  playerName: string;
+  position: Pos;
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  targetGameweekId: number;
+  fixtureId: number | null;
+  predictedPoints: number;
+  baselinePredictedPoints: number | null;
+  confidence: number | null;
+  uncertainty: number | null;
+  sourceSnapshotHash: string | null;
+  featureSnapshotHash: string | null;
+  featureValues: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PredictionSummary = {
+  run: PredictionRun;
+  predictions: PlayerPrediction[];
+  count: number;
+};
+
+export type ModelEvaluation = {
+  id: number;
+  evaluationKey: string;
+  modelName: string;
+  modelVersion: string;
+  evaluationType: string;
+  predictionCount: number;
+  metrics: Record<string, unknown>;
+  baselineMetrics: Record<string, unknown> | null;
+  metricsByPosition: Record<string, unknown> | null;
+  baselineMetricsByPosition: Record<string, unknown> | null;
+  evaluatedGameweeks: number[];
+  skippedGameweeks: number[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
