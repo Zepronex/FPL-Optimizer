@@ -106,6 +106,14 @@ pnpm.cmd run model:backtest
 pnpm.cmd run model:predict
 ```
 
+Load generated predictions into PostgreSQL after migrations and normalized FPL data are loaded:
+
+```powershell
+pnpm.cmd run db:migrate
+pnpm.cmd run db:load:fpl
+pnpm.cmd run db:load:predictions
+```
+
 Run the model tests:
 
 ```powershell
@@ -122,6 +130,8 @@ data/models/
 data/evaluation/
 data/predictions/
 ```
+
+The Day 6 serving flow is documented in `docs/PREDICTION_SERVING.md`.
 
 ## Future Optimizer Handoff
 
