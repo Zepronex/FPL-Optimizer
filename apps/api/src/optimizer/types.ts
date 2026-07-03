@@ -99,6 +99,13 @@ export type TransferRecommendation = {
   validation: ConstraintValidationResult;
 };
 
+export type TransferOptimizationInput = {
+  currentSquad: Squad;
+  availablePlayers: PlayerCandidate[];
+  freeTransfers: number;
+  maxHits?: number;
+};
+
 export type OptimizerResult = {
   squad: Squad;
   startingXi: StartingXI;
