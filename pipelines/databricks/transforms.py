@@ -180,15 +180,21 @@ GOLD_TABLE_COLUMNS: dict[str, tuple[str, ...]] = {
         'player_name',
         'position',
         'team_id',
-        'team',
+        'team_name',
         'price',
         'availability_status',
         'chance_of_playing_next_round',
         'chance_of_playing_this_round',
         'total_points',
         'form',
+        'recent_points_average',
         'selected_by_percent',
         'minutes',
+        'completed_gameweeks',
+        'season_points_average',
+        'season_minutes_average',
+        'rolling_points_average',
+        'rolling_minutes_average',
         'points_per_game',
         'value_season',
         'fixture_id',
@@ -492,6 +498,7 @@ def build_gold_tables(silver_tables: dict[str, list[JsonObject]]) -> dict[str, l
     teams_by_id = {team['team_id']: team for team in teams}
 
     next_gameweek_id = select_next_gameweek_id(gameweeks, fixtures)
+    completed_gameweeks = count_completed_gameweeks_before(gameweeks, next_gameweek_id)
     upcoming_fixtures = [
         fixture
         for fixture in fixtures
@@ -520,15 +527,25 @@ def build_gold_tables(silver_tables: dict[str, list[JsonObject]]) -> dict[str, l
                         'player_name': player['player_name'],
                         'position': player['position'],
                         'team_id': player['team_id'],
-                        'team': player['team_name'],
+                        'team_name': player['team_name'],
                         'price': player['price'],
                         'availability_status': player['status'],
                         'chance_of_playing_next_round': player['chance_of_playing_next_round'],
                         'chance_of_playing_this_round': player['chance_of_playing_this_round'],
                         'total_points': player['total_points'],
                         'form': player['form'],
+                        'recent_points_average': player['form'],
                         'selected_by_percent': player['selected_by_percent'],
                         'minutes': player['minutes'],
+                        'completed_gameweeks': completed_gameweeks,
+                        'season_points_average': average_or_fallback(
+                            player['total_points'],
+                            completed_gameweeks,
+                            player['points_per_game']
+                        ),
+                        'season_minutes_average': average_or_fallback(player['minutes'], completed_gameweeks, 0),
+                        'rolling_points_average': player['form'],
+                        'rolling_minutes_average': average_or_fallback(player['minutes'], completed_gameweeks, 0),
                         'points_per_game': player['points_per_game'],
                         'value_season': player['value_season'],
                         'fixture_id': fixture_feature['fixture_id'],
@@ -662,6 +679,22 @@ def select_next_gameweek_id(gameweeks: list[JsonObject], fixtures: list[JsonObje
             return future_gameweeks[0]
 
     return upcoming_fixture_gameweeks[0] if upcoming_fixture_gameweeks else None
+
+
+def count_completed_gameweeks_before(gameweeks: list[JsonObject], target_gameweek_id: int | None) -> int:
+    return len([
+        gameweek
+        for gameweek in gameweeks
+        if gameweek['finished']
+        and gameweek['data_checked']
+        and (target_gameweek_id is None or gameweek['gameweek_id'] < target_gameweek_id)
+    ])
+
+
+def average_or_fallback(value: int | float | None, count: int, fallback: int | float) -> float:
+    if count <= 0 or value is None:
+        return float(fallback)
+    return round(float(value) / count, 4)
 
 
 def build_team_fixture_feature_rows(fixture: JsonObject, teams_by_id: dict[int, JsonObject]) -> list[JsonObject]:
