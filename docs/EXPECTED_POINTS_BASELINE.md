@@ -4,7 +4,11 @@ ScoutIQ's Day 5 prediction foundation adds a transparent expected-points baselin
 
 ## Feature Rows
 
-Current prediction rows come from Gold `player_gameweek_features`. They are player-gameweek fixture rows for the next available gameweek and include:
+Prediction rows are written to `data/features/player_gameweek_features.jsonl`. They normally come from Gold `player_gameweek_features` and represent player-fixture rows for the next available gameweek.
+
+When a snapshot has no unstarted future fixtures, for example after a season has finished, `pipeline:features` can write the latest historical gameweek feature slice from official player history instead. That fallback exists for local model validation only; it is still deterministic official data, but it is not a live upcoming-gameweek recommendation input.
+
+Prediction rows include:
 
 - Player identity: `player_id`, `player_name`, `position`
 - Team context: `team_id`, `team_name`, opponent, home/away
@@ -13,15 +17,19 @@ Current prediction rows come from Gold `player_gameweek_features`. They are play
 - Pre-deadline aggregates: completed gameweeks, season points average, season minutes average, recent points average
 - Reproducibility metadata: `source_snapshot_hash`, `source_generated_at`, `season`
 
-Gold prediction feature rows intentionally exclude outcome columns such as fixture scores and `target_points`.
+Prediction feature rows intentionally exclude outcome columns such as fixture scores and `target_points`.
 
-Historical training rows are built from multiple deterministic normalized FPL snapshots. For each pre-gameweek snapshot, the feature builder only attaches a `target_points` value when it can find a later snapshot whose latest checked gameweek exactly matches the target gameweek. If a snapshot skips over the target gameweek, the row is skipped because the single-gameweek target cannot be isolated safely.
+Training rows are written to `data/features/player_gameweek_training_rows.jsonl`. They include the same feature columns plus `target_points` and `target_minutes`.
+
+The default training path uses deterministic official player history from `data/fpl/history/player_gameweek_history.json`, produced from each player's public FPL `element-summary/{player_id}` endpoint. The older multi-snapshot path is still available with `pipeline:features -- --historical` when pre-gameweek and post-gameweek normalized snapshots have been archived.
 
 ## Target
 
 The target is actual FPL points scored by a player in `upcoming_gameweek_id`.
 
-For historical rows this is calculated as:
+For official player-history rows this comes directly from the public FPL player gameweek history record.
+
+For archived snapshot rows this is calculated as:
 
 ```text
 future_checked_snapshot.player.totalPoints - pre_gameweek_snapshot.player.totalPoints
@@ -32,7 +40,8 @@ future_checked_snapshot.player.totalPoints - pre_gameweek_snapshot.player.totalP
 ## Leakage Controls
 
 - Prediction rows are generated from pre-deadline snapshot data only.
-- Historical targets are attached only from a later checked snapshot for the exact target gameweek.
+- Official player-history feature values are calculated from prior player gameweeks only; the target gameweek's points and minutes are target columns, not model inputs.
+- Archived snapshot targets are attached only from a later checked snapshot for the exact target gameweek.
 - Rolling point and minute averages are calculated from prior player gameweeks only. The current target gameweek is not included in its own features.
 - Walk-forward backtests train on rows with `upcoming_gameweek_id` strictly less than the evaluated target gameweek.
 - Fixture result columns are not included in Gold model feature rows.
@@ -53,39 +62,47 @@ The comparison baseline is recent average points, using historical rolling point
 
 ## Local Commands
 
-Refresh deterministic ingestion first when needed:
+Run the local setup in this order:
+
+```powershell
+pnpm.cmd install
+pnpm.cmd run ingest:fpl
+pnpm.cmd run ingest:fpl:history
+pnpm.cmd run pipeline:features
+pnpm.cmd run model:train
+pnpm.cmd run model:backtest
+pnpm.cmd run model:predict
+```
+
+Refresh deterministic bootstrap/fixture ingestion only:
 
 ```powershell
 pnpm.cmd run ingest:fpl
 ```
 
-Write current expected-points feature rows from the latest normalized snapshot:
+Fetch official player-gameweek history for the latest normalized player list:
+
+```powershell
+pnpm.cmd run ingest:fpl:history
+```
+
+Build both current prediction rows and training rows:
 
 ```powershell
 pnpm.cmd run pipeline:features
 ```
 
-Build historical training rows from a directory of deterministic snapshots:
+Build training rows from archived deterministic snapshots instead:
 
 ```powershell
 pnpm.cmd run pipeline:features -- --historical --input data/fpl/snapshots --output data/features/player_gameweek_training_rows.jsonl
 ```
 
-Train the baseline:
+Train, backtest and predict:
 
 ```powershell
 pnpm.cmd run model:train
-```
-
-Run a walk-forward backtest:
-
-```powershell
 pnpm.cmd run model:backtest
-```
-
-Predict expected points for the latest feature rows:
-
-```powershell
 pnpm.cmd run model:predict
 ```
 
@@ -100,6 +117,7 @@ Outputs are written under gitignored local paths:
 
 ```text
 data/features/
+data/fpl/history/
 data/models/
 data/evaluation/
 data/predictions/
@@ -114,6 +132,6 @@ The prediction output contains `player_id`, `upcoming_gameweek_id`, `fixture_id`
 - The model is intentionally simple and interpretable.
 - It is not a squad or transfer optimizer.
 - It does not use external paid data.
-- Historical training quality depends on collecting deterministic snapshots before and after gameweeks.
+- Historical training quality depends on official FPL element-summary availability or archived deterministic snapshots.
 - Double-gameweek aggregation is left to a future serving/optimizer layer.
 - The current Gold layer uses official FPL form as the immediate recent-points proxy when no historical rows are available.

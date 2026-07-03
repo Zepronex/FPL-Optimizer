@@ -64,6 +64,7 @@ htmlcov/
 data/
 data/evaluation/
 data/features/
+data/fpl/history/
 data/models/
 data/predictions/
 data/tmp/

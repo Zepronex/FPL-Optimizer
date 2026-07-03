@@ -30,7 +30,7 @@ Silver writes clean typed player, team, fixture and gameweek tables under `data/
 
 Gold writes feature-ready tables under `data/lakehouse/gold`. The first table, `team_fixture_features`, contains upcoming fixture context. The second table, `player_gameweek_features`, joins players to their next gameweek fixture context with columns such as player id, player name, position, team name, price, availability status, total points, form, selected-by percentage, minutes, pre-deadline season averages, fixture difficulty, home/away and source snapshot hash.
 
-Gold prediction rows do not include target points, fixture scores, or other post-gameweek outcomes. Expected-points training and backtesting consume these rows through the separate baseline pipeline documented in [Expected-Points Baseline](EXPECTED_POINTS_BASELINE.md), keeping the snapshot hash available for reproducibility and leakage checks.
+Gold prediction rows do not include target points, fixture scores, or other post-gameweek outcomes. Expected-points training and backtesting consume these rows plus official player-gameweek history through the separate baseline pipeline documented in [Expected-Points Baseline](EXPECTED_POINTS_BASELINE.md), keeping the snapshot hash available for reproducibility and leakage checks.
 
 ## Local Commands
 
