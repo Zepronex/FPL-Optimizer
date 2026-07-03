@@ -124,10 +124,10 @@ export async function readTopPredictions(
     : await readLatestPredictionRun(client);
   if (!run) return null;
 
-  const predictions = await readPredictionsForRun(client, run.id, {
-    position: filters.position,
-    limit: filters.limit
-  });
+  const predictions = filterSortLimitPredictions(
+    await readPredictionsForRun(client, run.id, { limit: run.predictionCount }),
+    filters
+  );
   return {
     run,
     predictions,
@@ -164,6 +164,25 @@ export async function readLatestModelEvaluation(
 
   const row = result.rows[0];
   return row ? toModelEvaluation(row) : null;
+}
+
+export function filterSortLimitPredictions(
+  predictions: PlayerPrediction[],
+  filters: TopPredictionFilters
+): PlayerPrediction[] {
+  return [...predictions]
+    .filter(prediction => !filters.position || prediction.position === filters.position)
+    .sort((left, right) => {
+      if (right.predictedPoints !== left.predictedPoints) {
+        return right.predictedPoints - left.predictedPoints;
+      }
+
+      const nameComparison = left.playerName.localeCompare(right.playerName);
+      if (nameComparison !== 0) return nameComparison;
+
+      return (left.fixtureId ?? Number.MAX_SAFE_INTEGER) - (right.fixtureId ?? Number.MAX_SAFE_INTEGER);
+    })
+    .slice(0, filters.limit);
 }
 
 async function readLatestPredictionRun(client: Queryable): Promise<PredictionRun | null> {
