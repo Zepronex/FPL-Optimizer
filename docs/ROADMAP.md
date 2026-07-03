@@ -23,6 +23,7 @@
 
 ## Phase 4: Feature Engineering
 
+- Maintain a Databricks-compatible Bronze/Silver/Gold pipeline foundation for FPL feature tables.
 - Build pre-deadline feature transformations.
 - Add leakage checks for all feature sets.
 - Version feature definitions and generated datasets.
