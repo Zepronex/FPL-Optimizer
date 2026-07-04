@@ -86,6 +86,158 @@ export type ApiResponse<T> = {
   details?: unknown;
 };
 
+export type CountedApiResponse<T> = ApiResponse<T> & {
+  count?: number;
+};
+
+export type Formation = '3-4-3' | '3-5-2' | '4-4-2' | '4-3-3' | '4-5-1' | '5-3-2' | '5-4-1';
+
+export type PlayerAvailability = 'available' | 'doubtful' | 'unavailable' | 'unknown';
+
+export type PlayerPrediction = {
+  playerId: number;
+  playerName: string;
+  position: Pos;
+  teamId: number;
+  teamName?: string;
+  teamShortName?: string;
+  price: number;
+  predictedPoints: number;
+  predictionRunId?: number;
+  targetGameweekId?: number;
+  fixtureId?: number | null;
+  availability?: PlayerAvailability;
+};
+
+export type OptimizerSquadSlot = PlayerPrediction & {
+  slotIndex: number;
+};
+
+export type OptimizerSquad = {
+  slots: OptimizerSquadSlot[];
+  budget: number;
+  bank: number;
+};
+
+export type OptimizerSquadInput = {
+  slots?: PlayerPrediction[];
+  playerIds?: number[];
+  bank?: number;
+  budget?: number;
+};
+
+export type ConstraintValue = number | string | Record<string, number>;
+
+export type ConstraintViolationCode =
+  | 'duplicate_player'
+  | 'invalid_budget'
+  | 'invalid_captaincy'
+  | 'invalid_formation'
+  | 'invalid_position_count'
+  | 'invalid_squad_size'
+  | 'invalid_starting_xi_size'
+  | 'max_players_per_team'
+  | 'transfer_count_exceeded'
+  | 'unknown_player';
+
+export type ConstraintCheck = {
+  key: string;
+  passed: boolean;
+  expected: ConstraintValue;
+  actual: ConstraintValue;
+};
+
+export type ConstraintViolation = {
+  code: ConstraintViolationCode;
+  key: string;
+  expected: ConstraintValue;
+  actual: ConstraintValue;
+  playerIds?: number[];
+  teamId?: number;
+};
+
+export type ConstraintValidationResult = {
+  valid: boolean;
+  checks: ConstraintCheck[];
+  violations: ConstraintViolation[];
+};
+
+export type CaptaincyRecommendation = {
+  captain: OptimizerSquadSlot;
+  viceCaptain: OptimizerSquadSlot;
+  captainPredictedPoints: number;
+  viceCaptainPredictedPoints: number;
+};
+
+export type StartingXIRecommendation = {
+  formation: Formation;
+  starters: OptimizerSquadSlot[];
+  bench: OptimizerSquadSlot[];
+  captaincy: CaptaincyRecommendation;
+  totalPredictedPoints: number;
+  constraintSummary: ConstraintValidationResult;
+};
+
+export type TransferMove = {
+  playerOut: OptimizerSquadSlot;
+  playerIn: PlayerPrediction;
+  predictedPointsDelta: number;
+  costDelta: number;
+};
+
+export type TransferRecommendation = {
+  transferCount: 1 | 2;
+  moves: TransferMove[];
+  expectedPointsGain: number;
+  pointsHit: number;
+  netExpectedPointsGain: number;
+  budgetImpact: number;
+  bankAfterTransfers: number;
+  squadAfterTransfers: OptimizerSquad;
+  startingXi: StartingXIRecommendation;
+  validation: ConstraintValidationResult;
+};
+
+export type StartingXIOptimizerResult = {
+  startingXi: StartingXIRecommendation;
+  predictionRunIds: number[];
+  targetGameweekId?: number;
+};
+
+export type TransferOptimizerResult = {
+  currentStartingXi: StartingXIRecommendation;
+  recommendations: TransferRecommendation[];
+  predictionRunIds: number[];
+  targetGameweekId?: number;
+};
+
+export type OptimizerResult = {
+  squad: OptimizerSquad;
+  startingXi: StartingXIRecommendation;
+  predictionRunIds: number[];
+  targetGameweekId?: number;
+};
+
+export type StartingXIRecommendationRequest = {
+  squad: OptimizerSquadInput;
+  gameweekId?: number;
+};
+
+export type TransferRecommendationRequest = {
+  currentSquad: OptimizerSquadInput;
+  availablePlayers?: PlayerPrediction[];
+  gameweekId?: number;
+  freeTransfers: number;
+  maxHits?: number;
+};
+
+export type SquadOptimizationRequest = {
+  availablePlayers?: PlayerPrediction[];
+  gameweekId?: number;
+  budget?: number;
+  reservedBank?: number;
+};
+
 export type GeneratedTeamData = {
   squad: Squad;
   strategy: string;

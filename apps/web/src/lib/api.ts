@@ -7,7 +7,14 @@ import {
   SquadAnalysis,
   PlayersResponse,
   PlayerSearchResult,
-  WeightPreset
+  WeightPreset,
+  CountedApiResponse,
+  OptimizerResult,
+  SquadOptimizationRequest,
+  StartingXIOptimizerResult,
+  StartingXIRecommendationRequest,
+  TransferOptimizerResult,
+  TransferRecommendationRequest
 } from './types';
 
 const API_BASE_URL = '/api';
@@ -102,6 +109,28 @@ export const apiClient = {
 
   async getCurrentGameweek() {
     const response = await api.get('/fixtures/current');
+    return response.data;
+  },
+
+  // Optimizer API
+  async getStartingXIRecommendation(
+    request: StartingXIRecommendationRequest
+  ): Promise<ApiResponse<StartingXIOptimizerResult>> {
+    const response = await api.post('/optimizer/starting-xi', request);
+    return response.data;
+  },
+
+  async getTransferRecommendations(
+    request: TransferRecommendationRequest
+  ): Promise<CountedApiResponse<TransferOptimizerResult>> {
+    const response = await api.post('/optimizer/transfers', request);
+    return response.data;
+  },
+
+  async getSquadRecommendation(
+    request: SquadOptimizationRequest
+  ): Promise<ApiResponse<OptimizerResult>> {
+    const response = await api.post('/optimizer/squad', request);
     return response.data;
   },
 
