@@ -12,6 +12,7 @@ import { generateRouter } from './routes/generate';
 import { mlRouter } from './routes/ml';
 import { predictionsRouter } from './routes/predictions';
 import { modelRouter } from './routes/model';
+import { optimizerRouter } from './routes/optimizer';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ const strictLimiter = rateLimit({
 // Apply strict rate limiting to expensive endpoints
 app.use('/api/generate', strictLimiter);
 app.use('/api/analyze', strictLimiter);
+app.use('/api/optimizer', strictLimiter);
 
 // Routes
 app.use('/api/players', playersRouter);
@@ -88,6 +90,7 @@ app.use('/api/generate', generateRouter);
 app.use('/api/ml', mlRouter);
 app.use('/api/predictions', predictionsRouter);
 app.use('/api/model', modelRouter);
+app.use('/api/optimizer', optimizerRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

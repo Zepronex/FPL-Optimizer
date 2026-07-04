@@ -153,6 +153,10 @@ export type PlayerPrediction = {
   teamId: number;
   teamName: string;
   teamShortName: string;
+  price: number;
+  status: FPLStatus;
+  chanceOfPlayingNextRound: number | null;
+  chanceOfPlayingThisRound: number | null;
   targetGameweekId: number;
   fixtureId: number | null;
   predictedPoints: number;
