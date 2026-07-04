@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Edit3, BarChart3 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Edit3, BarChart3 } from 'lucide-react';
 import { Squad, AnalysisWeights, SquadSlot } from '../lib/types';
 import { apiClient } from '../lib/api';
 import { formatPrice } from '../lib/format';
@@ -62,12 +62,12 @@ const GeneratedTeamPage = () => {
   const getStrategyInfo = (strategy: string) => {
     const strategies = {
       balanced: { name: 'Balanced Approach', color: 'bg-blue-500', description: 'Well-rounded team focusing on consistent performers across all positions' },
-      premium: { name: 'Premium Heavy', color: 'bg-purple-500', description: 'Invest heavily in proven premium players with guaranteed minutes' },
+      premium: { name: 'Premium Heavy', color: 'bg-slate-600', description: 'Invest heavily in proven premium players with guaranteed minutes' },
       value: { name: 'Value Optimized', color: 'bg-green-500', description: 'Maximum points per million - focus on budget enablers and differentials' },
       differential: { name: 'Differential Focus', color: 'bg-orange-500', description: 'Low ownership players for unique advantages and rank climbing' },
-      ai: { name: 'AI Strategy', color: 'bg-gradient-to-r from-purple-500 to-pink-500', description: 'Machine learning optimized team selection using advanced algorithms' },
+      ai: { name: 'AI Strategy', color: 'bg-slate-700', description: 'Machine learning optimized team selection using advanced algorithms' },
       form: { name: 'Form & Fixtures', color: 'bg-red-500', description: 'Players in hot form with favorable upcoming fixture runs' },
-      template: { name: 'Template Team', color: 'bg-indigo-500', description: 'Popular picks with high ownership for consistent, safe returns' },
+      template: { name: 'Template Team', color: 'bg-blue-600', description: 'Popular picks with high ownership for consistent, safe returns' },
       setforget: { name: 'Set & Forget', color: 'bg-gray-500', description: 'Stable team with minimal transfers - focus on season-long consistency' },
       wildcard: { name: 'Wildcard Strategy', color: 'bg-yellow-500', description: 'Aggressive approach for short-term gains with high-risk, high-reward players' }
     };
@@ -89,7 +89,7 @@ const GeneratedTeamPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-2">No Team Found</h1>
           <p className="text-red-600 mb-4">{error || 'The generated team data could not be found.'}</p>
           <button 
@@ -210,7 +210,7 @@ const GeneratedTeamPage = () => {
             </div>
             
             {/* Budget Summary - Read Only */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
+            <div className="bg-green-50 rounded-lg p-6 border border-green-200">
               <h3 className="text-lg font-semibold text-green-800 mb-4">Budget Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -258,13 +258,13 @@ const GeneratedTeamPage = () => {
                   {generatedData.strategy === 'ai' ? (
                     // AI Strategy specific focus areas
                     <>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                         ML Analysis: 100%
                       </span>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                         Historical Data
                       </span>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                         Pattern Recognition
                       </span>
                     </>

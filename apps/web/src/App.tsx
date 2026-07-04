@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
@@ -57,7 +58,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-2">API Connection Failed</h1>
           <p className="text-red-600 mb-4">
             Unable to connect to the FPL Optimizer API. Please make sure the API server is running on port 3001.

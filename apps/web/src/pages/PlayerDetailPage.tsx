@@ -4,7 +4,7 @@ import { EnrichedPlayer } from '../lib/types';
 import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
-import { ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import PlayerStats from '../components/PlayerStats';
 import PlayerSuggestions from '../components/PlayerSuggestions';
 
@@ -107,7 +107,7 @@ const PlayerDetailPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-2">Player Not Found</h1>
           <p className="text-red-600 mb-4">{error || 'The requested player could not be found.'}</p>
           <button 

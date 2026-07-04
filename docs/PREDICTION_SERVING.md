@@ -163,8 +163,10 @@ pnpm.cmd run model:train
 pnpm.cmd run model:backtest
 pnpm.cmd run model:predict
 pnpm.cmd run db:load:predictions
-pnpm.cmd run dev
+pnpm.cmd run dev:app
 ```
+
+The ML service is optional for normal frontend/API development. Start it separately with `pnpm.cmd run dev:ml` only when working on ML-backed strategy behavior.
 
 Current limitations:
 
