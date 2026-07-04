@@ -75,6 +75,7 @@ const AnalyzePage = () => {
   const [optimizerState, setOptimizerState] = useState<OptimizerRecommendationState | null>(null);
   const [isOptimizerLoading, setIsOptimizerLoading] = useState(false);
   const [optimizerError, setOptimizerError] = useState<string | null>(null);
+  const [optimizerRefreshKey, setOptimizerRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isReAnalyzing, setIsReAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +239,7 @@ const AnalyzePage = () => {
     return () => {
       cancelled = true;
     };
-  }, [originalSquad]);
+  }, [originalSquad, optimizerRefreshKey]);
 
   const handleNewAnalysis = () => {
     sessionStorage.removeItem('fpl-analysis-results');
@@ -417,6 +418,8 @@ const AnalyzePage = () => {
             transferRecommendations={optimizerState?.transfers}
             isLoading={isOptimizerLoading}
             error={optimizerError}
+            contextNote="Transfer recommendations assume 1 free transfer and no points hits."
+            onRetry={() => setOptimizerRefreshKey(current => current + 1)}
             targetGameweekId={optimizerState?.targetGameweekId}
             predictionRunIds={optimizerState?.predictionRunIds}
             emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."

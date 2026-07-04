@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Coins,
+  RefreshCw,
   ShieldCheck,
   Trophy,
   Users
@@ -23,6 +24,8 @@ type OptimizerRecommendationsProps = {
   isLoading?: boolean;
   error?: string | null;
   emptyMessage?: string;
+  contextNote?: string;
+  onRetry?: () => void;
   targetGameweekId?: number;
   predictionRunIds?: number[];
 };
@@ -35,6 +38,8 @@ const OptimizerRecommendations = ({
   isLoading = false,
   error,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
+  contextNote,
+  onRetry,
   targetGameweekId,
   predictionRunIds = []
 }: OptimizerRecommendationsProps) => {
@@ -52,6 +57,7 @@ const OptimizerRecommendations = ({
         tone="error"
         title="Optimizer unavailable"
         message={error}
+        action={onRetry ? { label: 'Retry optimizer', onClick: onRetry } : undefined}
       />
     );
   }
@@ -62,6 +68,7 @@ const OptimizerRecommendations = ({
         tone="info"
         title="No recommendation"
         message={emptyMessage}
+        action={onRetry ? { label: 'Retry optimizer', onClick: onRetry } : undefined}
       />
     );
   }
@@ -74,6 +81,9 @@ const OptimizerRecommendations = ({
           <p className="text-sm text-gray-600">
             Prediction-backed squad decisions for the selected gameweek.
           </p>
+          {contextNote && (
+            <p className="mt-1 text-xs text-gray-500">{contextNote}</p>
+          )}
         </div>
         <RecommendationMeta
           targetGameweekId={targetGameweekId}
@@ -104,9 +114,13 @@ type StatusPanelProps = {
   tone: StatusTone;
   title: string;
   message: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 };
 
-const StatusPanel = ({ tone, title, message }: StatusPanelProps) => {
+const StatusPanel = ({ tone, title, message, action }: StatusPanelProps) => {
   const toneClass = {
     error: 'border-red-200 bg-red-50 text-red-800',
     warning: 'border-yellow-200 bg-yellow-50 text-yellow-800',
@@ -120,6 +134,15 @@ const StatusPanel = ({ tone, title, message }: StatusPanelProps) => {
         <div>
           <h3 className="font-semibold">{title}</h3>
           <p className="mt-1 text-sm">{message}</p>
+          {action && (
+            <button
+              onClick={action.onClick}
+              className="mt-3 inline-flex items-center rounded-md border border-current bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              {action.label}
+            </button>
+          )}
         </div>
       </div>
     </section>
