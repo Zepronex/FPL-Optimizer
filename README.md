@@ -52,6 +52,7 @@ The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature pre
 - [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
+- [Prediction Serving and Optimizer Recommendations](docs/PREDICTION_SERVING.md)
 
 ## Project Structure
 
