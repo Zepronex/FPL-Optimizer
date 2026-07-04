@@ -37,7 +37,7 @@ const GenerateTeamPage = () => {
         ownership: 0.02
       },
       budget: 100,
-      color: 'bg-gradient-to-r from-purple-500 to-pink-500'
+      color: 'bg-slate-700'
     },
     {
       id: 'balanced',
@@ -73,7 +73,7 @@ const GenerateTeamPage = () => {
         ownership: 0.03
       },
       budget: 100,
-      color: 'bg-purple-500'
+      color: 'bg-slate-600'
     },
     {
       id: 'value',
@@ -145,7 +145,7 @@ const GenerateTeamPage = () => {
         ownership: 0.1
       },
       budget: 100,
-      color: 'bg-indigo-500'
+      color: 'bg-blue-600'
     },
     {
       id: 'setforget',
@@ -291,13 +291,13 @@ const GenerateTeamPage = () => {
               <div className="flex flex-wrap gap-2">
                 {strategy.id === 'ai' ? (
                   <>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                       ML Analysis: 100%
                     </span>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                       Historical Data
                     </span>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
                       Pattern Recognition
                     </span>
                   </>

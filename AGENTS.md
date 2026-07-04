@@ -21,6 +21,13 @@ These rules apply to every change in this repository.
 - Feature engineering and model evaluation code must include leakage checks or tests that enforce time-aware data boundaries.
 - Bug fixes in shared logic should include regression coverage.
 
+## UI Style
+
+- Do not use emojis in app UI text, headings, buttons, alerts, or empty states.
+- Do not use purple or pink visual styling, gradients, or accent palettes in the app UI.
+- Keep the UI professional, neutral, and recruiter/demo-friendly.
+- Avoid gimmicky fantasy-football styling; the app should feel like a serious AI/data decision platform.
+
 ## Collaboration
 
 - Work should happen on feature branches and be reviewed through pull requests.

@@ -15,25 +15,27 @@ An intelligent Fantasy Premier League team optimization tool that analyzes playe
 # Install dependencies
 pnpm install
 
-# Setup ML service (optional, for AI Strategy)
+# Setup ML service (optional, only for ML-backed strategy work)
 ./setup_ml.sh
 
-# Start development servers
-pnpm run dev
+# Start normal ScoutIQ development servers
+pnpm.cmd run dev:app
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-### AI Strategy Setup
+### Optional ML Strategy Setup
 
-The AI Strategy uses machine learning to optimize team selection. To use it:
+The ML strategy service is optional and should not block normal frontend/API development. Use `pnpm.cmd run dev:app` for the main ScoutIQ web app and API.
+
+To work on the optional ML strategy path:
 
 1. **Setup ML service**: Run `./setup_ml.sh` to install Python dependencies
-2. **Train the model**: Run `pnpm run train:ml` to train the ML model
-3. **Start services**: Run `pnpm run dev` to start all services
-4. **Use AI Strategy**: Select "AI Strategy" in the team generation page
+2. **Train the model**: Run `pnpm.cmd run train:ml` to train the ML model
+3. **Start app services**: Run `pnpm.cmd run dev:app`
+4. **Start ML service separately**: Run `pnpm.cmd run dev:ml`
 
-The AI Strategy will predict optimal player selections for the next 3 gameweeks using historical data and advanced algorithms.
+`pnpm.cmd run dev:all` starts API, web, and ML together when all three services are needed.
 
 ## How It Works
 
@@ -52,6 +54,7 @@ The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature pre
 - [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
+- [Prediction Serving and Optimizer Recommendations](docs/PREDICTION_SERVING.md)
 
 ## Project Structure
 

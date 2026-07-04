@@ -1,24 +1,85 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnalysisWeights, Pos, SquadAnalysis, Squad, SquadSlot } from '../lib/types';
+import {
+  AnalysisWeights,
+  OptimizerSquadInput,
+  Pos,
+  SquadAnalysis,
+  Squad,
+  SquadSlot,
+  StartingXIRecommendation,
+  TransferRecommendation
+} from '../lib/types';
 import PlayerRow from '../components/PlayerRow';
 import WeightsPanel from '../components/WeightsPanel';
 import { formatScore, formatPrice, getFormationString } from '../lib/format';
 import { apiClient } from '../lib/api';
 import { useWeights } from '../state/useWeights';
+import OptimizerRecommendations from '../components/OptimizerRecommendations';
+
+type OptimizerRecommendationState = {
+  startingXi: StartingXIRecommendation | null;
+  transfers: TransferRecommendation[];
+  targetGameweekId?: number;
+  predictionRunIds: number[];
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const toOptimizerSquadInput = (squad: Squad): OptimizerSquadInput => ({
+  playerIds: [...squad.startingXI, ...squad.bench].map(player => player.id),
+  bank: squad.bank,
+  budget: 100
+});
+
+const mergePredictionRunIds = (...runIdGroups: number[][]): number[] => {
+  return [...new Set(runIdGroups.flat())].sort((left, right) => left - right);
+};
+
+const getOptimizerErrorCode = (value: unknown): string | undefined => {
+  const payload = isRecord(value) && isRecord(value.response)
+    ? value.response.data
+    : value;
+
+  return isRecord(payload) && typeof payload.error === 'string'
+    ? payload.error
+    : undefined;
+};
+
+const getOptimizerErrorMessage = (value: unknown): string => {
+  const code = getOptimizerErrorCode(value);
+
+  switch (code) {
+    case 'no_prediction_runs_loaded':
+      return 'Prediction data is missing. Run the prediction pipeline and load predictions into PostgreSQL.';
+    case 'squad_predictions_missing':
+      return 'Some squad players do not have prediction rows. Re-run the prediction pipeline and reload predictions into PostgreSQL.';
+    case 'invalid_squad':
+      return 'The squad is invalid for optimizer rules. Check squad size, position counts, budget, duplicates, and max three players per club.';
+    case 'invalid_optimizer_request':
+      return 'The optimizer request is invalid. Check that the stored squad has 15 valid players.';
+    case 'available_players_required':
+    case 'prediction_candidates_required':
+      return 'Prediction candidates are unavailable. Load prediction-serving data before requesting transfer recommendations.';
+    default:
+      return 'Could not load optimizer recommendations. Check that the API is running and the prediction database is reachable.';
+  }
+};
 
 const AnalyzePage = () => {
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState<SquadAnalysis | null>(null);
   const [originalSquad, setOriginalSquad] = useState<Squad | null>(null);
+  const [optimizerState, setOptimizerState] = useState<OptimizerRecommendationState | null>(null);
+  const [isOptimizerLoading, setIsOptimizerLoading] = useState(false);
+  const [optimizerError, setOptimizerError] = useState<string | null>(null);
+  const [optimizerRefreshKey, setOptimizerRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isReAnalyzing, setIsReAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const weightsState = useWeights();
-
-  const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value === 'object' && value !== null;
-  };
 
   const isAnalysisWeights = (value: unknown): value is AnalysisWeights => {
     if (!isRecord(value)) return false;
@@ -114,6 +175,71 @@ const AnalyzePage = () => {
 
     loadAnalysis();
   }, []);
+
+  useEffect(() => {
+    if (!originalSquad) return;
+
+    const playerIds = [...originalSquad.startingXI, ...originalSquad.bench].map(player => player.id);
+    if (playerIds.length !== 15) {
+      setOptimizerState(null);
+      setOptimizerError('Optimizer recommendations require a complete 15-player squad.');
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadOptimizerRecommendations = async () => {
+      setIsOptimizerLoading(true);
+      setOptimizerError(null);
+      setOptimizerState(null);
+
+      try {
+        const optimizerSquad = toOptimizerSquadInput(originalSquad);
+        const [startingXiResponse, transfersResponse] = await Promise.all([
+          apiClient.getStartingXIRecommendation({ squad: optimizerSquad }),
+          apiClient.getTransferRecommendations({
+            currentSquad: optimizerSquad,
+            freeTransfers: 1,
+            maxHits: 0
+          })
+        ]);
+
+        if (!startingXiResponse.success || !startingXiResponse.data) {
+          throw startingXiResponse;
+        }
+
+        if (!transfersResponse.success || !transfersResponse.data) {
+          throw transfersResponse;
+        }
+
+        if (!cancelled) {
+          setOptimizerState({
+            startingXi: startingXiResponse.data.startingXi,
+            transfers: transfersResponse.data.recommendations,
+            targetGameweekId: startingXiResponse.data.targetGameweekId ?? transfersResponse.data.targetGameweekId,
+            predictionRunIds: mergePredictionRunIds(
+              startingXiResponse.data.predictionRunIds,
+              transfersResponse.data.predictionRunIds
+            )
+          });
+        }
+      } catch (optimizerRequestError) {
+        if (!cancelled) {
+          setOptimizerError(getOptimizerErrorMessage(optimizerRequestError));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsOptimizerLoading(false);
+        }
+      }
+    };
+
+    loadOptimizerRecommendations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [originalSquad, optimizerRefreshKey]);
 
   const handleNewAnalysis = () => {
     sessionStorage.removeItem('fpl-analysis-results');
@@ -286,6 +412,18 @@ const AnalyzePage = () => {
               <div className="text-sm text-gray-600">Bank Remaining</div>
             </div>
           </div>
+
+          <OptimizerRecommendations
+            startingXi={optimizerState?.startingXi}
+            transferRecommendations={optimizerState?.transfers}
+            isLoading={isOptimizerLoading}
+            error={optimizerError}
+            contextNote="Transfer recommendations assume 1 free transfer and no points hits."
+            onRetry={() => setOptimizerRefreshKey(current => current + 1)}
+            targetGameweekId={optimizerState?.targetGameweekId}
+            predictionRunIds={optimizerState?.predictionRunIds}
+            emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."
+          />
 
           {/* Weights Display */}
           <div className="card">
