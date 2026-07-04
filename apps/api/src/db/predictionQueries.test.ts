@@ -23,6 +23,8 @@ const PredictionSummaryResponseSchema = z.object({
       playerId: z.number(),
       playerName: z.string(),
       position: z.enum(['GK', 'DEF', 'MID', 'FWD']),
+      price: z.number(),
+      status: z.string(),
       predictedPoints: z.number(),
       baselinePredictedPoints: z.number().nullable()
     })),
@@ -67,6 +69,10 @@ describe('prediction query mapping', () => {
       team_id: 1,
       team_name: 'Arsenal',
       team_short_name: 'ARS',
+      price: 9.5,
+      status: 'a',
+      chance_of_playing_next_round: 100,
+      chance_of_playing_this_round: 100,
       target_gameweek_id: 4,
       fixture_id: 101,
       predicted_points: 6.25,
@@ -83,6 +89,8 @@ describe('prediction query mapping', () => {
     assert.equal(prediction.id, 5);
     assert.equal(prediction.predictionRunId, 42);
     assert.equal(prediction.predictedPoints, 6.25);
+    assert.equal(prediction.price, 9.5);
+    assert.equal(prediction.status, 'a');
     assert.deepEqual(prediction.featureValues, { fixture_difficulty: 2 });
   });
 
@@ -174,6 +182,10 @@ function predictionFixture(
     teamId: 1,
     teamName: 'Arsenal',
     teamShortName: 'ARS',
+    price: 9.5,
+    status: 'a',
+    chanceOfPlayingNextRound: 100,
+    chanceOfPlayingThisRound: 100,
     targetGameweekId: 4,
     fixtureId,
     predictedPoints,

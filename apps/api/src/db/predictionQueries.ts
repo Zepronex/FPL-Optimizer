@@ -40,6 +40,10 @@ type PlayerPredictionDbRow = {
   team_id: number;
   team_name: string;
   team_short_name: string;
+  price: number;
+  status: PlayerPrediction['status'];
+  chance_of_playing_next_round: number | null;
+  chance_of_playing_this_round: number | null;
   target_gameweek_id: number;
   fixture_id: number | null;
   predicted_points: number;
@@ -276,6 +280,10 @@ function predictionSelectSql(): string {
       p.team_id,
       t.name AS team_name,
       t.short_name AS team_short_name,
+      p.now_cost::float8 AS price,
+      p.status,
+      p.chance_of_playing_next_round,
+      p.chance_of_playing_this_round,
       pp.target_gameweek_id,
       pp.fixture_id,
       pp.predicted_points::float8 AS predicted_points,
@@ -324,6 +332,10 @@ export function toPlayerPrediction(row: PlayerPredictionDbRow): PlayerPrediction
     teamId: row.team_id,
     teamName: row.team_name,
     teamShortName: row.team_short_name,
+    price: row.price,
+    status: row.status,
+    chanceOfPlayingNextRound: row.chance_of_playing_next_round,
+    chanceOfPlayingThisRound: row.chance_of_playing_this_round,
     targetGameweekId: row.target_gameweek_id,
     fixtureId: row.fixture_id,
     predictedPoints: row.predicted_points,

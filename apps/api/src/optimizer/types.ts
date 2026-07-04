@@ -106,6 +106,12 @@ export type TransferOptimizationInput = {
   maxHits?: number;
 };
 
+export type SquadOptimizationInput = {
+  candidates: PlayerCandidate[];
+  budget: number;
+  reservedBank?: number;
+};
+
 export type OptimizerResult = {
   squad: Squad;
   startingXi: StartingXI;
