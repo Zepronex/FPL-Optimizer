@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
   Coins,
+  FileText,
   RefreshCw,
   ShieldCheck,
   Trophy,
@@ -12,11 +13,13 @@ import {
 import {
   ConstraintValidationResult,
   OptimizerSquadSlot,
+  RecommendationExplanation,
   StartingXIRecommendation,
   TransferRecommendation
 } from '../lib/types';
 import { formatDelta, formatPrice, formatScore, getPositionColor } from '../lib/format';
 import LoadingSpinner from './LoadingSpinner';
+import { apiClient } from '../lib/api';
 
 type OptimizerRecommendationsProps = {
   startingXi?: StartingXIRecommendation | null;
@@ -31,10 +34,11 @@ type OptimizerRecommendationsProps = {
 };
 
 const DEFAULT_EMPTY_MESSAGE = 'No optimizer recommendation is available for this squad yet.';
+const EMPTY_TRANSFER_RECOMMENDATIONS: TransferRecommendation[] = [];
 
 const OptimizerRecommendations = ({
   startingXi,
-  transferRecommendations = [],
+  transferRecommendations = EMPTY_TRANSFER_RECOMMENDATIONS,
   isLoading = false,
   error,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
@@ -43,6 +47,61 @@ const OptimizerRecommendations = ({
   targetGameweekId,
   predictionRunIds = []
 }: OptimizerRecommendationsProps) => {
+  const [explanation, setExplanation] = useState<RecommendationExplanation | null>(null);
+  const [isExplanationLoading, setIsExplanationLoading] = useState(false);
+  const [explanationError, setExplanationError] = useState<string | null>(null);
+  const [explanationRefreshKey, setExplanationRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!startingXi) {
+      setExplanation(null);
+      setExplanationError(null);
+      setIsExplanationLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadExplanation = async () => {
+      setIsExplanationLoading(true);
+      setExplanationError(null);
+
+      try {
+        const response = await apiClient.explainRecommendation({
+          optimizerResult: {
+            startingXi,
+            transferRecommendations,
+            targetGameweekId,
+            predictionRunIds
+          }
+        });
+
+        if (!response.success || !response.data) {
+          throw response;
+        }
+
+        if (!cancelled) {
+          setExplanation(response.data);
+        }
+      } catch {
+        if (!cancelled) {
+          setExplanation(null);
+          setExplanationError('Could not load the recommendation explanation.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsExplanationLoading(false);
+        }
+      }
+    };
+
+    loadExplanation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [startingXi, transferRecommendations, targetGameweekId, predictionRunIds, explanationRefreshKey]);
+
   if (isLoading) {
     return (
       <section className="rounded-lg border border-gray-200 bg-white p-6">
@@ -104,6 +163,13 @@ const OptimizerRecommendations = ({
           message="The optimizer did not find a valid transfer that improves projected points under the current constraints."
         />
       )}
+
+      <ExplanationPanel
+        explanation={explanation}
+        isLoading={isExplanationLoading}
+        error={explanationError}
+        onRetry={() => setExplanationRefreshKey(current => current + 1)}
+      />
     </section>
   );
 };
@@ -146,6 +212,99 @@ const StatusPanel = ({ tone, title, message, action }: StatusPanelProps) => {
         </div>
       </div>
     </section>
+  );
+};
+
+type ExplanationPanelProps = {
+  explanation: RecommendationExplanation | null;
+  isLoading: boolean;
+  error: string | null;
+  onRetry: () => void;
+};
+
+const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: ExplanationPanelProps) => {
+  if (isLoading) {
+    return (
+      <section className="rounded-lg border border-gray-200 bg-white p-6">
+        <LoadingSpinner text="Preparing recommendation explanation..." />
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <StatusPanel
+        tone="warning"
+        title="Explanation unavailable"
+        message={error}
+        action={{ label: 'Retry explanation', onClick: onRetry }}
+      />
+    );
+  }
+
+  if (!explanation) return null;
+
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white p-5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="rounded-md bg-gray-100 p-2 text-gray-700">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-fpl-dark">Recommendation explanation</h3>
+            <p className="mt-1 text-sm text-gray-600">{explanation.summary}</p>
+          </div>
+        </div>
+        <span className="w-fit rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+          {explanation.usedFallback ? 'Deterministic fallback' : 'Configured provider'}
+        </span>
+      </div>
+
+      {explanation.usedFallback && explanation.fallbackReason && (
+        <div className="mb-5 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+          {explanation.fallbackReason}
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ExplanationSection title="Recommended actions" items={explanation.recommendedActions} />
+        <ExplanationSection title="Starting XI reasoning" items={explanation.startingXiReasoning} />
+        <ExplanationSection title="Captaincy reasoning" items={explanation.captaincyReasoning} />
+        <ExplanationSection title="Transfer reasoning" items={explanation.transferReasoning} />
+        <ExplanationSection title="Risks" items={explanation.risks} />
+        <ExplanationSection title="Alternatives" items={explanation.alternatives} />
+        <ExplanationSection title="Data limitations" items={explanation.dataLimitations} />
+        <ExplanationSection title="Constraint summary" items={explanation.constraintSummary} />
+      </div>
+
+      <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
+        {explanation.disclaimer}
+      </p>
+    </section>
+  );
+};
+
+type ExplanationSectionProps = {
+  title: string;
+  items: string[];
+};
+
+const ExplanationSection = ({ title, items }: ExplanationSectionProps) => {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-gray-100 bg-gray-50 p-4">
+      <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+      <ul className="mt-3 space-y-2 text-sm text-gray-700">
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gray-400" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 

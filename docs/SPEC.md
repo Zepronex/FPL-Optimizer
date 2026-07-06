@@ -43,6 +43,10 @@ The optimizer selects squads, transfers, captaincy, and chip strategies under FP
 
 The LLM explanation agent turns model and optimizer outputs into concise user-facing reasoning. It must not invent inputs, override the optimizer, or cite unavailable data. Explanations should reference the actual factors used by the recommendation.
 
+The optimizer remains the source of truth for squad, transfer, captaincy, and bench decisions. The agent receives optimizer result JSON and returns structured explanation JSON only; it must not add players, transfer moves, captaincy choices, or constraint interpretations that are absent from the optimizer payload.
+
+The API must support deterministic fallback explanations when the provider is disabled, missing credentials, unavailable, timed out, malformed, or fails grounding checks. Provider responses must be validated against the explanation schema and rejected when they reference ungrounded player identifiers or names where practical.
+
 ### Backtesting and Evaluation
 
 Backtesting replays historical gameweeks with only pre-deadline data, records recommended actions, compares outcomes against baselines, and reports metrics such as total points, rank proxies, hit cost, captaincy accuracy, transfer value, and calibration.
