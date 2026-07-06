@@ -57,6 +57,47 @@ The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature pre
 - [PostgreSQL Foundation](docs/DATABASE.md)
 - [Prediction Serving and Optimizer Recommendations](docs/PREDICTION_SERVING.md)
 
+## Model Evaluation Dashboard
+
+The web app includes a `Model Evaluation` page at `/evaluation`. It shows the latest walk-forward backtest, baseline comparison, data coverage, pipeline status, and current limitations.
+
+Generate and load the evaluation data locally with:
+
+```powershell
+pnpm.cmd run ingest:fpl
+pnpm.cmd run db:migrate
+pnpm.cmd run db:load:fpl
+pnpm.cmd run ingest:fpl:history
+pnpm.cmd run pipeline:features
+pnpm.cmd run model:train
+pnpm.cmd run model:backtest
+pnpm.cmd run model:predict
+pnpm.cmd run db:load:predictions
+```
+
+The dashboard reads:
+
+- `GET /api/evaluation/latest`
+- `GET /api/evaluation/runs`
+- `GET /api/evaluation/data-health`
+
+It reports MAE, RMSE, baseline MAE, baseline RMSE, row counts, prediction-run metadata, and coverage counts for players, teams, gameweeks, fixtures, player-gameweek history rows, and latest prediction rows.
+
+MAE and RMSE are error metrics, so lower values are better. The app compares the model against the recent-points baseline and does not claim model superiority unless the model is lower than the baseline on both MAE and RMSE. The current backtest has lower RMSE than the baseline, but higher MAE, so the dashboard states that the model is not clearly better across tracked metrics.
+
+This page is intended to support transparent data decision-making: recommendations remain deterministic optimizer outputs, and predictions should be treated as decision support rather than certainty.
+
+Relevant validation commands:
+
+```powershell
+pnpm.cmd run build
+pnpm.cmd run build:api
+pnpm.cmd run build:web
+pnpm.cmd run test:api
+pnpm.cmd run pipeline:test
+pnpm.cmd run model:test
+```
+
 ## Recommendation Explanations
 
 The optimizer remains the only layer that selects squads, transfers, captaincy, and bench order. The explanation endpoint only summarizes optimizer output that already exists in the request payload. The agent does not choose players, transfers, captaincy, bench order, or chips.
