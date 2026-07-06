@@ -11,8 +11,8 @@ const HomePage = () => {
           Master Your Fantasy Premier League
         </h1>
         <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
-          Build the perfect FPL squad with AI-powered analysis, smart team generation, and comprehensive player insights. 
-          Whether you're a seasoned manager or just starting out, our tools will help you maximize your points and climb the rankings.
+          Build a data-backed FPL squad with transparent analysis, deterministic recommendations, and comprehensive player insights.
+          Review the assumptions behind each decision before making changes.
         </p>
         <div className="flex justify-center space-x-4">
           <button
@@ -38,10 +38,10 @@ const HomePage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">AI-Powered Analysis</h3>
+          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Model-Backed Analysis</h3>
           <p className="text-gray-600">
             Get detailed insights on your squad with advanced analytics covering form, fixtures, value, and potential points. 
-            Our AI analyzes player performance patterns to help you make informed decisions.
+            The scoring model summarizes player performance patterns to support informed decisions.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ const HomePage = () => {
           </div>
           <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Smart Team Generation</h3>
           <p className="text-gray-600">
-            Let our algorithm build the perfect team for you! Choose from different strategies like balanced, 
+            Let the optimizer build a constrained squad for you. Choose from different strategies like balanced,
             cost-effective, or form-focused approaches to generate optimized squads within your budget.
           </p>
         </div>
@@ -82,7 +82,7 @@ const HomePage = () => {
             </div>
             <h3 className="text-lg font-semibold mb-2">Build or Generate</h3>
             <p className="text-gray-600">
-              Create your squad manually by searching and selecting players, or use our AI to generate an optimized team 
+              Create your squad manually by searching and selecting players, or generate an optimized team
               based on your preferred strategy and budget constraints.
             </p>
           </div>
@@ -103,7 +103,7 @@ const HomePage = () => {
             <h3 className="text-lg font-semibold mb-2">Get Suggestions</h3>
             <p className="text-gray-600">
               Receive personalized recommendations for transfers, captain choices, and tactical adjustments. 
-              Our AI suggests the best moves to maximize your points potential.
+              Recommendations summarize the best available moves from the loaded scoring data and optimizer constraints.
             </p>
           </div>
         </div>
@@ -111,10 +111,9 @@ const HomePage = () => {
 
       {/* CTA Section */}
       <div className="text-center bg-fpl-dark text-white rounded-lg p-8">
-        <h2 className="text-3xl font-bold mb-4">Ready to Dominate Your Mini-League?</h2>
+        <h2 className="text-3xl font-bold mb-4">Ready to Review Your Squad?</h2>
         <p className="text-xl mb-6 opacity-90">
-          Join thousands of FPL managers who are already using our tools to climb the rankings. 
-          Start building your winning squad today with AI-powered insights and smart recommendations.
+          Use transparent model output, deterministic constraints, and squad analysis before making transfer decisions.
         </p>
         <div className="flex justify-center space-x-4">
           <button

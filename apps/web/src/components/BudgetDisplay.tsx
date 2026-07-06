@@ -12,7 +12,7 @@ const BudgetDisplay = ({ squad, onSetBank }: BudgetDisplayProps) => {
   const budgetUsed = (totalValue / 100) * 100;
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+    <div className="bg-white rounded-lg p-4 border border-blue-200">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-blue-800">Budget Management</h3>
         <div className="text-sm text-blue-600">
@@ -43,7 +43,7 @@ const BudgetDisplay = ({ squad, onSetBank }: BudgetDisplayProps) => {
           Bank (Remaining Budget)
         </label>
         <div className="flex items-center space-x-2">
-          <span className="text-gray-500 font-medium">£</span>
+          <span className="text-gray-500 font-medium">GBP</span>
           <input
             type="number"
             value={Math.round(squad.bank * 10) / 10}

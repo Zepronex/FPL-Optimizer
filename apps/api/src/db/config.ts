@@ -8,6 +8,7 @@ export type DatabaseConfig = {
   workspaceRoot: string;
   migrationsDir: string;
   defaultFplDataDir: string;
+  defaultFplHistoryPath: string;
   defaultPredictionOutputPath: string;
   defaultExpectedPointsModelPath: string;
   defaultExpectedPointsEvaluationPath: string;
@@ -31,6 +32,13 @@ export function readDatabaseConfig(
     workspaceRoot,
     migrationsDir: path.join(workspaceRoot, 'db', 'migrations'),
     defaultFplDataDir: path.join(workspaceRoot, 'data', 'fpl', 'latest'),
+    defaultFplHistoryPath: path.join(
+      workspaceRoot,
+      'data',
+      'fpl',
+      'history',
+      'player_gameweek_history.json'
+    ),
     defaultPredictionOutputPath: path.join(
       workspaceRoot,
       'data',

@@ -6,11 +6,11 @@ export const formatPrice = (price: number): string => {
   
   // If the decimal part is 0, show as whole number
   if (rounded % 1 === 0) {
-    return `£${rounded.toFixed(0)}m`;
+    return `GBP ${rounded.toFixed(0)}m`;
   }
   
   // Otherwise show with 1 decimal place
-  return `£${rounded.toFixed(1)}m`;
+  return `GBP ${rounded.toFixed(1)}m`;
 };
 
 export const formatScore = (score: number): string => {
@@ -77,7 +77,7 @@ export const getLabelText = (label: PlayerLabel): string => {
 export const getPositionColor = (position: string): string => {
   switch (position) {
     case 'GK':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-gray-100 text-gray-800';
     case 'DEF':
       return 'bg-blue-100 text-blue-800';
     case 'MID':

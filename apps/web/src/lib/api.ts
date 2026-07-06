@@ -10,6 +10,9 @@ import {
   WeightPreset,
   CountedApiResponse,
   AgentPublicStatus,
+  EvaluationDataHealth,
+  EvaluationLatest,
+  EvaluationRuns,
   OptimizerResult,
   ExplainRecommendationRequest,
   RecommendationExplanation,
@@ -146,6 +149,22 @@ export const apiClient = {
 
   async getAgentStatus(): Promise<ApiResponse<AgentPublicStatus>> {
     const response = await api.get('/agent/status');
+    return response.data;
+  },
+
+  // Evaluation API
+  async getEvaluationLatest(): Promise<ApiResponse<EvaluationLatest>> {
+    const response = await api.get('/evaluation/latest');
+    return response.data;
+  },
+
+  async getEvaluationRuns(limit: number = 5): Promise<CountedApiResponse<EvaluationRuns>> {
+    const response = await api.get(`/evaluation/runs?limit=${encodeURIComponent(String(limit))}`);
+    return response.data;
+  },
+
+  async getEvaluationDataHealth(): Promise<ApiResponse<EvaluationDataHealth>> {
+    const response = await api.get('/evaluation/data-health');
     return response.data;
   },
 

@@ -88,6 +88,9 @@ GET /api/predictions/player/:playerId
 GET /api/predictions/gameweek/:gameweekId
 GET /api/predictions/top?gameweekId=&position=&limit=
 GET /api/model/evaluations/latest
+GET /api/evaluation/latest
+GET /api/evaluation/runs
+GET /api/evaluation/data-health
 ```
 
 Prediction responses include:
@@ -97,6 +100,29 @@ Prediction responses include:
 - `count`: returned row count
 
 Top predictions are sorted by `predictedPoints` descending, then player name and fixture id for deterministic ties. `position` accepts `GK`, `DEF`, `MID`, or `FWD`; `limit` is capped at 100.
+
+## Evaluation Dashboard API
+
+The `/api/evaluation/*` endpoints shape prediction-serving and evaluation records for the web dashboard.
+
+`GET /api/evaluation/latest` returns:
+
+- latest evaluation metadata: model name, model version, evaluation type, evaluation key and timestamps
+- backtest row count
+- MAE and RMSE
+- baseline MAE and baseline RMSE
+- difference versus baseline for each metric
+- `modelBeatsBaseline` flags for MAE and RMSE
+- latest prediction-run metadata when prediction rows are loaded
+- setup commands and warnings when evaluation or prediction data is missing
+
+`GET /api/evaluation/runs` returns recent evaluation runs in deterministic newest-first order by `createdAt`, then id.
+
+`GET /api/evaluation/data-health` returns coverage counts for players, teams, gameweeks, fixtures, player-gameweek history rows from the local history artifact, latest prediction rows, prediction runs, and evaluation runs.
+
+MAE and RMSE are error metrics, so lower values are better. The dashboard does not claim the model is clearly better unless both MAE and RMSE are lower than the baseline. The current backtest should be interpreted as mixed: RMSE is lower than the baseline, but MAE is higher.
+
+The evaluation dashboard is a transparency surface. It should be used to inspect model quality, data coverage, and pipeline status before relying on prediction-backed optimizer recommendations.
 
 ## Optimizer API
 

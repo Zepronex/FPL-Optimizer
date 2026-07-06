@@ -76,7 +76,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
           Squad Builder
         </h1>
         <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
-          Build your Fantasy Premier League squad and get AI-powered analysis with personalized suggestions to maximize your points potential.
+          Build your Fantasy Premier League squad and review model-backed analysis with deterministic suggestions.
         </p>
         
         {/* Analyze Button - Moved to top */}
