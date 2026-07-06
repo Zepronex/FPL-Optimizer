@@ -18,6 +18,7 @@ const processes = [
 
 const children = new Set();
 let shuttingDown = false;
+let shutdownExitTimer = null;
 
 function buildChildEnv() {
   const env = { ...process.env };
@@ -114,10 +115,30 @@ function stopAll(signal = 'SIGTERM') {
   shuttingDown = true;
 
   for (const child of children) {
-    if (!child.killed) {
-      child.kill(signal);
-    }
+    stopChild(child, signal);
   }
+
+  shutdownExitTimer = setTimeout(() => {
+    process.exit(process.exitCode ?? 1);
+  }, 3000);
+}
+
+function stopChild(child, signal) {
+  if (child.killed) {
+    return;
+  }
+
+  if (process.platform === 'win32' && child.pid) {
+    const killer = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
+      stdio: 'ignore',
+      windowsHide: true
+    });
+
+    killer.on('error', () => child.kill(signal));
+    return;
+  }
+
+  child.kill(signal);
 }
 
 for (const processConfig of processes) {
@@ -145,6 +166,10 @@ for (const processConfig of processes) {
     stdout.close();
     stderr.close();
     children.delete(child);
+
+    if (children.size === 0 && shutdownExitTimer) {
+      clearTimeout(shutdownExitTimer);
+    }
 
     if (!shuttingDown) {
       const reason = signal ? `signal ${signal}` : `exit code ${code}`;
