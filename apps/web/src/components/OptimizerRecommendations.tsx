@@ -86,7 +86,7 @@ const OptimizerRecommendations = ({
       } catch {
         if (!cancelled) {
           setExplanation(null);
-          setExplanationError('Could not load the recommendation explanation.');
+          setExplanationError('Could not load the recommendation explanation. Optimizer recommendations remain unchanged.');
         }
       } finally {
         if (!cancelled) {
@@ -227,6 +227,9 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
     return (
       <section className="rounded-lg border border-gray-200 bg-white p-6">
         <LoadingSpinner text="Preparing recommendation explanation..." />
+        <p className="mt-3 text-center text-sm text-gray-600">
+          The optimizer result has already been produced; this step only prepares explanatory text.
+        </p>
       </section>
     );
   }
@@ -242,7 +245,19 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
     );
   }
 
-  if (!explanation) return null;
+  if (!explanation) {
+    return (
+      <StatusPanel
+        tone="info"
+        title="Explanation pending"
+        message="An explanation will appear after the optimizer returns a recommendation payload."
+        action={{ label: 'Retry explanation', onClick: onRetry }}
+      />
+    );
+  }
+
+  const modeLabel = formatAgentModeLabel(explanation);
+  const fallbackMessage = explanation.fallbackReason ?? explanation.agentStatus.message;
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5">
@@ -256,14 +271,19 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
             <p className="mt-1 text-sm text-gray-600">{explanation.summary}</p>
           </div>
         </div>
-        <span className="w-fit rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
-          {explanation.usedFallback ? 'Deterministic fallback' : 'Configured provider'}
-        </span>
+        <div className="w-fit rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+          <div className="text-xs font-semibold uppercase text-gray-500">Explanation mode</div>
+          <div className="font-medium text-gray-900">{modeLabel}</div>
+          <div className="mt-1 max-w-xs text-xs text-gray-600">{explanation.agentStatus.message}</div>
+        </div>
       </div>
 
-      {explanation.usedFallback && explanation.fallbackReason && (
-        <div className="mb-5 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
-          {explanation.fallbackReason}
+      {explanation.agentStatus.mode === 'deterministic_fallback' && (
+        <div className="mb-5 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
+          <p>{fallbackMessage}</p>
+          <p className="mt-2">
+            Recommendations remain valid because the optimizer selected the players, transfers, captaincy and bench order before this explanation was generated.
+          </p>
         </div>
       )}
 
@@ -278,11 +298,42 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
         <ExplanationSection title="Constraint summary" items={explanation.constraintSummary} />
       </div>
 
+      <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-700" />
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">Why this is safe</h4>
+            <p className="mt-1 text-sm text-gray-600">
+              The optimizer decides the recommendation. The agent only explains the supplied optimizer output, and live provider responses must pass schema validation and grounding checks before display. If those checks fail, deterministic fallback is used.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
         {explanation.disclaimer}
       </p>
     </section>
   );
+};
+
+const formatAgentModeLabel = (explanation: RecommendationExplanation): string => {
+  if (explanation.agentStatus.mode === 'deterministic_fallback') {
+    return 'Deterministic fallback';
+  }
+
+  return `${formatProviderName(explanation.agentStatus.provider)} provider`;
+};
+
+const formatProviderName = (provider: RecommendationExplanation['agentStatus']['provider']): string => {
+  switch (provider) {
+    case 'openai':
+      return 'OpenAI';
+    case 'azure_openai':
+      return 'Azure OpenAI';
+    case 'deterministic_fallback':
+      return 'Deterministic fallback';
+  }
 };
 
 type ExplanationSectionProps = {
