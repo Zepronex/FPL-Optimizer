@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\" \"pnpm --filter @fpl-optimizer/ml run dev\"",
-    "dev:app": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\"",
+    "dev:app": "node scripts/dev-app.mjs",
     "dev:all": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\" \"pnpm --filter @fpl-optimizer/ml run dev\"",
     "dev:api": "pnpm --filter @fpl-optimizer/api run dev",
     "dev:web": "pnpm --filter @fpl-optimizer/web run dev",
