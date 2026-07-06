@@ -211,6 +211,35 @@ export type TransferOptimizerResult = {
   targetGameweekId?: number;
 };
 
+export type RecommendationExplanationInput = {
+  startingXi: StartingXIRecommendation;
+  transferRecommendations: TransferRecommendation[];
+  predictionRunIds: number[];
+  targetGameweekId?: number;
+};
+
+export type ExplainRecommendationRequest = {
+  optimizerResult: RecommendationExplanationInput;
+};
+
+export type RecommendationExplanationProvider = 'deterministic_fallback' | 'openai' | 'azure_openai';
+
+export type RecommendationExplanation = {
+  summary: string;
+  recommendedActions: string[];
+  startingXiReasoning: string[];
+  captaincyReasoning: string[];
+  transferReasoning: string[];
+  risks: string[];
+  alternatives: string[];
+  dataLimitations: string[];
+  constraintSummary: string[];
+  disclaimer: string;
+  provider: RecommendationExplanationProvider;
+  usedFallback: boolean;
+  fallbackReason?: string;
+};
+
 export type OptimizerResult = {
   squad: OptimizerSquad;
   startingXi: StartingXIRecommendation;

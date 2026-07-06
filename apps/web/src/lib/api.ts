@@ -10,6 +10,8 @@ import {
   WeightPreset,
   CountedApiResponse,
   OptimizerResult,
+  ExplainRecommendationRequest,
+  RecommendationExplanation,
   SquadOptimizationRequest,
   StartingXIOptimizerResult,
   StartingXIRecommendationRequest,
@@ -131,6 +133,13 @@ export const apiClient = {
     request: SquadOptimizationRequest
   ): Promise<ApiResponse<OptimizerResult>> {
     const response = await api.post('/optimizer/squad', request);
+    return response.data;
+  },
+
+  async explainRecommendation(
+    request: ExplainRecommendationRequest
+  ): Promise<ApiResponse<RecommendationExplanation>> {
+    const response = await api.post('/agent/explain-recommendation', request);
     return response.data;
   },
 
