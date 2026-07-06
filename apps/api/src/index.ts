@@ -15,6 +15,7 @@ import { modelRouter } from './routes/model';
 import { evaluationRouter } from './routes/evaluation';
 import { optimizerRouter } from './routes/optimizer';
 import { agentRouter } from './routes/agent';
+import { healthRouter } from './routes/health';
 
 dotenv.config();
 
@@ -96,11 +97,7 @@ app.use('/api/model', modelRouter);
 app.use('/api/evaluation', evaluationRouter);
 app.use('/api/optimizer', optimizerRouter);
 app.use('/api/agent', agentRouter);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+app.use('/api/health', healthRouter);
 
 // Request logging middleware
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
