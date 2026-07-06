@@ -194,3 +194,90 @@ export type ModelEvaluation = {
   updatedAt: string;
 };
 
+export type EvaluationMetricName = 'mae' | 'rmse';
+
+export type EvaluationMetricComparison = {
+  metric: EvaluationMetricName;
+  modelValue: number | null;
+  baselineValue: number | null;
+  differenceVsBaseline: number | null;
+  modelBeatsBaseline: boolean | null;
+  lowerIsBetter: true;
+};
+
+export type EvaluationRunSummary = {
+  id: number;
+  evaluationKey: string;
+  modelName: string;
+  modelVersion: string;
+  evaluationType: string;
+  backtestRows: number | null;
+  predictionCount: number;
+  mae: EvaluationMetricComparison;
+  rmse: EvaluationMetricComparison;
+  evaluatedGameweeks: number[];
+  skippedGameweeks: number[];
+  evaluatedGameweekCount: number;
+  skippedGameweekCount: number;
+  createdAt: string;
+  updatedAt: string;
+  warnings: string[];
+};
+
+export type EvaluationPredictionRunMetadata = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionCount: number;
+  sourceGeneratedAt: string | null;
+  sourceSnapshotHash: string | null;
+  featureSnapshotHash: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EvaluationLatest = {
+  latestRun: EvaluationRunSummary | null;
+  latestPredictionRun: EvaluationPredictionRunMetadata | null;
+  requiredCommands: string[];
+  limitations: string[];
+  warnings: string[];
+};
+
+export type EvaluationRuns = {
+  runs: EvaluationRunSummary[];
+  count: number;
+  warnings: string[];
+};
+
+export type EvaluationDataCoverageCounts = {
+  players: number;
+  teams: number;
+  gameweeks: number;
+  fixtures: number;
+  playerGameweekHistoryRows: number | null;
+  playerGameweekHistoryPlayers: number | null;
+  latestPredictionRows: number;
+  predictionRuns: number;
+  evaluationRuns: number;
+};
+
+export type PlayerGameweekHistoryArtifact = {
+  path: string;
+  generatedAt: string | null;
+  sourceName: string | null;
+  playerCount: number | null;
+  rowCount: number | null;
+};
+
+export type EvaluationDataHealth = {
+  generatedAt: string;
+  coverage: EvaluationDataCoverageCounts;
+  latestPredictionRun: EvaluationPredictionRunMetadata | null;
+  playerGameweekHistory: PlayerGameweekHistoryArtifact | null;
+  requiredCommands: string[];
+  warnings: string[];
+};
+

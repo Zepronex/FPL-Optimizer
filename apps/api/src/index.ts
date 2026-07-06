@@ -12,6 +12,7 @@ import { generateRouter } from './routes/generate';
 import { mlRouter } from './routes/ml';
 import { predictionsRouter } from './routes/predictions';
 import { modelRouter } from './routes/model';
+import { evaluationRouter } from './routes/evaluation';
 import { optimizerRouter } from './routes/optimizer';
 import { agentRouter } from './routes/agent';
 
@@ -92,6 +93,7 @@ app.use('/api/generate', generateRouter);
 app.use('/api/ml', mlRouter);
 app.use('/api/predictions', predictionsRouter);
 app.use('/api/model', modelRouter);
+app.use('/api/evaluation', evaluationRouter);
 app.use('/api/optimizer', optimizerRouter);
 app.use('/api/agent', agentRouter);
 

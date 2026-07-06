@@ -1,5 +1,6 @@
 import { Queryable } from './client';
 import {
+  EvaluationDataCoverageCounts,
   ModelEvaluation,
   PlayerPrediction,
   Pos,
@@ -73,6 +74,16 @@ type ModelEvaluationDbRow = {
   metadata: unknown;
   created_at: Date | string;
   updated_at: Date | string;
+};
+
+type EvaluationDataCoverageDbRow = {
+  players: string;
+  teams: string;
+  gameweeks: string;
+  fixtures: string;
+  latest_prediction_rows: string;
+  prediction_runs: string;
+  evaluation_runs: string;
 };
 
 export async function readLatestPredictionSummary(
@@ -170,6 +181,64 @@ export async function readLatestModelEvaluation(
   return row ? toModelEvaluation(row) : null;
 }
 
+export async function readModelEvaluationRuns(
+  client: Queryable,
+  options: { limit?: number } = {}
+): Promise<ModelEvaluation[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? 25, 100));
+  const result = await client.query<ModelEvaluationDbRow>(
+    `
+      ${modelEvaluationSelectSql()}
+      ORDER BY created_at DESC, id DESC
+      LIMIT $1
+    `,
+    [limit]
+  );
+
+  return result.rows.map(toModelEvaluation);
+}
+
+export async function readEvaluationDataCoverage(
+  client: Queryable
+): Promise<Omit<
+  EvaluationDataCoverageCounts,
+  'playerGameweekHistoryRows' | 'playerGameweekHistoryPlayers'
+>> {
+  const result = await client.query<EvaluationDataCoverageDbRow>(
+    `
+      WITH latest_prediction_run AS (
+        SELECT id
+        FROM prediction_runs
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      )
+      SELECT
+        (SELECT count(*) FROM players) AS players,
+        (SELECT count(*) FROM teams) AS teams,
+        (SELECT count(*) FROM gameweeks) AS gameweeks,
+        (SELECT count(*) FROM fixtures) AS fixtures,
+        (
+          SELECT count(*)
+          FROM player_predictions
+          WHERE prediction_run_id = (SELECT id FROM latest_prediction_run)
+        ) AS latest_prediction_rows,
+        (SELECT count(*) FROM prediction_runs) AS prediction_runs,
+        (SELECT count(*) FROM model_evaluations) AS evaluation_runs
+    `
+  );
+
+  const row = result.rows[0];
+  return {
+    players: Number(row.players),
+    teams: Number(row.teams),
+    gameweeks: Number(row.gameweeks),
+    fixtures: Number(row.fixtures),
+    latestPredictionRows: Number(row.latest_prediction_rows),
+    predictionRuns: Number(row.prediction_runs),
+    evaluationRuns: Number(row.evaluation_runs)
+  };
+}
+
 export function filterSortLimitPredictions(
   predictions: PlayerPrediction[],
   filters: TopPredictionFilters
@@ -189,7 +258,7 @@ export function filterSortLimitPredictions(
     .slice(0, filters.limit);
 }
 
-async function readLatestPredictionRun(client: Queryable): Promise<PredictionRun | null> {
+export async function readLatestPredictionRun(client: Queryable): Promise<PredictionRun | null> {
   const result = await client.query<PredictionRunDbRow>(
     `
       ${predictionRunSelectSql()}
@@ -266,6 +335,28 @@ function predictionRunSelectSql(): string {
       created_at,
       updated_at
     FROM prediction_runs
+  `;
+}
+
+function modelEvaluationSelectSql(): string {
+  return `
+    SELECT
+      id,
+      evaluation_key,
+      model_name,
+      model_version,
+      evaluation_type,
+      prediction_count,
+      metrics,
+      baseline_metrics,
+      metrics_by_position,
+      baseline_metrics_by_position,
+      evaluated_gameweeks,
+      skipped_gameweeks,
+      metadata,
+      created_at,
+      updated_at
+    FROM model_evaluations
   `;
 }
 
