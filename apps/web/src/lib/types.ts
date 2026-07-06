@@ -224,6 +224,38 @@ export type ExplainRecommendationRequest = {
 
 export type RecommendationExplanationProvider = 'deterministic_fallback' | 'openai' | 'azure_openai';
 
+export type AgentProvider = 'openai' | 'azure_openai';
+export type AgentExplanationMode = 'deterministic_fallback' | 'live_provider';
+export type AgentFallbackReasonCode =
+  | 'agent_disabled'
+  | 'missing_openai_config'
+  | 'missing_azure_openai_config'
+  | 'missing_provider_config'
+  | 'provider_error'
+  | 'schema_validation_failed'
+  | 'hallucination_guard_failed';
+
+export type AgentExplanationStatus = {
+  mode: AgentExplanationMode;
+  provider: RecommendationExplanationProvider;
+  providerConfigured: boolean;
+  fallbackReasonCode?: AgentFallbackReasonCode;
+  message: string;
+};
+
+export type AgentPublicStatus = {
+  enabled: boolean;
+  providerPreference: AgentProvider | 'auto';
+  provider: AgentProvider | null;
+  requiredConfigPresent: boolean;
+  activeMode: 'deterministic_fallback' | 'provider_ready';
+  model: string | null;
+  fallbackReasonCode?: Extract<
+    AgentFallbackReasonCode,
+    'agent_disabled' | 'missing_openai_config' | 'missing_azure_openai_config' | 'missing_provider_config'
+  >;
+};
+
 export type RecommendationExplanation = {
   summary: string;
   recommendedActions: string[];
@@ -238,6 +270,7 @@ export type RecommendationExplanation = {
   provider: RecommendationExplanationProvider;
   usedFallback: boolean;
   fallbackReason?: string;
+  agentStatus: AgentExplanationStatus;
 };
 
 export type OptimizerResult = {

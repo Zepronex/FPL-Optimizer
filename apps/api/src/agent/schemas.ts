@@ -126,10 +126,30 @@ export const RecommendationExplanationCoreSchema = z.object({
   disclaimer: z.string().trim().min(1)
 }).strict();
 
+export const AgentExplanationModeSchema = z.enum(['deterministic_fallback', 'live_provider']);
+export const AgentFallbackReasonCodeSchema = z.enum([
+  'agent_disabled',
+  'missing_openai_config',
+  'missing_azure_openai_config',
+  'missing_provider_config',
+  'provider_error',
+  'schema_validation_failed',
+  'hallucination_guard_failed'
+]);
+
+export const AgentExplanationStatusSchema = z.object({
+  mode: AgentExplanationModeSchema,
+  provider: z.enum(['deterministic_fallback', 'openai', 'azure_openai']),
+  providerConfigured: z.boolean(),
+  fallbackReasonCode: AgentFallbackReasonCodeSchema.optional(),
+  message: z.string().trim().min(1)
+}).strict();
+
 export const RecommendationExplanationSchema = RecommendationExplanationCoreSchema.extend({
   provider: z.enum(['deterministic_fallback', 'openai', 'azure_openai']),
   usedFallback: z.boolean(),
-  fallbackReason: z.string().trim().min(1).optional()
+  fallbackReason: z.string().trim().min(1).optional(),
+  agentStatus: AgentExplanationStatusSchema
 }).strict();
 
 export const RecommendationExplanationJsonSchema = {
@@ -164,4 +184,5 @@ export const RecommendationExplanationJsonSchema = {
 export type RecommendationExplanationInput = z.infer<typeof RecommendationExplanationInputSchema>;
 export type ExplainRecommendationRequest = z.infer<typeof ExplainRecommendationRequestSchema>;
 export type RecommendationExplanationCore = z.infer<typeof RecommendationExplanationCoreSchema>;
+export type AgentFallbackReasonCode = z.infer<typeof AgentFallbackReasonCodeSchema>;
 export type RecommendationExplanation = z.infer<typeof RecommendationExplanationSchema>;

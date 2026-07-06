@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, it } from 'node:test';
 import {
   ExplainRecommendationRequestSchema,
@@ -19,6 +21,14 @@ describe('recommendation explanation schemas', () => {
 
     assert.equal(parsed.optimizerResult.startingXi.formation, '3-4-3');
     assert.equal(parsed.optimizerResult.startingXi.starters.length, 11);
+  });
+
+  it('validates the local demo explanation request fixture', () => {
+    const fixture = JSON.parse(readFileSync(resolveFixturePath(), 'utf8')) as unknown;
+    const parsed = ExplainRecommendationRequestSchema.parse(fixture);
+
+    assert.equal(parsed.optimizerResult.startingXi.starters.length, 11);
+    assert.equal(parsed.optimizerResult.transferRecommendations.length, 1);
   });
 
   it('rejects unstructured explanation output', () => {
@@ -47,6 +57,16 @@ describe('recommendation explanation schemas', () => {
     assert.deepEqual([...RecommendationExplanationJsonSchema.required].sort(), zodKeys);
   });
 });
+
+function resolveFixturePath(): string {
+  const candidates = [
+    path.resolve(process.cwd(), 'fixtures/agent/recommendation-explanation-request.json'),
+    path.resolve(process.cwd(), '../../fixtures/agent/recommendation-explanation-request.json')
+  ];
+  const fixturePath = candidates.find(candidate => existsSync(candidate));
+  assert.ok(fixturePath, 'Local demo explanation fixture was not found.');
+  return fixturePath;
+}
 
 function startingXiFixture() {
   const players = [

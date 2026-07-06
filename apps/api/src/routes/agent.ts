@@ -1,5 +1,6 @@
 import { Router, Response, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
+import { AgentPublicStatus, readAgentPublicStatus } from '../agent/config';
 import { explainRecommendation } from '../agent/explanationService';
 import {
   ExplainRecommendationRequestSchema,
@@ -11,13 +12,24 @@ type ExplainRecommendationFn = (
   input: RecommendationExplanationInput
 ) => Promise<RecommendationExplanation>;
 
+type ReadAgentStatusFn = () => AgentPublicStatus;
+
 type AgentRouterOptions = {
   explainRecommendation?: ExplainRecommendationFn;
+  readAgentStatus?: ReadAgentStatusFn;
 };
 
 export function createAgentRouter(options: AgentRouterOptions = {}): ExpressRouter {
   const router: ExpressRouter = Router();
   const explain = options.explainRecommendation ?? explainRecommendation;
+  const readStatus = options.readAgentStatus ?? (() => readAgentPublicStatus());
+
+  router.get('/status', (_req, res) => {
+    res.json({
+      success: true,
+      data: readStatus()
+    });
+  });
 
   router.post('/explain-recommendation', async (req, res) => {
     try {

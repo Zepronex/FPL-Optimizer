@@ -59,27 +59,57 @@ The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature pre
 
 ## Recommendation Explanations
 
-The optimizer remains the only layer that selects squads, transfers, captaincy, and bench order. The explanation endpoint only summarizes optimizer output that already exists in the request payload.
+The optimizer remains the only layer that selects squads, transfers, captaincy, and bench order. The explanation endpoint only summarizes optimizer output that already exists in the request payload. The agent does not choose players, transfers, captaincy, bench order, or chips.
 
 `POST /api/agent/explain-recommendation` accepts the optimizer result and returns structured JSON with summary, recommended actions, starting XI reasoning, captaincy reasoning, transfer reasoning, risks, alternatives, data limitations, constraint summary, and disclaimer fields.
 
-The deterministic fallback explanation works without provider credentials and is the default local mode. It uses only supplied optimizer data and states when prediction run, gameweek, or player metadata is missing. Optional provider output is schema-validated and checked for ungrounded player references before it can reach the API response; invalid, timed out, unavailable, or unsafe provider output falls back to deterministic explanation.
+The response includes `agentStatus` metadata so the API and frontend can show whether the explanation used deterministic fallback or a live provider. Fallback reasons are safe public codes such as `missing_provider_config`, `provider_error`, `schema_validation_failed`, and `hallucination_guard_failed`; raw provider errors and secrets are not returned.
 
-Configure local explanation behavior with empty or non-secret values in `.env.example` or `apps/api/.env.example`:
+`GET /api/agent/status` returns safe public status for local demos: whether the agent is enabled, the selected provider type when known, whether required config appears present, the active mode, and the configured model or deployment name when safe. It does not return API keys or raw environment values.
 
-```bash
-SCOUTIQ_AGENT_ENABLED=false
-OPENAI_API_KEY=
-OPENAI_MODEL=
-```
-
-Optional provider selection and timeout settings are documented in `apps/api/.env.example`. Do not commit real API keys.
+The deterministic fallback explanation works without provider credentials and is the default local demo path. It uses only supplied optimizer data and states when prediction run, gameweek, or player metadata is missing. Optional provider output is schema-validated and checked for ungrounded player references before it can reach the API response; invalid, timed out, unavailable, or unsafe provider output falls back to deterministic explanation.
 
 Run normal local web and API development with:
 
 ```bash
 pnpm.cmd run dev:app
 ```
+
+With the dev servers running, check local fallback status and exercise the explanation endpoint with the committed demo fixture:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:3001/api/agent/status
+
+$payload = Get-Content .\fixtures\agent\recommendation-explanation-request.json -Raw
+Invoke-RestMethod `
+  -Uri http://localhost:3001/api/agent/explain-recommendation `
+  -Method Post `
+  -ContentType 'application/json' `
+  -Body $payload
+```
+
+The fixture is for local development and tests only. It is not loaded by the optimizer and is not part of the production recommendation path.
+
+Configure local explanation behavior with empty or non-secret values in `.env.example` or `apps/api/.env.example`:
+
+```bash
+SCOUTIQ_AGENT_ENABLED=true
+OPENAI_API_KEY=
+OPENAI_MODEL=
+```
+
+To enable a live OpenAI provider locally, keep `SCOUTIQ_AGENT_ENABLED=true`, set `SCOUTIQ_AGENT_PROVIDER=openai` if you do not want auto-detection, and provide private values in your local `.env` file only:
+
+```bash
+SCOUTIQ_AGENT_ENABLED=true
+SCOUTIQ_AGENT_PROVIDER=openai
+OPENAI_API_KEY=<private key>
+OPENAI_MODEL=<model name>
+```
+
+Optional provider selection, Azure OpenAI, base URL, and timeout settings are documented in `apps/api/.env.example`. Do not commit real API keys.
+
+In the UI, deterministic fallback means the explanation text came from the local fallback builder. Live provider mode means the explanation text came from the configured OpenAI or Azure OpenAI provider after schema validation and grounding checks. In both modes, the recommendation itself came from the deterministic optimizer before the explanation was generated.
 
 Useful validation commands for this path:
 

@@ -26,7 +26,17 @@ export type AzureOpenAIAgentConfig = {
 
 export type AgentConfig = DisabledAgentConfig | OpenAIAgentConfig | AzureOpenAIAgentConfig;
 
-type ProviderPreference = AgentProvider | 'auto';
+export type ProviderPreference = AgentProvider | 'auto';
+
+export type AgentPublicStatus = {
+  enabled: boolean;
+  providerPreference: ProviderPreference;
+  provider: AgentProvider | null;
+  requiredConfigPresent: boolean;
+  activeMode: 'deterministic_fallback' | 'provider_ready';
+  model: string | null;
+  fallbackReasonCode?: DisabledAgentConfig['reason'];
+};
 
 const DEFAULT_OPENAI_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_AGENT_TIMEOUT_MS = 10000;
@@ -58,6 +68,47 @@ export function readAgentConfig(env: NodeJS.ProcessEnv = process.env): AgentConf
   );
 }
 
+export function readAgentPublicStatus(env: NodeJS.ProcessEnv = process.env): AgentPublicStatus {
+  const enabled = parseBoolean(env.SCOUTIQ_AGENT_ENABLED);
+  const preference = readProviderPreference(env.SCOUTIQ_AGENT_PROVIDER);
+  const timeoutMs = readPositiveInteger(env.SCOUTIQ_AGENT_TIMEOUT_MS) ?? DEFAULT_AGENT_TIMEOUT_MS;
+  const configuredProvider = resolveConfiguredProvider(env, preference, timeoutMs);
+
+  if (!enabled) {
+    return {
+      enabled: false,
+      providerPreference: preference,
+      provider: configuredProvider?.provider ?? null,
+      requiredConfigPresent: Boolean(configuredProvider),
+      activeMode: 'deterministic_fallback',
+      model: configuredProvider ? readSafeModelName(configuredProvider) : null,
+      fallbackReasonCode: 'agent_disabled'
+    };
+  }
+
+  if (configuredProvider) {
+    return {
+      enabled: true,
+      providerPreference: preference,
+      provider: configuredProvider.provider,
+      requiredConfigPresent: true,
+      activeMode: 'provider_ready',
+      model: readSafeModelName(configuredProvider)
+    };
+  }
+
+  const disabledConfig = readAgentConfig(env) as DisabledAgentConfig;
+  return {
+    enabled: true,
+    providerPreference: preference,
+    provider: null,
+    requiredConfigPresent: false,
+    activeMode: 'deterministic_fallback',
+    model: null,
+    fallbackReasonCode: disabledConfig.reason
+  };
+}
+
 function readOpenAIConfig(env: NodeJS.ProcessEnv, timeoutMs: number): OpenAIAgentConfig | null {
   const apiKey = readNonEmptyString(env.OPENAI_API_KEY);
   const model = readNonEmptyString(env.OPENAI_MODEL);
@@ -71,6 +122,26 @@ function readOpenAIConfig(env: NodeJS.ProcessEnv, timeoutMs: number): OpenAIAgen
     baseUrl: stripTrailingSlash(readNonEmptyString(env.OPENAI_BASE_URL) ?? DEFAULT_OPENAI_BASE_URL),
     timeoutMs
   };
+}
+
+function resolveConfiguredProvider(
+  env: NodeJS.ProcessEnv,
+  preference: ProviderPreference,
+  timeoutMs: number
+): OpenAIAgentConfig | AzureOpenAIAgentConfig | null {
+  if (preference === 'azure_openai') {
+    return readAzureConfig(env, timeoutMs);
+  }
+
+  if (preference === 'openai') {
+    return readOpenAIConfig(env, timeoutMs);
+  }
+
+  return readAzureConfig(env, timeoutMs) ?? readOpenAIConfig(env, timeoutMs);
+}
+
+function readSafeModelName(config: OpenAIAgentConfig | AzureOpenAIAgentConfig): string {
+  return config.provider === 'openai' ? config.model : config.deployment;
 }
 
 function readAzureConfig(env: NodeJS.ProcessEnv, timeoutMs: number): AzureOpenAIAgentConfig | null {

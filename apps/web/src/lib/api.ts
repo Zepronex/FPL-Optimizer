@@ -9,6 +9,7 @@ import {
   PlayerSearchResult,
   WeightPreset,
   CountedApiResponse,
+  AgentPublicStatus,
   OptimizerResult,
   ExplainRecommendationRequest,
   RecommendationExplanation,
@@ -140,6 +141,11 @@ export const apiClient = {
     request: ExplainRecommendationRequest
   ): Promise<ApiResponse<RecommendationExplanation>> {
     const response = await api.post('/agent/explain-recommendation', request);
+    return response.data;
+  },
+
+  async getAgentStatus(): Promise<ApiResponse<AgentPublicStatus>> {
+    const response = await api.get('/agent/status');
     return response.data;
   },
 
