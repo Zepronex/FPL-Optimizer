@@ -17,6 +17,8 @@ describe('LLM recommendation explanation service', () => {
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
     assert.match(explanation.fallbackReason ?? '', /disabled/);
+    assert.equal(explanation.agentStatus.mode, 'deterministic_fallback');
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'agent_disabled');
   });
 
   it('returns validated OpenAI structured output when configured', async () => {
@@ -32,6 +34,9 @@ describe('LLM recommendation explanation service', () => {
 
     assert.equal(explanation.provider, 'openai');
     assert.equal(explanation.usedFallback, false);
+    assert.equal(explanation.agentStatus.mode, 'live_provider');
+    assert.equal(explanation.agentStatus.provider, 'openai');
+    assert.equal(explanation.agentStatus.providerConfigured, true);
     assert.equal(calls[0].url, 'https://api.openai.test/v1/responses');
     const body = calls[0].body as OpenAIRequestBody;
     assert.equal(body.text.format.type, 'json_schema');
@@ -57,6 +62,8 @@ describe('LLM recommendation explanation service', () => {
 
     assert.equal(explanation.provider, 'azure_openai');
     assert.equal(explanation.usedFallback, false);
+    assert.equal(explanation.agentStatus.mode, 'live_provider');
+    assert.equal(explanation.agentStatus.provider, 'azure_openai');
     assert.equal(calls[0].url, 'https://azure.example/openai/v1/chat/completions');
     const body = calls[0].body as AzureOpenAIRequestBody;
     assert.equal(body.response_format.type, 'json_schema');
@@ -77,7 +84,27 @@ describe('LLM recommendation explanation service', () => {
 
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
-    assert.match(explanation.fallbackReason ?? '', /unavailable or invalid/);
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'schema_validation_failed');
+    assert.doesNotMatch(JSON.stringify(explanation), /test-key/);
+  });
+
+  it('falls back with a safe provider error reason when the provider request fails', async () => {
+    const fetchImpl: FetchLike = async () => ({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: 'raw provider detail' }),
+      text: async () => 'raw provider detail'
+    });
+
+    const explanation = await explainRecommendation(explanationInputFixture(), {
+      config: openAIConfigFixture(),
+      fetchImpl
+    });
+
+    assert.equal(explanation.provider, 'deterministic_fallback');
+    assert.equal(explanation.usedFallback, true);
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'provider_error');
+    assert.doesNotMatch(JSON.stringify(explanation), /raw provider detail/);
   });
 
   it('falls back when provider output references an unknown player id', async () => {
@@ -95,6 +122,7 @@ describe('LLM recommendation explanation service', () => {
 
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'hallucination_guard_failed');
   });
 
   it('falls back when provider output references an unknown player name', async () => {
@@ -112,6 +140,7 @@ describe('LLM recommendation explanation service', () => {
 
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'hallucination_guard_failed');
   });
 });
 

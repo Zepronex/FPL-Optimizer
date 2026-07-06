@@ -11,6 +11,8 @@ describe('deterministic recommendation explanation fallback', () => {
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
     assert.equal(explanation.fallbackReason, 'LLM provider is not configured.');
+    assert.equal(explanation.agentStatus.mode, 'deterministic_fallback');
+    assert.equal(explanation.agentStatus.providerConfigured, false);
     assert.match(explanation.summary, /3-4-3/);
     assert.match(explanation.summary, /\+3 pts/);
     assert.ok(explanation.recommendedActions.some(action => action.includes('Captain Fwd A')));

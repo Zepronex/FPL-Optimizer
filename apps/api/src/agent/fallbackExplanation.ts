@@ -1,12 +1,19 @@
 import {
+  AgentFallbackReasonCode,
   RecommendationExplanation,
   RecommendationExplanationInput,
   RecommendationExplanationSchema
 } from './schemas';
 
+type FallbackExplanationOptions = {
+  fallbackReasonCode?: AgentFallbackReasonCode;
+  providerConfigured?: boolean;
+};
+
 export function buildFallbackExplanation(
   input: RecommendationExplanationInput,
-  fallbackReason = 'Agent provider is disabled or unavailable.'
+  fallbackReason = 'Agent provider is disabled or unavailable.',
+  options: FallbackExplanationOptions = {}
 ): RecommendationExplanation {
   const topTransfer = input.transferRecommendations[0];
   const invalidTransfer = input.transferRecommendations.find(recommendation => !recommendation.validation.valid);
@@ -29,7 +36,14 @@ export function buildFallbackExplanation(
     disclaimer: 'The optimizer makes the recommendation. This explanation only summarizes optimizer output and prediction metadata.',
     provider: 'deterministic_fallback' as const,
     usedFallback: true,
-    fallbackReason
+    fallbackReason,
+    agentStatus: {
+      mode: 'deterministic_fallback' as const,
+      provider: 'deterministic_fallback' as const,
+      providerConfigured: options.providerConfigured ?? false,
+      fallbackReasonCode: options.fallbackReasonCode,
+      message: fallbackReason
+    }
   };
 
   return RecommendationExplanationSchema.parse(explanation);
