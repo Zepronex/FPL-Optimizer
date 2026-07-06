@@ -48,7 +48,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       key: 'xa90' as const,
       label: 'xA/90',
       description: 'Expected assists per 90 minutes',
-      color: 'bg-purple-500'
+      color: 'bg-slate-500'
     },
     {
       key: 'expMin' as const,
@@ -66,7 +66,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       key: 'avgPoints' as const,
       label: 'Avg Points',
       description: 'Historical FPL points per game',
-      color: 'bg-indigo-500'
+      color: 'bg-cyan-600'
     },
     {
       key: 'value' as const,
@@ -78,7 +78,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       key: 'ownership' as const,
       label: 'Ownership',
       description: 'Popularity among FPL managers',
-      color: 'bg-pink-500'
+      color: 'bg-orange-500'
     }
   ];
 
@@ -158,7 +158,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
       )}
 
       {/* Total Weight Display */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 mb-6 border border-gray-200">
+      <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium text-gray-700">Total Weight:</span>
           <span className={`font-bold text-lg ${Math.abs(totalWeight - 1) < 0.01 ? 'text-green-600' : 'text-orange-600'}`}>
@@ -167,7 +167,7 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
         </div>
         {Math.abs(totalWeight - 1) > 0.01 && (
           <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">
-            ⚠️ Weights don't sum to 1.0 - consider normalizing for consistent scoring
+            Weights do not sum to 1.0. Consider normalizing for consistent scoring.
           </div>
         )}
       </div>
@@ -199,9 +199,6 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
                 value={weights[config.key]}
                 onChange={(e) => updateWeight(config.key, parseFloat(e.target.value))}
                 className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                style={{
-                  background: `linear-gradient(to right, ${config.color} 0%, ${config.color} ${weights[config.key] * 100}%, #e5e7eb ${weights[config.key] * 100}%, #e5e7eb 100%)`
-                }}
               />
             </div>
           </div>
@@ -216,19 +213,15 @@ const WeightsPanel = ({ weightsState }: WeightsPanelProps) => {
             <p className="font-semibold mb-2">How weights work:</p>
             <ul className="text-xs space-y-1.5">
               <li className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
                 Higher weights prioritize that metric in player scoring
               </li>
               <li className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
                 Weights are automatically saved to your browser
               </li>
               <li className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
                 Use "Reset" to restore default values
               </li>
               <li className="flex items-start">
-                <span className="text-blue-500 mr-2">•</span>
                 Normalize ensures weights sum to 1.0 for consistent scoring
               </li>
             </ul>

@@ -14,6 +14,7 @@ import GenerateTeamPage from './pages/GenerateTeamPage';
 
 // secondary pages lazy loaded to reduce initial bundle size
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
+const EvaluationPage = lazy(() => import('./pages/EvaluationPage'));
 const GeneratedTeamPage = lazy(() => import('./pages/GeneratedTeamPage'));
 const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage'));
 
@@ -118,7 +119,13 @@ function App() {
                 >
                   Team Analysis
                 </a>
-                <a 
+                <a
+                  href="/evaluation"
+                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                >
+                  Evaluation
+                </a>
+                <a
                   href="/" 
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
@@ -138,6 +145,7 @@ function App() {
               <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
               <Route path="/top-players" element={<TopPlayersPage />} />
               <Route path="/analyze" element={<AnalyzePage />} />
+              <Route path="/evaluation" element={<EvaluationPage />} />
               <Route path="/player/:id" element={<PlayerDetailPage />} />
             </Routes>
           </Suspense>

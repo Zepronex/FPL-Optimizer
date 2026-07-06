@@ -12,7 +12,7 @@ const SquadSummary = ({ squad }: SquadSummaryProps) => {
   const formation = getFormationString(squad.startingXI.map(slot => ({ pos: slot.pos })));
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-200">
+    <div className="bg-white rounded-lg p-6 mb-6 border border-blue-200">
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-blue-800">Squad Overview</h3>
       </div>
