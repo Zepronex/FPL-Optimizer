@@ -13,6 +13,47 @@ afterEach(() => {
 });
 
 describe('agent explanation route', () => {
+  it('returns safe fallback status without an API key', async () => {
+    process.env.SCOUTIQ_AGENT_ENABLED = 'true';
+    process.env.SCOUTIQ_AGENT_PROVIDER = 'auto';
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_MODEL;
+    delete process.env.AZURE_OPENAI_API_KEY;
+    delete process.env.AZURE_OPENAI_ENDPOINT;
+    delete process.env.AZURE_OPENAI_DEPLOYMENT;
+    delete process.env.AZURE_OPENAI_MODEL;
+
+    const response = await getJson(createAgentRouter(), '/api/agent/status');
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.success, true);
+    assert.equal(response.body.data.enabled, true);
+    assert.equal(response.body.data.provider, null);
+    assert.equal(response.body.data.requiredConfigPresent, false);
+    assert.equal(response.body.data.activeMode, 'deterministic_fallback');
+    assert.equal(response.body.data.fallbackReasonCode, 'missing_provider_config');
+  });
+
+  it('returns safe provider-ready status when OpenAI config is present', async () => {
+    process.env.SCOUTIQ_AGENT_ENABLED = 'true';
+    process.env.SCOUTIQ_AGENT_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'secret-openai-key';
+    process.env.OPENAI_MODEL = 'gpt-test-model';
+
+    const response = await getJson(createAgentRouter(), '/api/agent/status');
+    const responseText = JSON.stringify(response.body);
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.success, true);
+    assert.equal(response.body.data.enabled, true);
+    assert.equal(response.body.data.providerPreference, 'openai');
+    assert.equal(response.body.data.provider, 'openai');
+    assert.equal(response.body.data.requiredConfigPresent, true);
+    assert.equal(response.body.data.activeMode, 'provider_ready');
+    assert.equal(response.body.data.model, 'gpt-test-model');
+    assert.doesNotMatch(responseText, /secret-openai-key/);
+  });
+
   it('returns deterministic fallback when no provider is configured', async () => {
     process.env.SCOUTIQ_AGENT_ENABLED = 'false';
     delete process.env.OPENAI_API_KEY;
@@ -26,6 +67,8 @@ describe('agent explanation route', () => {
     assert.equal(response.body.success, true);
     assert.equal(response.body.data.provider, 'deterministic_fallback');
     assert.equal(response.body.data.usedFallback, true);
+    assert.equal(response.body.data.agentStatus.mode, 'deterministic_fallback');
+    assert.equal(response.body.data.agentStatus.fallbackReasonCode, 'agent_disabled');
   });
 
   it('passes valid optimizer payloads to the explanation service', async () => {
@@ -70,6 +113,26 @@ async function postJson(router: ReturnType<typeof createAgentRouter>, body: unkn
       },
       body: JSON.stringify(body)
     });
+
+    return {
+      status: response.status,
+      body: await response.json()
+    };
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+  }
+}
+
+async function getJson(router: ReturnType<typeof createAgentRouter>, path: string) {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/agent', router);
+
+  const server = app.listen(0);
+  const address = server.address() as AddressInfo;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}${path}`);
 
     return {
       status: response.status,
