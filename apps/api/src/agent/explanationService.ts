@@ -221,6 +221,7 @@ function validateGroundedPlayerReferences(
   input: RecommendationExplanationInput
 ): void {
   const allowedPlayerIds = new Set(collectPlayerIds(input));
+  const allowedPlayerNames = new Set(collectPlayerNames(input).map(normalizePlayerName));
   const explanationText = Object.values(explanation)
     .flatMap(value => Array.isArray(value) ? value : [value])
     .join(' ');
@@ -230,6 +231,14 @@ function validateGroundedPlayerReferences(
   const unknownPlayerIds = referencedPlayerIds.filter(playerId => !allowedPlayerIds.has(playerId));
   if (unknownPlayerIds.length > 0) {
     throw new Error('ungrounded_player_id_reference');
+  }
+
+  const referencedPlayerNames = extractPotentialPlayerNames(explanationText);
+  const unknownPlayerNames = referencedPlayerNames
+    .map(normalizePlayerName)
+    .filter(playerName => !allowedPlayerNames.has(playerName));
+  if (unknownPlayerNames.length > 0) {
+    throw new Error('ungrounded_player_name_reference');
   }
 }
 
@@ -245,6 +254,87 @@ function collectPlayerIds(input: RecommendationExplanationInput): number[] {
     ])
   ].map(player => player.playerId);
 }
+
+function collectPlayerNames(input: RecommendationExplanationInput): string[] {
+  return [
+    ...input.startingXi.starters,
+    ...input.startingXi.bench,
+    ...input.transferRecommendations.flatMap(recommendation => [
+      ...recommendation.moves.flatMap(move => [move.playerOut, move.playerIn]),
+      ...recommendation.squadAfterTransfers.slots,
+      ...recommendation.startingXi.starters,
+      ...recommendation.startingXi.bench
+    ])
+  ].map(player => player.playerName);
+}
+
+function extractPotentialPlayerNames(value: string): string[] {
+  const candidates = [
+    ...extractRegexGroupMatches(
+      value,
+      /\b(?:player\s*name|playerName|name)\s*:?\s*["']?([A-Z][A-Za-z'.-]*(?:\s+[A-Z][A-Za-z'.-]*){0,3})["']?/g
+    ),
+    ...extractRegexGroupMatches(
+      value,
+      /\b([A-Z][A-Za-z'.-]*(?:\s+[A-Z][A-Za-z'.-]*){0,3})\s+(?:is|was|starts|sits|replaces|drops|offers|projects|faces)\b/g
+    ),
+    ...extractRegexGroupMatches(
+      value,
+      /\bto\s+([A-Z][A-Za-z'.-]*(?:\s+[A-Z][A-Za-z'.-]*){0,3})\b/g
+    )
+  ];
+
+  return [...new Set(candidates.filter(isPotentialPlayerName))];
+}
+
+function extractRegexGroupMatches(value: string, pattern: RegExp): string[] {
+  return [...value.matchAll(pattern)]
+    .map(match => match[1]?.trim())
+    .filter((match): match is string => Boolean(match));
+}
+
+function isPotentialPlayerName(value: string): boolean {
+  const normalized = normalizePlayerName(value);
+  return normalized.length > 0 && !NON_PLAYER_REFERENCE_WORDS.has(normalized);
+}
+
+function normalizePlayerName(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+const NON_PLAYER_REFERENCE_WORDS = new Set([
+  'alternative',
+  'alternatives',
+  'bank',
+  'bench',
+  'budget',
+  'captain',
+  'captaincy',
+  'constraint',
+  'constraints',
+  'data',
+  'expected',
+  'explanation',
+  'formation',
+  'gameweek',
+  'net',
+  'no',
+  'optimizer',
+  'player',
+  'players',
+  'prediction',
+  'recommendation',
+  'risk',
+  'risks',
+  'squad',
+  'starting',
+  'starting xi',
+  'the',
+  'this',
+  'transfer',
+  'transfers',
+  'vice captain'
+]);
 
 function fallbackReasonForDisabledConfig(reason: Extract<AgentConfig, { provider: 'disabled' }>['reason']): string {
   switch (reason) {

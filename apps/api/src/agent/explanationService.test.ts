@@ -96,6 +96,23 @@ describe('LLM recommendation explanation service', () => {
     assert.equal(explanation.provider, 'deterministic_fallback');
     assert.equal(explanation.usedFallback, true);
   });
+
+  it('falls back when provider output references an unknown player name', async () => {
+    const fetchImpl = jsonFetch([], {
+      output_text: JSON.stringify({
+        ...coreExplanationFixture(),
+        risks: ['Invented Player is a rotation risk.']
+      })
+    });
+
+    const explanation = await explainRecommendation(explanationInputFixture(), {
+      config: openAIConfigFixture(),
+      fetchImpl
+    });
+
+    assert.equal(explanation.provider, 'deterministic_fallback');
+    assert.equal(explanation.usedFallback, true);
+  });
 });
 
 function jsonFetch(calls: Array<{ url: string; body: unknown }>, payload: unknown): FetchLike {
