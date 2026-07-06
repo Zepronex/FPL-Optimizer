@@ -1,0 +1,127 @@
+{
+  "optimizerResult": {
+    "startingXi": {
+      "formation": "3-4-3",
+      "starters": [
+        { "slotIndex": 0, "playerId": 1, "playerName": "North Keeper", "position": "GK", "teamId": 1, "teamName": "North FC", "teamShortName": "NOR", "price": 5.0, "predictedPoints": 4.5, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 1, "playerId": 2, "playerName": "East Defender", "position": "DEF", "teamId": 2, "teamName": "East United", "teamShortName": "EAS", "price": 5.5, "predictedPoints": 5.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 2, "playerId": 3, "playerName": "Central Defender", "position": "DEF", "teamId": 3, "teamName": "Central City", "teamShortName": "CEN", "price": 5.0, "predictedPoints": 5.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 3, "playerId": 4, "playerName": "Harbor Defender", "position": "DEF", "teamId": 4, "teamName": "Harbor Athletic", "teamShortName": "HAR", "price": 4.8, "predictedPoints": 4.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 4, "playerId": 5, "playerName": "Metro Midfielder", "position": "MID", "teamId": 5, "teamName": "Metro Rovers", "teamShortName": "MET", "price": 8.5, "predictedPoints": 7.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 5, "playerId": 6, "playerName": "Valley Midfielder", "position": "MID", "teamId": 6, "teamName": "Valley Town", "teamShortName": "VAL", "price": 7.8, "predictedPoints": 7.1, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 6, "playerId": 7, "playerName": "Ridge Midfielder", "position": "MID", "teamId": 7, "teamName": "Ridge Wanderers", "teamShortName": "RID", "price": 7.2, "predictedPoints": 6.6, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 7, "playerId": 8, "playerName": "Canal Midfielder", "position": "MID", "teamId": 8, "teamName": "Canal Albion", "teamShortName": "CAN", "price": 6.7, "predictedPoints": 6.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 8, "playerId": 9, "playerName": "Summit Forward", "position": "FWD", "teamId": 9, "teamName": "Summit FC", "teamShortName": "SUM", "price": 9.5, "predictedPoints": 8.3, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 9, "playerId": 10, "playerName": "Forest Forward", "position": "FWD", "teamId": 10, "teamName": "Forest Borough", "teamShortName": "FOR", "price": 8.2, "predictedPoints": 7.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 10, "playerId": 11, "playerName": "City Forward", "position": "FWD", "teamId": 11, "teamName": "City Rangers", "teamShortName": "CTY", "price": 7.6, "predictedPoints": 6.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" }
+      ],
+      "bench": [
+        { "slotIndex": 11, "playerId": 12, "playerName": "Reserve Keeper", "position": "GK", "teamId": 12, "teamName": "Reserve FC", "teamShortName": "RES", "price": 4.0, "predictedPoints": 3.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 12, "playerId": 13, "playerName": "Rotation Defender", "position": "DEF", "teamId": 13, "teamName": "Rotation Town", "teamShortName": "ROT", "price": 4.4, "predictedPoints": 4.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 13, "playerId": 14, "playerName": "Bench Midfielder", "position": "MID", "teamId": 14, "teamName": "Bench United", "teamShortName": "BEN", "price": 5.8, "predictedPoints": 4.7, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        { "slotIndex": 14, "playerId": 15, "playerName": "Bench Defender", "position": "DEF", "teamId": 15, "teamName": "Bench City", "teamShortName": "BNC", "price": 4.5, "predictedPoints": 3.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" }
+      ],
+      "captaincy": {
+        "captain": { "slotIndex": 8, "playerId": 9, "playerName": "Summit Forward", "position": "FWD", "teamId": 9, "teamName": "Summit FC", "teamShortName": "SUM", "price": 9.5, "predictedPoints": 8.3, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        "viceCaptain": { "slotIndex": 4, "playerId": 5, "playerName": "Metro Midfielder", "position": "MID", "teamId": 5, "teamName": "Metro Rovers", "teamShortName": "MET", "price": 8.5, "predictedPoints": 7.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+        "captainPredictedPoints": 8.3,
+        "viceCaptainPredictedPoints": 7.8
+      },
+      "totalPredictedPoints": 70.9,
+      "constraintSummary": {
+        "valid": true,
+        "checks": [
+          { "key": "starting_xi_size", "passed": true, "expected": 11, "actual": 11 },
+          { "key": "formation", "passed": true, "expected": "3-4-3", "actual": "3-4-3" }
+        ],
+        "violations": []
+      }
+    },
+    "transferRecommendations": [
+      {
+        "transferCount": 1,
+        "moves": [
+          {
+            "playerOut": { "slotIndex": 14, "playerId": 15, "playerName": "Bench Defender", "position": "DEF", "teamId": 15, "teamName": "Bench City", "teamShortName": "BNC", "price": 4.5, "predictedPoints": 3.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            "playerIn": { "playerId": 101, "playerName": "Upgrade Defender", "position": "DEF", "teamId": 16, "teamName": "Upgrade FC", "teamShortName": "UPG", "price": 4.9, "predictedPoints": 6.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            "predictedPointsDelta": 2.5,
+            "costDelta": 0.4
+          }
+        ],
+        "expectedPointsGain": 1.6,
+        "pointsHit": 0,
+        "netExpectedPointsGain": 1.6,
+        "budgetImpact": 0.4,
+        "bankAfterTransfers": 0.8,
+        "squadAfterTransfers": {
+          "budget": 100,
+          "bank": 0.8,
+          "slots": [
+            { "slotIndex": 0, "playerId": 1, "playerName": "North Keeper", "position": "GK", "teamId": 1, "teamName": "North FC", "teamShortName": "NOR", "price": 5.0, "predictedPoints": 4.5, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 1, "playerId": 2, "playerName": "East Defender", "position": "DEF", "teamId": 2, "teamName": "East United", "teamShortName": "EAS", "price": 5.5, "predictedPoints": 5.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 2, "playerId": 3, "playerName": "Central Defender", "position": "DEF", "teamId": 3, "teamName": "Central City", "teamShortName": "CEN", "price": 5.0, "predictedPoints": 5.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 3, "playerId": 4, "playerName": "Harbor Defender", "position": "DEF", "teamId": 4, "teamName": "Harbor Athletic", "teamShortName": "HAR", "price": 4.8, "predictedPoints": 4.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 4, "playerId": 5, "playerName": "Metro Midfielder", "position": "MID", "teamId": 5, "teamName": "Metro Rovers", "teamShortName": "MET", "price": 8.5, "predictedPoints": 7.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 5, "playerId": 6, "playerName": "Valley Midfielder", "position": "MID", "teamId": 6, "teamName": "Valley Town", "teamShortName": "VAL", "price": 7.8, "predictedPoints": 7.1, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 6, "playerId": 7, "playerName": "Ridge Midfielder", "position": "MID", "teamId": 7, "teamName": "Ridge Wanderers", "teamShortName": "RID", "price": 7.2, "predictedPoints": 6.6, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 7, "playerId": 8, "playerName": "Canal Midfielder", "position": "MID", "teamId": 8, "teamName": "Canal Albion", "teamShortName": "CAN", "price": 6.7, "predictedPoints": 6.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 8, "playerId": 9, "playerName": "Summit Forward", "position": "FWD", "teamId": 9, "teamName": "Summit FC", "teamShortName": "SUM", "price": 9.5, "predictedPoints": 8.3, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 9, "playerId": 10, "playerName": "Forest Forward", "position": "FWD", "teamId": 10, "teamName": "Forest Borough", "teamShortName": "FOR", "price": 8.2, "predictedPoints": 7.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 10, "playerId": 11, "playerName": "City Forward", "position": "FWD", "teamId": 11, "teamName": "City Rangers", "teamShortName": "CTY", "price": 7.6, "predictedPoints": 6.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 11, "playerId": 12, "playerName": "Reserve Keeper", "position": "GK", "teamId": 12, "teamName": "Reserve FC", "teamShortName": "RES", "price": 4.0, "predictedPoints": 3.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 12, "playerId": 13, "playerName": "Rotation Defender", "position": "DEF", "teamId": 13, "teamName": "Rotation Town", "teamShortName": "ROT", "price": 4.4, "predictedPoints": 4.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 13, "playerId": 14, "playerName": "Bench Midfielder", "position": "MID", "teamId": 14, "teamName": "Bench United", "teamShortName": "BEN", "price": 5.8, "predictedPoints": 4.7, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 14, "playerId": 101, "playerName": "Upgrade Defender", "position": "DEF", "teamId": 16, "teamName": "Upgrade FC", "teamShortName": "UPG", "price": 4.9, "predictedPoints": 6.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" }
+          ]
+        },
+        "startingXi": {
+          "formation": "4-3-3",
+          "starters": [
+            { "slotIndex": 0, "playerId": 1, "playerName": "North Keeper", "position": "GK", "teamId": 1, "teamName": "North FC", "teamShortName": "NOR", "price": 5.0, "predictedPoints": 4.5, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 1, "playerId": 2, "playerName": "East Defender", "position": "DEF", "teamId": 2, "teamName": "East United", "teamShortName": "EAS", "price": 5.5, "predictedPoints": 5.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 2, "playerId": 3, "playerName": "Central Defender", "position": "DEF", "teamId": 3, "teamName": "Central City", "teamShortName": "CEN", "price": 5.0, "predictedPoints": 5.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 3, "playerId": 4, "playerName": "Harbor Defender", "position": "DEF", "teamId": 4, "teamName": "Harbor Athletic", "teamShortName": "HAR", "price": 4.8, "predictedPoints": 4.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 14, "playerId": 101, "playerName": "Upgrade Defender", "position": "DEF", "teamId": 16, "teamName": "Upgrade FC", "teamShortName": "UPG", "price": 4.9, "predictedPoints": 6.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 4, "playerId": 5, "playerName": "Metro Midfielder", "position": "MID", "teamId": 5, "teamName": "Metro Rovers", "teamShortName": "MET", "price": 8.5, "predictedPoints": 7.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 5, "playerId": 6, "playerName": "Valley Midfielder", "position": "MID", "teamId": 6, "teamName": "Valley Town", "teamShortName": "VAL", "price": 7.8, "predictedPoints": 7.1, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 6, "playerId": 7, "playerName": "Ridge Midfielder", "position": "MID", "teamId": 7, "teamName": "Ridge Wanderers", "teamShortName": "RID", "price": 7.2, "predictedPoints": 6.6, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 8, "playerId": 9, "playerName": "Summit Forward", "position": "FWD", "teamId": 9, "teamName": "Summit FC", "teamShortName": "SUM", "price": 9.5, "predictedPoints": 8.3, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 9, "playerId": 10, "playerName": "Forest Forward", "position": "FWD", "teamId": 10, "teamName": "Forest Borough", "teamShortName": "FOR", "price": 8.2, "predictedPoints": 7.4, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 10, "playerId": 11, "playerName": "City Forward", "position": "FWD", "teamId": 11, "teamName": "City Rangers", "teamShortName": "CTY", "price": 7.6, "predictedPoints": 6.9, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" }
+          ],
+          "bench": [
+            { "slotIndex": 11, "playerId": 12, "playerName": "Reserve Keeper", "position": "GK", "teamId": 12, "teamName": "Reserve FC", "teamShortName": "RES", "price": 4.0, "predictedPoints": 3.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 7, "playerId": 8, "playerName": "Canal Midfielder", "position": "MID", "teamId": 8, "teamName": "Canal Albion", "teamShortName": "CAN", "price": 6.7, "predictedPoints": 6.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 13, "playerId": 14, "playerName": "Bench Midfielder", "position": "MID", "teamId": 14, "teamName": "Bench United", "teamShortName": "BEN", "price": 5.8, "predictedPoints": 4.7, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            { "slotIndex": 12, "playerId": 13, "playerName": "Rotation Defender", "position": "DEF", "teamId": 13, "teamName": "Rotation Town", "teamShortName": "ROT", "price": 4.4, "predictedPoints": 4.2, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" }
+          ],
+          "captaincy": {
+            "captain": { "slotIndex": 8, "playerId": 9, "playerName": "Summit Forward", "position": "FWD", "teamId": 9, "teamName": "Summit FC", "teamShortName": "SUM", "price": 9.5, "predictedPoints": 8.3, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            "viceCaptain": { "slotIndex": 4, "playerId": 5, "playerName": "Metro Midfielder", "position": "MID", "teamId": 5, "teamName": "Metro Rovers", "teamShortName": "MET", "price": 8.5, "predictedPoints": 7.8, "predictionRunId": 42, "targetGameweekId": 3, "availability": "available" },
+            "captainPredictedPoints": 8.3,
+            "viceCaptainPredictedPoints": 7.8
+          },
+          "totalPredictedPoints": 71.1,
+          "constraintSummary": {
+            "valid": true,
+            "checks": [
+              { "key": "starting_xi_size", "passed": true, "expected": 11, "actual": 11 },
+              { "key": "formation", "passed": true, "expected": "4-3-3", "actual": "4-3-3" }
+            ],
+            "violations": []
+          }
+        },
+        "validation": {
+          "valid": true,
+          "checks": [
+            { "key": "transfer_count", "passed": true, "expected": 1, "actual": 1 },
+            { "key": "budget", "passed": true, "expected": "nonnegative bank", "actual": "0.8" }
+          ],
+          "violations": []
+        }
+      }
+    ],
+    "predictionRunIds": [42],
+    "targetGameweekId": 3
+  }
+}
