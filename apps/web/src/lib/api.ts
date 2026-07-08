@@ -15,6 +15,7 @@ import {
   EvaluationLatest,
   EvaluationRuns,
   OptimizerResult,
+  PredictionSummary,
   ExplainRecommendationRequest,
   RecommendationExplanation,
   SquadOptimizationRequest,
@@ -182,19 +183,25 @@ export const apiClient = {
     return response.data;
   },
 
+  async getTopPredictions(limit: number = 100): Promise<CountedApiResponse<PredictionSummary>> {
+    try {
+      const response = await api.get(`/predictions/top?limit=${encodeURIComponent(String(limit))}`);
+      return response.data;
+    } catch (error) {
+      return toApiResponse<PredictionSummary>(
+        error,
+        'Prediction data is missing. Run the prediction pipeline and load predictions into PostgreSQL.'
+      ) as CountedApiResponse<PredictionSummary>;
+    }
+  },
+
   // Health check
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
   },
 
-  // ML API
-  async getTopPlayers(limit?: number) {
-    const params = limit ? `?limit=${limit}` : '';
-    const response = await api.get(`/ml/top-players${params}`);
-    return response.data;
-  },
-
+  // Optional legacy ML service health check.
   async getMLHealth() {
     const response = await api.get('/ml/health');
     return response.data;

@@ -370,6 +370,42 @@ export type EvaluationDataHealth = {
   warnings: string[];
 };
 
+export type PredictionRunMetadata = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PredictionRow = {
+  id: number;
+  predictionRunId: number;
+  playerId: number;
+  playerName: string;
+  position: Pos;
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  price: number;
+  status: string;
+  targetGameweekId: number;
+  fixtureId: number | null;
+  predictedPoints: number;
+  baselinePredictedPoints: number | null;
+  confidence: number | null;
+  uncertainty: number | null;
+};
+
+export type PredictionSummary = {
+  run: PredictionRunMetadata;
+  predictions: PredictionRow[];
+  count: number;
+};
+
 export type OptimizerResult = {
   squad: OptimizerSquad;
   startingXi: StartingXIRecommendation;
