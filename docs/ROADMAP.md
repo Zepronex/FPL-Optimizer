@@ -98,4 +98,4 @@ No secrets, API keys, service account files, local `.env` files, or database dum
   - optimizer recommendation result
   - explanation panel with fallback/provider status
   - evaluation dashboard
-- Store screenshots under `docs/screenshots/` and document the data run used to create them.
+- Store screenshots under `docs/assets/screenshots/` and document the data run used to create them.

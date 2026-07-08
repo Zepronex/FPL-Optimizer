@@ -146,11 +146,11 @@ Safe claims:
 
 ## Screenshot Placeholders
 
-No fake screenshots are committed. Add real screenshots later after a local demo run, preferably under `docs/screenshots/`, for:
+No fake screenshots are committed. Add real screenshots later after a local demo run under `docs/assets/screenshots/`, for:
 
 - home or analyze page
 - optimizer recommendation result
 - explanation panel with fallback/provider status
 - evaluation dashboard
 
-When screenshots are added, include the local data date or run context in the surrounding documentation so reviewers know what they are seeing.
+When screenshots are added, include the local data date or run context in the surrounding documentation so reviewers know what they are seeing. See [Screenshot Capture Guide](SCREENSHOTS.md) for filenames and capture checks.
