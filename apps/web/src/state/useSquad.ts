@@ -31,11 +31,11 @@ const STARTING_XI_POSITION_LIMITS: Record<Pos, number> = {
   FWD: 3
 };
 
-const POSITION_LABELS: Record<Pos, string> = {
-  GK: 'goalkeepers',
-  DEF: 'defenders',
-  MID: 'midfielders',
-  FWD: 'forwards'
+const POSITION_LABELS: Record<Pos, { singular: string; plural: string }> = {
+  GK: { singular: 'goalkeeper', plural: 'goalkeepers' },
+  DEF: { singular: 'defender', plural: 'defenders' },
+  MID: { singular: 'midfielder', plural: 'midfielders' },
+  FWD: { singular: 'forward', plural: 'forwards' }
 };
 
 // Sort players by position order
@@ -72,7 +72,8 @@ export const useSquad = () => {
 
       const squadPositionCount = countPlayersByPosition([...prev.startingXI, ...prev.bench], player.pos);
       if (squadPositionCount >= SQUAD_POSITION_LIMITS[player.pos]) {
-        setError(`Full squad can include at most ${SQUAD_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
+        const limit = SQUAD_POSITION_LIMITS[player.pos];
+        setError(`Full squad can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
         return prev;
       }
 
@@ -84,7 +85,8 @@ export const useSquad = () => {
 
         const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
         if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
-          setError(`Starting XI can include at most ${STARTING_XI_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
+          const limit = STARTING_XI_POSITION_LIMITS[player.pos];
+          setError(`Starting XI can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
           return prev;
         }
 
@@ -155,7 +157,8 @@ export const useSquad = () => {
         }
         const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
         if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
-          setError(`Starting XI can include at most ${STARTING_XI_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
+          const limit = STARTING_XI_POSITION_LIMITS[player.pos];
+          setError(`Starting XI can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
           return prev;
         }
         
@@ -228,6 +231,10 @@ export const useSquad = () => {
 
 function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): number {
   return players.filter(player => player.pos === position).length;
+}
+
+function formatPositionLabel(position: Pos, count: number): string {
+  return count === 1 ? POSITION_LABELS[position].singular : POSITION_LABELS[position].plural;
 }
 
 function calculateRemainingBank(startingXI: readonly SquadSlot[], bench: readonly SquadSlot[]): number {
