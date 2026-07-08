@@ -1,108 +1,154 @@
-# FPL Optimizer
+# ScoutIQ
 
-An intelligent Fantasy Premier League team optimization tool that analyzes player performance and suggests optimal team compositions.
+ScoutIQ is an AI and data engineering project for Fantasy Premier League decision support. It combines official FPL data ingestion, PostgreSQL storage, feature engineering, expected-points modelling, deterministic optimization, and controlled recommendation explanations into one local-first demo.
 
-## Features
+The project exists to show how a sports decision platform can be built with reproducible data pipelines and transparent model evaluation instead of opaque recommendations. It is designed as a recruiter-readable engineering portfolio project for junior AI, data, and software roles.
 
-- **Team Generation**: Generate optimized squads using different strategies (Premium, Balanced, Value, etc.)
-- **Squad Analysis**: Analyze your current team with configurable scoring weights
-- **Player Suggestions**: Get replacement recommendations based on performance metrics
-- **Recommendation Explanations**: Explain optimizer outputs without changing optimizer decisions
-- **Real-time Data**: Uses official FPL API for up-to-date player and fixture information
+## What It Solves
 
-## Local Demo Quick Start
+Fantasy sports recommendations are only useful when the data, model quality, constraints, and failure modes are visible. ScoutIQ focuses on:
+
+- collecting and normalizing public FPL data in a repeatable way
+- preparing leakage-aware features for expected-points modelling
+- comparing model output against a simple baseline before using predictions
+- generating squads, transfers, starting XI, captaincy, and bench order through deterministic constraints
+- explaining optimizer output without allowing an LLM to make decisions
+- showing local health, pipeline, evaluation, and fallback status for reviewers
+
+The current model is transparent but not clearly better than the historical baseline. The latest backtest snapshot is mixed: `mae=1.0925` versus `baseline_mae=1.0366`, and `rmse=2.0246` versus `baseline_rmse=2.1458` across `28352` rows. ScoutIQ reports that honestly instead of claiming model superiority.
+
+## Architecture At A Glance
+
+ScoutIQ is split into separate layers:
+
+- `apps/web`: React and Vite frontend for squad workflows, optimizer recommendations, agent transparency, and the evaluation dashboard
+- `apps/api`: Express and TypeScript API for ingestion, database loading, prediction serving, optimizer endpoints, agent explanations, health checks, and evaluation routes
+- `db/migrations`: PostgreSQL schema for normalized FPL records, prediction runs, player predictions, and model evaluations
+- `pipelines/databricks`: local JSONL and Databricks-compatible Bronze/Silver/Gold transformations
+- `pipelines/expected_points`: feature generation, baseline training, walk-forward backtesting, prediction output, and model tests
+- `scripts`: Windows-friendly local demo, smoke-test, ingestion, migration, and database load helpers
+
+Data flows from the public FPL API into normalized local JSON, then into PostgreSQL. Pipeline jobs create feature rows and model artifacts. Prediction rows are loaded back into PostgreSQL, where the API serves them to deterministic optimizer routes. The LLM explanation layer receives already-decided optimizer output and returns validated explanatory JSON or deterministic fallback text.
+
+## Implemented Capabilities
+
+### Data Ingestion And Storage
+
+- Fetches official public FPL bootstrap, fixture, and player-history data.
+- Normalizes players, teams, gameweeks, fixtures, and history records with typed validation.
+- Preserves source URLs, fetch timestamps, snapshot hashes, record counts, and reproducibility metadata.
+- Loads normalized records into PostgreSQL through migration-backed tables.
+
+### Lakehouse-Style Feature Pipeline
+
+- Provides Bronze, Silver, and Gold pipeline layers under `pipelines/databricks`.
+- Keeps Bronze close to source data, Silver normalized, and Gold feature-oriented.
+- Supports local JSONL execution and a Databricks/Spark-compatible path.
+- Keeps leakage-sensitive result fields out of current prediction features.
+
+### Prediction And Backtesting
+
+- Builds expected-points feature rows and training rows from official historical data.
+- Trains an interpretable baseline expected-points model.
+- Runs walk-forward backtests with historical baseline comparison.
+- Writes model, evaluation, and prediction artifacts under gitignored local `data/` paths.
+- Loads prediction and evaluation outputs into PostgreSQL for API serving.
+
+### Constraint-Based Optimization
+
+- Generates deterministic starting XI, bench order, captaincy, transfer, and squad recommendations.
+- Applies FPL constraints such as positions, budget, formations, club limits, and transfer settings.
+- Keeps optimizer logic separate from model training and LLM explanations.
+- Returns prediction run metadata so recommendations can be traced to the data used.
+
+### LLM Explanation Agent
+
+- Explains optimizer results after decisions are already made.
+- Uses structured JSON validation and grounding checks for provider responses.
+- Falls back to deterministic local explanations when provider config is missing, invalid, timed out, or unsafe.
+- Exposes safe status metadata without returning secrets or raw provider errors.
+
+### Evaluation Dashboard
+
+- Shows latest backtest metrics, baseline comparison, model limitation messaging, and data coverage.
+- Uses `GET /api/evaluation/latest`, `GET /api/evaluation/runs`, and `GET /api/evaluation/data-health`.
+- Avoids claiming the model beats the baseline unless both MAE and RMSE improve.
+
+### Local Demo And Smoke Tests
+
+- `pnpm.cmd run dev:app` starts only the API and web app.
+- `pnpm.cmd run smoke:app` checks the local API, agent status, evaluation route, and key web pages.
+- The default demo path works without an OpenAI API key because deterministic explanation fallback is enabled.
+
+## Run Locally
+
+Prerequisites:
+
+- Node.js with `pnpm.cmd` available on Windows
+- Docker Desktop or another Docker Compose-compatible engine
+- Python available as `python` for pipeline and model commands
+
+Start from a clean checkout:
 
 ```powershell
 pnpm.cmd install
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
 if (!(Test-Path apps\api\.env)) { Copy-Item apps\api\.env.example apps\api\.env }
+```
 
+Prepare the database, data, model outputs, and prediction-serving tables:
+
+```powershell
 docker compose up -d postgres
 pnpm.cmd run db:migrate
 pnpm.cmd run ingest:fpl
 pnpm.cmd run db:load:fpl
-
 pnpm.cmd run ingest:fpl:history
 pnpm.cmd run pipeline:features
 pnpm.cmd run model:train
 pnpm.cmd run model:backtest
 pnpm.cmd run model:predict
 pnpm.cmd run db:load:predictions
+```
 
+Start the normal local demo:
+
+```powershell
 pnpm.cmd run dev:app
 ```
 
-`pnpm.cmd run dev:app` starts only the API and web app. It does not require an OpenAI API key and does not start the optional ML service.
+Open:
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+- `http://localhost:3000`
+- `http://localhost:3000/analyze`
+- `http://localhost:3000/evaluation`
+- `http://localhost:3001/api/health`
 
-With `dev:app` running, verify the local demo from a second terminal:
+Run the local smoke check from a second terminal:
 
 ```powershell
 pnpm.cmd run smoke:app
 ```
 
-Expected local URLs:
+## Validation Commands
 
-- [http://localhost:3000](http://localhost:3000)
-- [http://localhost:3000/evaluation](http://localhost:3000/evaluation)
-- [http://localhost:3001/api/health](http://localhost:3001/api/health)
-
-If port 3000, 3001, or 5432 is already in use, stop the conflicting process or configure an alternate port before starting the demo. If Vite reports an access-denied error resolving `apps\web\vite.config.ts` in a restricted shell, rerun `pnpm.cmd run dev:app` from a normal PowerShell terminal.
-
-The default local explanation path uses deterministic fallback mode and works without provider credentials. To test live OpenAI explanations locally, put private values only in your local `.env` file:
+Use these commands to validate the main application, API, pipeline, and model paths:
 
 ```powershell
-SCOUTIQ_AGENT_ENABLED=true
-SCOUTIQ_AGENT_PROVIDER=openai
-OPENAI_API_KEY=<private key>
-OPENAI_MODEL=<model name>
+pnpm.cmd run build:api
+pnpm.cmd run test:api
+pnpm.cmd run test:smoke
+pnpm.cmd run pipeline:test
+pnpm.cmd run model:test
+pnpm.cmd run build
+pnpm.cmd run build:web
 ```
 
-See [Local Demo Walkthrough](docs/LOCAL_DEMO.md) for the full reviewer demo path and troubleshooting notes.
-
-### Optional ML Strategy Setup
-
-The ML strategy service is optional and should not block normal frontend/API development. Use `pnpm.cmd run dev:app` for the main ScoutIQ web app and API.
-
-To work on the optional ML strategy path:
-
-1. **Setup ML service**: Run `./setup_ml.sh` to install Python dependencies
-2. **Train the model**: Run `pnpm.cmd run train:ml` to train the ML model
-3. **Start app services**: Run `pnpm.cmd run dev:app`
-4. **Start ML service separately**: Run `pnpm.cmd run dev:ml`
-
-`pnpm.cmd run dev:all` starts API, web, and ML together when all three services are needed.
-
-## How It Works
-
-The tool uses advanced metrics to score players:
-
-- **Form**: Recent performance and consistency
-- **Expected Goals/Assists**: Statistical performance indicators
-- **Expected Minutes**: Playing time likelihood
-- **Fixture Difficulty**: Upcoming match difficulty
-- **Average Points**: Historical FPL performance
-
-## ScoutIQ Data Pipeline
-
-The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature preparation, and a simple expected-points baseline. See:
-
-- [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
-- [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
-- [PostgreSQL Foundation](docs/DATABASE.md)
-- [Prediction Serving and Optimizer Recommendations](docs/PREDICTION_SERVING.md)
-- [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
-
-## Model Evaluation Dashboard
-
-The web app includes a `Model Evaluation` page at `/evaluation`. It shows the latest walk-forward backtest, baseline comparison, data coverage, pipeline status, and current limitations.
-
-Generate and load the evaluation data locally with:
+For full data refresh and prediction serving:
 
 ```powershell
-pnpm.cmd run ingest:fpl
 pnpm.cmd run db:migrate
+pnpm.cmd run ingest:fpl
 pnpm.cmd run db:load:fpl
 pnpm.cmd run ingest:fpl:history
 pnpm.cmd run pipeline:features
@@ -112,106 +158,23 @@ pnpm.cmd run model:predict
 pnpm.cmd run db:load:predictions
 ```
 
-The dashboard reads:
+## Current Limitations
 
-- `GET /api/evaluation/latest`
-- `GET /api/evaluation/runs`
-- `GET /api/evaluation/data-health`
+- The current model does not clearly outperform the baseline across tracked metrics.
+- Public FPL API data limits the available player, team, injury, and tactical context.
+- Optimizer recommendations depend on complete prediction rows and valid constraints.
+- The LLM explanation agent explains existing optimizer output; it does not choose players, transfers, captaincy, bench order, or chips.
+- Local model and prediction artifacts are generated under gitignored `data/` paths and are not committed.
+- No secrets, API keys, service account files, local `.env` files, or database dumps should be committed.
 
-It reports MAE, RMSE, baseline MAE, baseline RMSE, row counts, prediction-run metadata, and coverage counts for players, teams, gameweeks, fixtures, player-gameweek history rows, and latest prediction rows.
+## Documentation
 
-MAE and RMSE are error metrics, so lower values are better. The app compares the model against the recent-points baseline and does not claim model superiority unless the model is lower than the baseline on both MAE and RMSE. The current backtest has lower RMSE than the baseline, but higher MAE, so the dashboard states that the model is not clearly better across tracked metrics.
-
-This page is intended to support transparent data decision-making: recommendations remain deterministic optimizer outputs, and predictions should be treated as decision support rather than certainty.
-
-Relevant validation commands:
-
-```powershell
-pnpm.cmd run build
-pnpm.cmd run build:api
-pnpm.cmd run build:web
-pnpm.cmd run test:api
-pnpm.cmd run pipeline:test
-pnpm.cmd run model:test
-```
-
-## Recommendation Explanations
-
-The optimizer remains the only layer that selects squads, transfers, captaincy, and bench order. The explanation endpoint only summarizes optimizer output that already exists in the request payload. The agent does not choose players, transfers, captaincy, bench order, or chips.
-
-`POST /api/agent/explain-recommendation` accepts the optimizer result and returns structured JSON with summary, recommended actions, starting XI reasoning, captaincy reasoning, transfer reasoning, risks, alternatives, data limitations, constraint summary, and disclaimer fields.
-
-The response includes `agentStatus` metadata so the API and frontend can show whether the explanation used deterministic fallback or a live provider. Fallback reasons are safe public codes such as `missing_provider_config`, `provider_error`, `schema_validation_failed`, and `hallucination_guard_failed`; raw provider errors and secrets are not returned.
-
-`GET /api/agent/status` returns safe public status for local demos: whether the agent is enabled, the selected provider type when known, whether required config appears present, the active mode, and the configured model or deployment name when safe. It does not return API keys or raw environment values.
-
-The deterministic fallback explanation works without provider credentials and is the default local demo path. It uses only supplied optimizer data and states when prediction run, gameweek, or player metadata is missing. Optional provider output is schema-validated and checked for ungrounded player references before it can reach the API response; invalid, timed out, unavailable, or unsafe provider output falls back to deterministic explanation.
-
-Run normal local web and API development with:
-
-```bash
-pnpm.cmd run dev:app
-```
-
-With the dev servers running, check local fallback status and exercise the explanation endpoint with the committed demo fixture:
-
-```powershell
-Invoke-RestMethod -Uri http://localhost:3001/api/agent/status
-
-$payload = Get-Content .\fixtures\agent\recommendation-explanation-request.json -Raw
-Invoke-RestMethod `
-  -Uri http://localhost:3001/api/agent/explain-recommendation `
-  -Method Post `
-  -ContentType 'application/json' `
-  -Body $payload
-```
-
-The fixture is for local development and tests only. It is not loaded by the optimizer and is not part of the production recommendation path.
-
-Configure local explanation behavior with empty or non-secret values in `.env.example` or `apps/api/.env.example`:
-
-```bash
-SCOUTIQ_AGENT_ENABLED=true
-OPENAI_API_KEY=
-OPENAI_MODEL=
-```
-
-To enable a live OpenAI provider locally, keep `SCOUTIQ_AGENT_ENABLED=true`, set `SCOUTIQ_AGENT_PROVIDER=openai` if you do not want auto-detection, and provide private values in your local `.env` file only:
-
-```bash
-SCOUTIQ_AGENT_ENABLED=true
-SCOUTIQ_AGENT_PROVIDER=openai
-OPENAI_API_KEY=<private key>
-OPENAI_MODEL=<model name>
-```
-
-Optional provider selection, Azure OpenAI, base URL, and timeout settings are documented in `apps/api/.env.example`. Do not commit real API keys.
-
-In the UI, deterministic fallback means the explanation text came from the local fallback builder. Live provider mode means the explanation text came from the configured OpenAI or Azure OpenAI provider after schema validation and grounding checks. In both modes, the recommendation itself came from the deterministic optimizer before the explanation was generated.
-
-Useful validation commands for this path:
-
-```bash
-pnpm.cmd run build
-pnpm.cmd run build:api
-pnpm.cmd run build:web
-pnpm.cmd run test:api
-pnpm.cmd run pipeline:test
-pnpm.cmd run model:test
-```
-
-## Project Structure
-
-```
-├── apps/
-│   ├── api/          # Express.js backend
-│   └── web/          # React frontend
-└── README.md
-```
-
-## Deployment
-
-The application is deployed to Vercel and automatically builds from the main branch.
+- [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
+- [Prediction Serving](docs/PREDICTION_SERVING.md)
+- [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
+- [PostgreSQL Foundation](docs/DATABASE.md)
+- [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
+- [Roadmap](docs/ROADMAP.md)
 
 ## License
 
