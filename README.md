@@ -82,6 +82,39 @@ Data flows from the public FPL API into normalized local JSON, then into Postgre
 - `pnpm.cmd run smoke:app` checks the local API, agent status, evaluation route, and key web pages.
 - The default demo path works without an OpenAI API key because deterministic explanation fallback is enabled.
 
+## Portfolio Walkthrough
+
+For a short recruiter or technical review, start the normal local app:
+
+```powershell
+pnpm.cmd run dev:app
+```
+
+Then open:
+
+- `http://localhost:3000`
+- `http://localhost:3000/analyze`
+- `http://localhost:3000/evaluation`
+- `http://localhost:3001/api/health`
+
+What to look for:
+
+- Home page: the React app loads and connects to the API.
+- Team Analysis: a complete analyzed squad can show deterministic optimizer output for starting XI, bench order, captaincy, transfers, projected points, and constraint status.
+- Recommendation explanation panel: the agent explains an optimizer result that already exists. In the default local demo, deterministic fallback mode is acceptable and expected when provider credentials are not configured.
+- Model Evaluation: the dashboard shows MAE, RMSE, baseline comparison, data coverage, recent runs, setup warnings, and limitation messaging.
+- API health: the backend can be checked independently from the frontend.
+
+The optimizer makes the recommendation decisions. The LLM explanation layer, when enabled, is downstream of the optimizer and does not choose players, transfers, captaincy, bench order, or chips.
+
+The evaluation dashboard should be read as a transparency surface. The current expected-points model is not claimed to outperform the historical baseline because MAE is worse while RMSE is better in the latest known backtest.
+
+## Screenshots
+
+No real portfolio screenshots are committed yet. Screenshot files should only be linked from this README after the image files exist under `docs/assets/screenshots/`.
+
+Capture targets and filenames are documented in [Screenshot Capture Guide](docs/SCREENSHOTS.md).
+
 ## Run Locally
 
 Prerequisites:
@@ -181,6 +214,16 @@ pnpm.cmd run model:predict
 pnpm.cmd run db:load:predictions
 ```
 
+## Project Status
+
+- The local demo works without an OpenAI API key through deterministic explanation fallback.
+- Live OpenAI or Azure OpenAI mode is optional and explanation-only.
+- Recommendations are deterministic and constraint-based.
+- Prediction-backed optimizer screens require generated and loaded prediction rows in PostgreSQL.
+- Evaluation compares the expected-points model against a historical recent-points baseline.
+- The current model is not claimed to outperform the baseline across tracked metrics.
+- GitHub Actions CI validates builds and tests, but production deployment is not yet complete.
+
 ## Current Limitations
 
 - The current model does not clearly outperform the baseline across tracked metrics.
@@ -188,6 +231,7 @@ pnpm.cmd run db:load:predictions
 - Optimizer recommendations depend on complete prediction rows and valid constraints.
 - The LLM explanation agent explains existing optimizer output; it does not choose players, transfers, captaincy, bench order, or chips.
 - Local model and prediction artifacts are generated under gitignored `data/` paths and are not committed.
+- Production deployment, scheduled ingestion, and production monitoring are not yet documented as complete.
 - No secrets, API keys, service account files, local `.env` files, or database dumps should be committed.
 
 ## Documentation
