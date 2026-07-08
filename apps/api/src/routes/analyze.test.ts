@@ -33,6 +33,17 @@ describe('analyze route', () => {
     }
   });
 
+  it('analyzes a complete squad without user-supplied weights', async () => {
+    const { weights: _weights, ...payload } = squadPayload();
+    const response = await postAnalyze(candidateRowsFixture(), payload);
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.success, true);
+    assert.equal(response.body.data.results.length, 15);
+    assert.equal(response.body.data.weights.form, 0.2);
+    assert.equal(response.body.data.weights.ownership, 0.05);
+  });
+
   it('treats frontend display fields as non-authoritative and enriches selected IDs from PostgreSQL rows', async () => {
     const response = await postAnalyze(candidateRowsFixture(), squadPayload({
       corruptDisplayFields: true

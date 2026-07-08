@@ -93,7 +93,7 @@ const HomePage = () => {
             <h3 className="text-lg font-semibold mb-2">Analyze & Optimize</h3>
             <p className="text-gray-600">
               Get detailed analysis of your squad with insights on formation, budget allocation, and player performance. 
-              Configure analysis weights to match your playing style and preferences.
+              Manual analysis uses a fixed scoring profile so the main flow stays consistent.
             </p>
           </div>
           <div className="text-center">

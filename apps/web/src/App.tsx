@@ -5,7 +5,6 @@ import GlobalPlayerSearch from './components/GlobalPlayerSearch';
 import LoadingSpinner from './components/LoadingSpinner';
 import { apiClient } from './lib/api';
 import { useSquad } from './state/useSquad';
-import { useWeights } from './state/useWeights';
 
 // main pages loaded directly for instant navigation
 import HomePage from './pages/HomePage';
@@ -31,7 +30,6 @@ const FastLoadingSpinner = () => (
 function App() {
   const [isApiConnected, setIsApiConnected] = useState<boolean | null>(null);
   const squadState = useSquad();
-  const weightsState = useWeights();
 
   // check api connection on app startup
   useEffect(() => {
@@ -142,7 +140,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/generate" element={<GenerateTeamPage />} />
               <Route path="/generated-team" element={<GeneratedTeamPage />} />
-              <Route path="/squad" element={<SquadPage squadState={squadState} weightsState={weightsState} />} />
+              <Route path="/squad" element={<SquadPage squadState={squadState} />} />
               <Route path="/top-players" element={<TopPlayersPage />} />
               <Route path="/analyze" element={<AnalyzePage />} />
               <Route path="/evaluation" element={<EvaluationPage />} />

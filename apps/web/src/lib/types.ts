@@ -75,6 +75,7 @@ export type SquadAnalysis = {
   flaggedPlayers: number;
   bankLeft: number;
   totalScore: number;
+  // Returned for auditability; manual analysis uses backend defaults instead of user-tuned controls.
   weights: AnalysisWeights;
   timestamp: string;
 };
