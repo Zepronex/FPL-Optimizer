@@ -222,7 +222,7 @@ pnpm.cmd run db:load:predictions
 - Prediction-backed optimizer screens require generated and loaded prediction rows in PostgreSQL.
 - Evaluation compares the expected-points model against a historical recent-points baseline.
 - The current model is not claimed to outperform the baseline across tracked metrics.
-- GitHub Actions CI validates builds and tests, but production deployment is not yet complete.
+- Deployment readiness is documented in [Deployment Guide](docs/DEPLOYMENT.md) and [Production Readiness](docs/PRODUCTION_READINESS.md), but production deployment is not yet complete.
 
 ## Current Limitations
 
@@ -238,6 +238,9 @@ pnpm.cmd run db:load:predictions
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Command Reference](docs/COMMAND_REFERENCE.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Environment Reference](docs/ENVIRONMENT.md)
+- [Production Readiness](docs/PRODUCTION_READINESS.md)
 - [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
 - [Reviewer Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
 - [Demo Script](docs/DEMO_SCRIPT.md)
