@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import { apiClient } from '../lib/api';
 import { ApiResponse, SquadAnalysis } from '../lib/types';
-import { isValidFormation } from '../lib/format';
+import { validateSquadForAnalysis } from '../lib/squadValidation';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -15,21 +15,61 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisCommands, setAnalysisCommands] = useState<string[]>([]);
+  const [remoteValidation, setRemoteValidation] = useState<{
+    status: 'idle' | 'checking' | 'valid' | 'invalid';
+    message: string | null;
+  }>({ status: 'idle', message: null });
 
-  const handleAnalyze = async () => {
-    if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {
-      setAnalysisError('Please complete your squad (11 starting XI + 4 bench players)');
+  const localValidation = useMemo(() => validateSquadForAnalysis(squad), [squad]);
+  const canAnalyze = localValidation.valid && remoteValidation.status === 'valid' && !isAnalyzing;
+
+  useEffect(() => {
+    setAnalysisError(null);
+    setAnalysisCommands([]);
+
+    if (!localValidation.valid) {
+      setRemoteValidation({ status: 'idle', message: null });
       return;
     }
 
-    if (!isValidFormation(squad.startingXI)) {
-      setAnalysisError('Starting XI must use exactly 1 GK and a valid FPL formation (DEF 3-5, MID 2-5, FWD 1-3)');
+    let cancelled = false;
+    setRemoteValidation({ status: 'checking', message: 'Checking squad rules against prediction data...' });
+
+    apiClient.validateSquad(squad).then(response => {
+      if (cancelled) return;
+
+      const message = formatValidationResponse(response);
+      const isValid = response.success && response.data?.valid === true;
+
+      setRemoteValidation({
+        status: isValid ? 'valid' : 'invalid',
+        message
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [localValidation.valid, squad]);
+
+  const handleAnalyze = async () => {
+    const currentLocalValidation = validateSquadForAnalysis(squad);
+    if (!currentLocalValidation.valid) {
+      setAnalysisError(currentLocalValidation.errors[0]);
       return;
     }
 
     setIsAnalyzing(true);
     setAnalysisError(null);
     setAnalysisCommands([]);
+
+    const validationResponse = await apiClient.validateSquad(squad);
+    if (!validationResponse.success || validationResponse.data?.valid !== true) {
+      setAnalysisError(formatValidationResponse(validationResponse));
+      setAnalysisCommands(validationResponse.requiredCommands || []);
+      setIsAnalyzing(false);
+      return;
+    }
 
     try {
       const response = await apiClient.analyzeSquad(squad);
@@ -70,7 +110,7 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
         <div className="flex flex-col items-center space-y-3 px-4">
           <button
             onClick={handleAnalyze}
-            disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
+            disabled={!canAnalyze}
             className="btn-primary text-lg sm:text-xl px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
           >
             {isAnalyzing ? (
@@ -88,19 +128,25 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
           
           {/* Progress indicators */}
           <div className="flex flex-col items-center space-y-1">
-            {squad.startingXI.length !== 11 && (
+            {!localValidation.valid && (
               <p className="text-sm text-orange-600 font-medium">
-                Complete your starting XI ({squad.startingXI.length}/11 players)
+                {localValidation.errors[0]}
               </p>
             )}
-            
-            {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
-              <p className="text-sm text-orange-600 font-medium">
-                Complete your bench ({squad.bench.length}/4 players)
+
+            {localValidation.valid && remoteValidation.status === 'checking' && (
+              <p className="text-sm text-blue-700 font-medium">
+                {remoteValidation.message}
               </p>
             )}
-            
-            {squad.startingXI.length === 11 && squad.bench.length === 4 && (
+
+            {localValidation.valid && remoteValidation.status === 'invalid' && (
+              <p className="text-sm text-red-700 font-medium">
+                {remoteValidation.message}
+              </p>
+            )}
+
+            {localValidation.valid && remoteValidation.status === 'valid' && (
               <p className="text-sm text-green-600 font-medium">
                 Squad complete! Ready to analyze
               </p>
@@ -148,13 +194,43 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
 };
 
 function formatAnalysisError(response: ApiResponse<SquadAnalysis>): string {
+  const detailsMessage = formatDetails(response.details);
+  if (detailsMessage) return detailsMessage;
+
   if (response.error) return response.error;
 
-  if (Array.isArray(response.details) && response.details.every(item => typeof item === 'string')) {
-    return response.details.join(' ');
+  return 'Could not analyze the squad. Check the squad and local prediction data before trying again.';
+}
+
+function formatValidationResponse(response: ApiResponse<{ valid: boolean; errors: string[] }>): string {
+  if (response.success && response.data) {
+    return response.data.errors[0] || 'Squad validation failed.';
   }
 
-  return 'Could not analyze the squad. Check the squad and local prediction data before trying again.';
+  const detailsMessage = formatDetails(response.details);
+  if (detailsMessage) return detailsMessage;
+
+  return response.error || 'Could not validate the squad.';
+}
+
+function formatDetails(details: unknown): string | null {
+  if (Array.isArray(details) && details.every(item => typeof item === 'string')) {
+    return details[0] ?? null;
+  }
+
+  if (isPlayerIdsDetails(details)) {
+    return 'Selected player data could not be found in prediction rows. Reload data and try again.';
+  }
+
+  return null;
+}
+
+function isPlayerIdsDetails(details: unknown): details is { playerIds: number[] } {
+  return (
+    typeof details === 'object' &&
+    details !== null &&
+    Array.isArray((details as { playerIds?: unknown }).playerIds)
+  );
 }
 
 export default SquadPage;

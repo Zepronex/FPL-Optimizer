@@ -28,6 +28,7 @@ export type SquadSlot = {
   price: number;
   name?: string;
   teamShort?: string;
+  teamId?: number;
 };
 
 export type Squad = {

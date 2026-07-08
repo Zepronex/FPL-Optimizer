@@ -31,6 +31,8 @@ const STARTING_XI_POSITION_LIMITS: Record<Pos, number> = {
   FWD: 3
 };
 
+const MAX_PLAYERS_PER_TEAM = 3;
+
 const POSITION_LABELS: Record<Pos, { singular: string; plural: string }> = {
   GK: { singular: 'goalkeeper', plural: 'goalkeepers' },
   DEF: { singular: 'defender', plural: 'defenders' },
@@ -61,7 +63,8 @@ export const useSquad = () => {
         pos: player.pos,
         price: player.price,
         name: player.name,
-        teamShort: player.teamShort
+        teamShort: player.teamShort,
+        teamId: player.teamId
       };
 
       if (prev.startingXI.some(slot => slot.id === player.id) ||
@@ -75,6 +78,14 @@ export const useSquad = () => {
         const limit = SQUAD_POSITION_LIMITS[player.pos];
         setError(`Full squad can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
         return prev;
+      }
+
+      if (player.teamId !== undefined) {
+        const teamCount = countPlayersByTeam([...prev.startingXI, ...prev.bench], player.teamId);
+        if (teamCount >= MAX_PLAYERS_PER_TEAM) {
+          setError('A squad can include at most 3 players from the same club.');
+          return prev;
+        }
       }
 
       if (isStarting) {
@@ -233,6 +244,10 @@ function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): n
   return players.filter(player => player.pos === position).length;
 }
 
+function countPlayersByTeam(players: readonly SquadSlot[], teamId: number): number {
+  return players.filter(player => player.teamId === teamId).length;
+}
+
 function formatPositionLabel(position: Pos, count: number): string {
   return count === 1 ? POSITION_LABELS[position].singular : POSITION_LABELS[position].plural;
 }
@@ -291,7 +306,8 @@ function isSquadSlot(value: unknown): value is SquadSlot {
     isPos(value.pos) &&
     typeof value.price === 'number' &&
     (value.name === undefined || typeof value.name === 'string') &&
-    (value.teamShort === undefined || typeof value.teamShort === 'string')
+    (value.teamShort === undefined || typeof value.teamShort === 'string') &&
+    (value.teamId === undefined || typeof value.teamId === 'number')
   );
 }
 

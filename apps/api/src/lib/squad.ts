@@ -19,6 +19,9 @@ const VALID_STARTING_FORMATIONS = [
   { GK: 1, DEF: 5, MID: 4, FWD: 1 }
 ] as const;
 
+const BUDGET_LIMIT = 100;
+const MAX_PLAYERS_PER_TEAM = 3;
+
 export class SquadAnalyzer {
   static async analyzeSquad(
     squad: Squad,
@@ -142,41 +145,50 @@ export class SquadAnalyzer {
     const allPlayers = [...squad.startingXI, ...squad.bench];
 
     if (squad.startingXI.length !== 11) {
-      errors.push('Starting XI must have exactly 11 players');
+      errors.push('Starting XI must include exactly 11 players.');
     }
 
     if (squad.bench.length !== 4) {
-      errors.push('Bench must have exactly 4 players');
+      errors.push('Bench must include exactly 4 players.');
     }
 
     const startingPositionCounts = countSquadSlotsByPosition(squad.startingXI);
     const squadPositionCounts = countSquadSlotsByPosition(allPlayers);
+
+    if (startingPositionCounts.GK !== 1) {
+      errors.push('Starting XI must include exactly 1 goalkeeper.');
+    }
 
     const isValidFormation = VALID_STARTING_FORMATIONS.some(formation =>
       Object.entries(formation).every(([pos, count]) => startingPositionCounts[pos] === count)
     );
 
     if (!isValidFormation) {
-      errors.push('Starting XI must use exactly 1 GK and a valid FPL formation (DEF 3-5, MID 2-5, FWD 1-3)');
+      errors.push('Starting XI must use a valid formation: 3-5 defenders, 2-5 midfielders, 1-3 forwards.');
     }
 
     const hasValidSquadComposition = Object.entries(SQUAD_POSITION_COUNTS)
       .every(([pos, expected]) => squadPositionCounts[pos] === expected);
 
     if (!hasValidSquadComposition) {
-      errors.push('Full squad must include 2 GK, 5 DEF, 5 MID and 3 FWD');
+      errors.push('Full squad must include exactly 2 goalkeepers, 5 defenders, 5 midfielders and 3 forwards.');
     }
     
     const totalCost = allPlayers.reduce((sum, slot) => sum + slot.price, 0);
     
-    if (totalCost + squad.bank > 100) {
-      errors.push('Total squad value cannot exceed 100.0');
+    if (roundMoney(totalCost) > BUDGET_LIMIT || squad.bank < 0) {
+      errors.push('Squad exceeds the 100.0m budget.');
     }
     
     const allPlayerIds = allPlayers.map(slot => slot.id);
     const uniqueIds = new Set(allPlayerIds);
     if (uniqueIds.size !== allPlayerIds.length) {
-      errors.push('Cannot have duplicate players in squad');
+      errors.push('Duplicate players are not allowed.');
+    }
+
+    const overTeamLimit = getOverTeamLimit(allPlayers);
+    if (overTeamLimit) {
+      errors.push('A squad can include at most 3 players from the same club.');
     }
     
     return {
@@ -191,5 +203,22 @@ function countSquadSlotsByPosition(players: readonly SquadSlot[]): Record<string
     counts[slot.pos] = (counts[slot.pos] || 0) + 1;
     return counts;
   }, {} as Record<string, number>);
+}
+
+function getOverTeamLimit(players: readonly SquadSlot[]): number | null {
+  const counts = new Map<number, number>();
+
+  for (const player of players) {
+    if (player.teamId === undefined) continue;
+    const count = (counts.get(player.teamId) ?? 0) + 1;
+    if (count > MAX_PLAYERS_PER_TEAM) return player.teamId;
+    counts.set(player.teamId, count);
+  }
+
+  return null;
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 

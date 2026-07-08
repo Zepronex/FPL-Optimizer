@@ -89,8 +89,15 @@ export const apiClient = {
   },
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
-    const response = await api.post('/analyze/validate', { squad });
-    return response.data;
+    try {
+      const response = await api.post('/analyze/validate', { squad });
+      return response.data;
+    } catch (error) {
+      return toApiResponse<{ valid: boolean; errors: string[] }>(
+        error,
+        'Could not validate the squad. Confirm that the local API is running and prediction data is loaded.'
+      );
+    }
   },
 
   // Suggestions API
