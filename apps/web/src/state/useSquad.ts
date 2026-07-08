@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Squad, SquadSlot, Pos } from '../lib/types';
 
-// Default empty squad state
+const SQUAD_STORAGE_KEY = 'scoutiq-squad-builder-state';
+
 const initialSquad: Squad = {
   startingXI: [],
   bench: [],
@@ -43,9 +44,13 @@ const sortPlayersByPosition = (players: SquadSlot[]): SquadSlot[] => {
 };
 
 export const useSquad = () => {
-  const [squad, setSquad] = useState<Squad>(initialSquad);
+  const [squad, setSquad] = useState<Squad>(() => readStoredSquad());
   const [isLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    writeStoredSquad(squad);
+  }, [squad]);
 
   const addPlayer = useCallback((player: SquadSlot, isStarting: boolean = true) => {
     setError(null);
@@ -206,4 +211,60 @@ export const useSquad = () => {
 
 function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): number {
   return players.filter(player => player.pos === position).length;
+}
+
+function readStoredSquad(): Squad {
+  if (typeof window === 'undefined') return initialSquad;
+
+  try {
+    const stored = window.sessionStorage.getItem(SQUAD_STORAGE_KEY);
+    if (!stored) return initialSquad;
+
+    const parsed: unknown = JSON.parse(stored);
+    return isSquad(parsed) ? parsed : initialSquad;
+  } catch {
+    return initialSquad;
+  }
+}
+
+function writeStoredSquad(squad: Squad): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.setItem(SQUAD_STORAGE_KEY, JSON.stringify(squad));
+  } catch {
+    // Ignore storage failures; in-memory state still works for the current session.
+  }
+}
+
+function isSquad(value: unknown): value is Squad {
+  if (!isRecord(value)) return false;
+
+  return (
+    Array.isArray(value.startingXI) &&
+    value.startingXI.every(isSquadSlot) &&
+    Array.isArray(value.bench) &&
+    value.bench.every(isSquadSlot) &&
+    typeof value.bank === 'number'
+  );
+}
+
+function isSquadSlot(value: unknown): value is SquadSlot {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.id === 'number' &&
+    isPos(value.pos) &&
+    typeof value.price === 'number' &&
+    (value.name === undefined || typeof value.name === 'string') &&
+    (value.teamShort === undefined || typeof value.teamShort === 'string')
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPos(value: unknown): value is Pos {
+  return value === 'GK' || value === 'DEF' || value === 'MID' || value === 'FWD';
 }

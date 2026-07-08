@@ -116,8 +116,6 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
           results={results}
           isLoading={isLoading}
           onPlayerSelect={handlePlayerClick}
-          onPlayerScore={() => {}} // placeholder function
-          isScoring={false}
           emptyMessage={statusMessage}
           tone={statusTone}
         />

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Link, Routes, Route } from 'react-router-dom';
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import GlobalPlayerSearch from './components/GlobalPlayerSearch';
@@ -93,42 +93,42 @@ function App() {
               <div className="w-4"></div>
               
               <nav className="flex space-x-6 ml-auto">
-                <a 
-                  href="/squad" 
+                <Link
+                  to="/squad"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Squad Builder
-                </a>
-                <a 
-                  href="/generate" 
+                </Link>
+                <Link
+                  to="/generate"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Generate Team
-                </a>
-                <a 
-                  href="/top-players" 
+                </Link>
+                <Link
+                  to="/top-players"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Top Players
-                </a>
-                <a 
-                  href="/analyze" 
+                </Link>
+                <Link
+                  to="/analyze"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Team Analysis
-                </a>
-                <a
-                  href="/evaluation"
+                </Link>
+                <Link
+                  to="/evaluation"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Evaluation
-                </a>
-                <a
-                  href="/" 
+                </Link>
+                <Link
+                  to="/"
                   className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
                 >
                   Home
-                </a>
+                </Link>
               </nav>
             </div>
           </div>
