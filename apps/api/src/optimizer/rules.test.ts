@@ -14,6 +14,7 @@ describe('optimizer FPL rules', () => {
       '4-4-2',
       '4-3-3',
       '4-5-1',
+      '5-2-3',
       '5-3-2',
       '5-4-1'
     ]);
@@ -69,6 +70,54 @@ describe('optimizer FPL rules', () => {
 
     assert.equal(formation, '4-5-1');
     assert.equal(result.valid, true);
+  });
+
+  it('accepts a 5-2-3 starting XI as a valid FPL formation', () => {
+    const squad = squadFixture();
+    const starters = [
+      squad.slots[0],
+      squad.slots[1],
+      squad.slots[2],
+      squad.slots[3],
+      squad.slots[4],
+      squad.slots[12],
+      squad.slots[5],
+      squad.slots[6],
+      squad.slots[10],
+      squad.slots[13],
+      squad.slots[14]
+    ];
+    const bench = [squad.slots[11], squad.slots[7], squad.slots[8], squad.slots[9]];
+
+    const result = validateStartingXi({
+      starters,
+      bench,
+      captainId: starters[0].playerId,
+      viceCaptainId: starters[1].playerId
+    });
+
+    assert.equal(getFormation(starters), '5-2-3');
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects a starting XI with more than one goalkeeper', () => {
+    const squad = squadFixture();
+    const starters = [
+      squad.slots[0],
+      squad.slots[11],
+      ...squad.slots.slice(1, 10)
+    ];
+    const bench = squad.slots.slice(10, 11).concat(squad.slots.slice(12));
+
+    const result = validateStartingXi({
+      starters,
+      bench,
+      captainId: starters[0].playerId,
+      viceCaptainId: starters[2].playerId
+    });
+
+    assert.equal(result.valid, false);
+    assert.ok(result.violations.some(violation => violation.key === 'starting_xi_goalkeepers'));
   });
 
   it('rejects invalid captaincy when captain and vice captain are the same player', () => {

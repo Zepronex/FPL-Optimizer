@@ -4,6 +4,7 @@ import SquadForm from '../components/SquadForm';
 import WeightsPanel from '../components/WeightsPanel';
 import { apiClient } from '../lib/api';
 import { ApiResponse, Squad, SquadAnalysis } from '../lib/types';
+import { isValidFormation } from '../lib/format';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -12,7 +13,7 @@ interface SquadPageProps {
 
 const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
   const navigate = useNavigate();
-  const { squad, error: squadError, clearError: clearSquadError } = squadState;
+  const { squad } = squadState;
   const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -45,6 +46,11 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
   const handleAnalyze = async () => {
     if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {
       setAnalysisError('Please complete your squad (11 starting XI + 4 bench players)');
+      return;
+    }
+
+    if (!isValidFormation(squad.startingXI)) {
+      setAnalysisError('Starting XI must use exactly 1 GK and a valid FPL formation (DEF 3-5, MID 2-5, FWD 1-3)');
       return;
     }
 
@@ -131,13 +137,13 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       </div>
 
       {/* Error Display */}
-      {(squadError || weightsError || analysisError) && (
+      {(weightsError || analysisError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-red-800 font-medium">Error</h3>
               <p className="text-red-700 mt-1">
-                {squadError || weightsError || analysisError}
+                {weightsError || analysisError}
               </p>
               {analysisCommands.length > 0 && analysisError && (
                 <div className="mt-3">
@@ -150,7 +156,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
             </div>
             <button
               onClick={() => {
-                clearSquadError();
                 clearWeightsError();
                 setAnalysisError(null);
                 setAnalysisCommands([]);

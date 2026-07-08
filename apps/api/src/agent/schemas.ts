@@ -72,7 +72,7 @@ export const CaptaincyRecommendationSchema = z.object({
 }).strict();
 
 export const StartingXISchema = z.object({
-  formation: z.enum(['3-4-3', '3-5-2', '4-4-2', '4-3-3', '4-5-1', '5-3-2', '5-4-1']),
+  formation: z.enum(['3-4-3', '3-5-2', '4-4-2', '4-3-3', '4-5-1', '5-2-3', '5-3-2', '5-4-1']),
   starters: z.array(SquadSlotSchema).length(11),
   bench: z.array(SquadSlotSchema).length(4),
   captaincy: CaptaincyRecommendationSchema,

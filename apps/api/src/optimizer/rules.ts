@@ -24,6 +24,7 @@ export const VALID_FORMATION_ORDER: readonly Formation[] = [
   '4-4-2',
   '4-3-3',
   '4-5-1',
+  '5-2-3',
   '5-3-2',
   '5-4-1'
 ];
@@ -34,6 +35,7 @@ export const VALID_FORMATIONS: Record<Formation, Record<Pos, number>> = {
   '4-4-2': { GK: 1, DEF: 4, MID: 4, FWD: 2 },
   '4-3-3': { GK: 1, DEF: 4, MID: 3, FWD: 3 },
   '4-5-1': { GK: 1, DEF: 4, MID: 5, FWD: 1 },
+  '5-2-3': { GK: 1, DEF: 5, MID: 2, FWD: 3 },
   '5-3-2': { GK: 1, DEF: 5, MID: 3, FWD: 2 },
   '5-4-1': { GK: 1, DEF: 5, MID: 4, FWD: 1 }
 };
@@ -140,6 +142,7 @@ export function validateStartingXi(params: {
 }): ConstraintValidationResult {
   const checks: ConstraintCheck[] = [];
   const violations: ConstraintViolation[] = [];
+  const positionCounts = countByPosition(params.starters);
   const formation = getFormation(params.starters);
   const starterIds = new Set(params.starters.map(player => player.playerId));
 
@@ -149,6 +152,14 @@ export function validateStartingXi(params: {
     expected: FPL_RULES.startingXiSize,
     actual: params.starters.length,
     code: 'invalid_starting_xi_size'
+  });
+
+  pushCheck(checks, violations, {
+    key: 'starting_xi_goalkeepers',
+    passed: positionCounts.GK === 1,
+    expected: 1,
+    actual: positionCounts.GK,
+    code: 'invalid_formation'
   });
 
   pushCheck(checks, violations, {
@@ -163,7 +174,7 @@ export function validateStartingXi(params: {
     key: 'formation',
     passed: formation !== null,
     expected: Object.keys(VALID_FORMATIONS).join(','),
-    actual: formation ?? `${countByPosition(params.starters).DEF}-${countByPosition(params.starters).MID}-${countByPosition(params.starters).FWD}`,
+    actual: formation ?? `${positionCounts.DEF}-${positionCounts.MID}-${positionCounts.FWD}`,
     code: 'invalid_formation'
   });
 

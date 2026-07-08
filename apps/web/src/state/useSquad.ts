@@ -16,6 +16,27 @@ const POSITION_ORDER: Record<Pos, number> = {
   'FWD': 4
 };
 
+const SQUAD_POSITION_LIMITS: Record<Pos, number> = {
+  GK: 2,
+  DEF: 5,
+  MID: 5,
+  FWD: 3
+};
+
+const STARTING_XI_POSITION_LIMITS: Record<Pos, number> = {
+  GK: 1,
+  DEF: 5,
+  MID: 5,
+  FWD: 3
+};
+
+const POSITION_LABELS: Record<Pos, string> = {
+  GK: 'goalkeepers',
+  DEF: 'defenders',
+  MID: 'midfielders',
+  FWD: 'forwards'
+};
+
 // Sort players by position order
 const sortPlayersByPosition = (players: SquadSlot[]): SquadSlot[] => {
   return [...players].sort((a, b) => POSITION_ORDER[a.pos] - POSITION_ORDER[b.pos]);
@@ -27,7 +48,6 @@ export const useSquad = () => {
   const [error, setError] = useState<string | null>(null);
 
   const addPlayer = useCallback((player: SquadSlot, isStarting: boolean = true) => {
-    // Clear any existing errors before attempting to add player
     setError(null);
     
     setSquad(prev => {
@@ -39,17 +59,27 @@ export const useSquad = () => {
         teamShort: player.teamShort
       };
 
+      if (prev.startingXI.some(slot => slot.id === player.id) ||
+          prev.bench.some(slot => slot.id === player.id)) {
+        setError('Player is already in squad');
+        return prev;
+      }
+
+      const squadPositionCount = countPlayersByPosition([...prev.startingXI, ...prev.bench], player.pos);
+      if (squadPositionCount >= SQUAD_POSITION_LIMITS[player.pos]) {
+        setError(`Full squad can include at most ${SQUAD_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
+        return prev;
+      }
+
       if (isStarting) {
-        // Validate starting XI capacity (max 11 players)
         if (prev.startingXI.length >= 11) {
           setError('Starting XI is full (11 players)');
           return prev;
         }
-        
-        // Prevent duplicate players in squad
-        if (prev.startingXI.some(slot => slot.id === player.id) || 
-            prev.bench.some(slot => slot.id === player.id)) {
-          setError('Player is already in squad');
+
+        const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
+        if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
+          setError(`Starting XI can include at most ${STARTING_XI_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
           return prev;
         }
 
@@ -59,16 +89,8 @@ export const useSquad = () => {
         };
         return newSquad;
       } else {
-        // Check if we can add to bench (max 4 players)
         if (prev.bench.length >= 4) {
           setError('Bench is full (4 players)');
-          return prev;
-        }
-        
-        // Check if player is already in squad
-        if (prev.startingXI.some(slot => slot.id === player.id) || 
-            prev.bench.some(slot => slot.id === player.id)) {
-          setError('Player is already in squad');
           return prev;
         }
 
@@ -90,11 +112,16 @@ export const useSquad = () => {
   }, []);
 
   const movePlayer = useCallback((playerId: number, fromStarting: boolean) => {
+    setError(null);
+
     setSquad(prev => {
       if (fromStarting) {
-        // Move from starting XI to bench
         const player = prev.startingXI.find(slot => slot.id === playerId);
-        if (!player || prev.bench.length >= 4) return prev;
+        if (!player) return prev;
+        if (prev.bench.length >= 4) {
+          setError('Bench is full (4 players)');
+          return prev;
+        }
         
         return {
           ...prev,
@@ -102,9 +129,17 @@ export const useSquad = () => {
           bench: sortPlayersByPosition([...prev.bench, player])
         };
       } else {
-        // Move from bench to starting XI
         const player = prev.bench.find(slot => slot.id === playerId);
-        if (!player || prev.startingXI.length >= 11) return prev;
+        if (!player) return prev;
+        if (prev.startingXI.length >= 11) {
+          setError('Starting XI is full (11 players)');
+          return prev;
+        }
+        const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
+        if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
+          setError(`Starting XI can include at most ${STARTING_XI_POSITION_LIMITS[player.pos]} ${POSITION_LABELS[player.pos]}`);
+          return prev;
+        }
         
         return {
           ...prev,
@@ -168,3 +203,7 @@ export const useSquad = () => {
     clearError
   };
 };
+
+function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): number {
+  return players.filter(player => player.pos === position).length;
+}

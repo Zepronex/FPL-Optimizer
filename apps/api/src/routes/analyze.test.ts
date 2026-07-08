@@ -62,6 +62,44 @@ describe('analyze route', () => {
     assert.match(response.body.error, /do not have prediction rows/);
     assert.deepEqual(response.body.details.playerIds, [15]);
   });
+
+  it('rejects a starting XI with more than one goalkeeper', async () => {
+    const payload = squadPayload();
+    const droppedStartingForward = payload.squad.startingXI[10];
+    payload.squad.startingXI = [
+      payload.squad.startingXI[0],
+      payload.squad.bench[0],
+      ...payload.squad.startingXI.slice(1, 10)
+    ];
+    payload.squad.bench = [
+      droppedStartingForward,
+      payload.squad.bench[1],
+      payload.squad.bench[2],
+      payload.squad.bench[3]
+    ];
+
+    const response = await postAnalyze(candidateRowsFixture(), payload);
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.success, false);
+    assert.match(response.body.details.join(' '), /exactly 1 GK/);
+  });
+
+  it('rejects an invalid full squad position composition', async () => {
+    const payload = squadPayload();
+    payload.squad.bench = [
+      payload.squad.bench[1],
+      payload.squad.bench[2],
+      payload.squad.bench[3],
+      { id: 16, pos: 'MID', price: 5, name: 'Extra Midfielder', teamShort: 'ARS' }
+    ];
+
+    const response = await postAnalyze(candidateRowsFixture(), payload);
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.success, false);
+    assert.ok(response.body.details.includes('Full squad must include 2 GK, 5 DEF, 5 MID and 3 FWD'));
+  });
 });
 
 async function postAnalyze(rows: PlayerCandidateTestRow[], payload: unknown) {

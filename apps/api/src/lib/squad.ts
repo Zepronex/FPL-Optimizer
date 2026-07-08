@@ -1,6 +1,24 @@
 import { Squad, SquadSlot, EnrichedPlayer, Suggestion, AnalysisWeights } from '../types';
 import { ScoringService } from './scoring';
 
+const SQUAD_POSITION_COUNTS = {
+  GK: 2,
+  DEF: 5,
+  MID: 5,
+  FWD: 3
+} as const;
+
+const VALID_STARTING_FORMATIONS = [
+  { GK: 1, DEF: 3, MID: 4, FWD: 3 },
+  { GK: 1, DEF: 3, MID: 5, FWD: 2 },
+  { GK: 1, DEF: 4, MID: 3, FWD: 3 },
+  { GK: 1, DEF: 4, MID: 4, FWD: 2 },
+  { GK: 1, DEF: 4, MID: 5, FWD: 1 },
+  { GK: 1, DEF: 5, MID: 2, FWD: 3 },
+  { GK: 1, DEF: 5, MID: 3, FWD: 2 },
+  { GK: 1, DEF: 5, MID: 4, FWD: 1 }
+] as const;
+
 export class SquadAnalyzer {
   static async analyzeSquad(
     squad: Squad,
@@ -121,52 +139,41 @@ export class SquadAnalyzer {
 
   static validateSquad(squad: Squad): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
-    // Check formation (must have exactly 11 starting players)
+    const allPlayers = [...squad.startingXI, ...squad.bench];
+
     if (squad.startingXI.length !== 11) {
       errors.push('Starting XI must have exactly 11 players');
     }
-    
-    // Check bench (must have exactly 4 bench players)
+
     if (squad.bench.length !== 4) {
       errors.push('Bench must have exactly 4 players');
     }
-    
-    // Check position distribution in starting XI
-    const positionCounts = squad.startingXI.reduce((counts, slot) => {
-      counts[slot.pos] = (counts[slot.pos] || 0) + 1;
-      return counts;
-    }, {} as Record<string, number>);
-    
-    // Valid formations: 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1
-    const validFormations = [
-      { GK: 1, DEF: 3, MID: 4, FWD: 3 },
-      { GK: 1, DEF: 3, MID: 5, FWD: 2 },
-      { GK: 1, DEF: 4, MID: 3, FWD: 3 },
-      { GK: 1, DEF: 4, MID: 4, FWD: 2 },
-      { GK: 1, DEF: 4, MID: 5, FWD: 1 },
-      { GK: 1, DEF: 5, MID: 3, FWD: 2 },
-      { GK: 1, DEF: 5, MID: 4, FWD: 1 }
-    ];
-    
-    const isValidFormation = validFormations.some(formation =>
-      Object.entries(formation).every(([pos, count]) => positionCounts[pos] === count)
+
+    const startingPositionCounts = countSquadSlotsByPosition(squad.startingXI);
+    const squadPositionCounts = countSquadSlotsByPosition(allPlayers);
+
+    const isValidFormation = VALID_STARTING_FORMATIONS.some(formation =>
+      Object.entries(formation).every(([pos, count]) => startingPositionCounts[pos] === count)
     );
-    
+
     if (!isValidFormation) {
-      errors.push('Invalid formation - must have 1 GK and valid DEF/MID/FWD distribution');
+      errors.push('Starting XI must use exactly 1 GK and a valid FPL formation (DEF 3-5, MID 2-5, FWD 1-3)');
+    }
+
+    const hasValidSquadComposition = Object.entries(SQUAD_POSITION_COUNTS)
+      .every(([pos, expected]) => squadPositionCounts[pos] === expected);
+
+    if (!hasValidSquadComposition) {
+      errors.push('Full squad must include 2 GK, 5 DEF, 5 MID and 3 FWD');
     }
     
-    // Check total cost
-    const totalCost = [...squad.startingXI, ...squad.bench]
-      .reduce((sum, slot) => sum + slot.price, 0);
+    const totalCost = allPlayers.reduce((sum, slot) => sum + slot.price, 0);
     
     if (totalCost + squad.bank > 100) {
       errors.push('Total squad value cannot exceed 100.0');
     }
     
-    // Check for duplicate players
-    const allPlayerIds = [...squad.startingXI, ...squad.bench].map(slot => slot.id);
+    const allPlayerIds = allPlayers.map(slot => slot.id);
     const uniqueIds = new Set(allPlayerIds);
     if (uniqueIds.size !== allPlayerIds.length) {
       errors.push('Cannot have duplicate players in squad');
@@ -177,5 +184,12 @@ export class SquadAnalyzer {
       errors
     };
   }
+}
+
+function countSquadSlotsByPosition(players: readonly SquadSlot[]): Record<string, number> {
+  return players.reduce((counts, slot) => {
+    counts[slot.pos] = (counts[slot.pos] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
 }
 
