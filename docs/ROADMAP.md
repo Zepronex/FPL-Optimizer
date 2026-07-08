@@ -1,65 +1,101 @@
-# FPL Optimizer v2 Roadmap
+# Limitations And Roadmap
 
-## Phase 1: Repo Cleanup
+This document captures the current project limits and the most useful next engineering steps. It should be read as a reviewer aid, not as a claim that the system is production-ready.
 
-- Remove committed dependency folders and build artifacts.
-- Standardize `.gitignore` and environment examples.
-- Document repository rules, target architecture, and setup expectations.
-- Verify existing build and typecheck behavior without changing product architecture.
+## Completed Foundations
 
-## Phase 2: Data Ingestion
+ScoutIQ currently includes:
 
-- Define source list and ingestion cadence.
-- Store raw snapshots with source metadata and timestamps.
-- Add repeatable local and scheduled ingestion commands.
-- Add validation for source schema drift.
+- deterministic public FPL ingestion with source metadata
+- PostgreSQL migrations and loaders for normalized FPL data
+- Bronze, Silver, and Gold pipeline layers for local and Databricks-compatible execution
+- expected-points feature engineering, training, backtesting, and prediction scripts
+- prediction-serving tables and API routes
+- deterministic optimizer routes for starting XI, transfers, and squad generation
+- controlled recommendation explanation endpoint with deterministic fallback behavior
+- evaluation dashboard API and frontend page
+- local demo, health endpoint, and smoke-test tooling
 
-## Phase 3: Database and Schema
+## Current Limitations
 
-- Introduce PostgreSQL for normalized FPL data.
-- Add migrations for players, teams, fixtures, events, prices, statuses, and snapshots.
-- Define model feature and prediction tables.
-- Add local database setup documentation.
+### Model Quality
 
-## Phase 4: Feature Engineering
+The current model does not clearly outperform the historical baseline. The latest known backtest is:
 
-- Maintain a Databricks-compatible Bronze/Silver/Gold pipeline foundation for FPL feature tables.
-- Build pre-deadline feature transformations.
-- Add leakage checks for all feature sets.
-- Version feature definitions and generated datasets.
-- Add tests for transformations and edge cases.
+```text
+rows=28352
+mae=1.0925
+rmse=2.0246
+baseline_mae=1.0366
+baseline_rmse=2.1458
+```
 
-## Phase 5: Prediction Model
+MAE and RMSE are error metrics, so lower values are better. The model has better RMSE but worse MAE, so the project should describe model performance as mixed.
 
-- Establish baseline expected-points models.
-- Use time-series validation and calibration reporting.
-- Persist model artifacts with feature metadata.
-- Track evaluation metrics for each model version.
+### Public Data Limits
 
-## Phase 6: Optimizer
+The system uses public FPL API data. That keeps the project reproducible, but it limits richer context such as detailed tactical information, training reports, private injury updates, and market intelligence.
 
-- Implement FPL constraints for squads, transfers, formations, budget, club limits, and captaincy.
-- Add deterministic optimization tests with fixed inputs.
-- Support scenario comparison across horizons and risk settings.
-- Record optimizer inputs and outputs for reproducibility.
+### Recommendation Dependencies
 
-## Phase 7: AI Agent
+Prediction-backed recommendations require:
 
-- Add an explanation layer after optimizer outputs are stable.
-- Ground explanations in recorded model features and optimizer decisions.
-- Add checks that prevent unsupported claims or invented data.
-- Keep the agent out of core recommendation calculations.
+- current normalized FPL data
+- generated feature rows
+- trained and backtested model artifacts
+- loaded prediction rows in PostgreSQL
+- complete squad inputs that satisfy optimizer constraints
 
-## Phase 8: Backtesting
+When these dependencies are missing, the UI should show setup guidance rather than invented recommendations.
 
-- Replay historical deadlines using only available-at-the-time data.
-- Compare against simple baselines and previous model versions.
-- Report points, transfer value, captaincy performance, and calibration.
-- Use backtest results as release gates for recommendation changes.
+### Explanation Agent Scope
 
-## Phase 9: Deployment
+The LLM explanation layer explains optimizer output after decisions have already been made. It does not choose players, transfers, captaincy, bench order, or chips. Provider output must pass schema validation and grounding checks, otherwise deterministic fallback output is returned.
 
-- Separate deployable web, API, worker, database, and model artifact concerns.
-- Add production configuration, migrations, monitoring, and scheduled jobs.
-- Define rollback procedures for API, model, and optimizer releases.
-- Document release and operations workflows.
+### Local Artifacts And Secrets
+
+Generated data, feature, model, evaluation, and prediction artifacts live under gitignored `data/` paths. They are local runtime outputs, not committed source files.
+
+No secrets, API keys, service account files, local `.env` files, or database dumps should be committed.
+
+## Roadmap
+
+### Improved Features
+
+- Add richer pre-deadline player and team context while preserving leakage boundaries.
+- Improve minutes, availability, fixture congestion, and team-strength features.
+- Version feature definitions more explicitly so model comparisons are easier to audit.
+
+### Better Model Comparison
+
+- Compare multiple expected-points models against the same historical splits.
+- Add calibration reporting and position-specific error analysis.
+- Track model changes as release gates before using predictions in recommendation demos.
+
+### Richer Recommendation Context
+
+- Surface clearer constraint reasons when optimizer inputs are incomplete.
+- Add better scenario comparison without changing the deterministic optimizer contract.
+- Keep chip strategy out of scope until there is a dedicated tested implementation.
+
+### Deployment
+
+- Separate deployable concerns for web, API, database, workers, and model artifacts.
+- Add environment-specific setup documentation and production migration workflow.
+- Add monitoring for ingestion, prediction freshness, optimizer errors, and agent fallback rates.
+
+### CI/CD Hardening
+
+- Add GitHub Actions or another CI runner only when the commands are verified in that environment.
+- Run API, pipeline, model, smoke, and frontend build validation automatically.
+- Publish accurate status badges only after real CI is configured and passing.
+
+### Demo Evidence
+
+- Add real screenshots or a short demo video after running the local app.
+- Suggested screenshot targets:
+  - home or analyze page
+  - optimizer recommendation result
+  - explanation panel with fallback/provider status
+  - evaluation dashboard
+- Store screenshots under `docs/screenshots/` and document the data run used to create them.

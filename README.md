@@ -171,6 +171,7 @@ pnpm.cmd run db:load:predictions
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
+- [Reviewer Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
 - [Prediction Serving](docs/PREDICTION_SERVING.md)
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
