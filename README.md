@@ -144,6 +144,17 @@ pnpm.cmd run build
 pnpm.cmd run build:web
 ```
 
+Core script reference:
+
+| Command | Use |
+| --- | --- |
+| `pnpm.cmd run dev:app` | Start the API and web app for normal local development and demos. |
+| `pnpm.cmd run smoke:app` | Check a running local API and web app from a second terminal. |
+| `pnpm.cmd run build` | Build both API and web workspaces. |
+| `pnpm.cmd run test:api` | Run API tests. |
+| `pnpm.cmd run pipeline:test` | Run lakehouse pipeline tests. |
+| `pnpm.cmd run model:test` | Run expected-points model tests. |
+
 For full data refresh and prediction serving:
 
 ```powershell
@@ -170,6 +181,7 @@ pnpm.cmd run db:load:predictions
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Command Reference](docs/COMMAND_REFERENCE.md)
 - [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
 - [Reviewer Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
 - [Prediction Serving](docs/PREDICTION_SERVING.md)

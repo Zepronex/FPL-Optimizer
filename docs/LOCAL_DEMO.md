@@ -2,6 +2,8 @@
 
 This walkthrough is for reviewers who want to run ScoutIQ locally, verify the API and web app, and understand what the demo proves.
 
+For a complete package script list, see [Command Reference](COMMAND_REFERENCE.md).
+
 ## Prerequisites
 
 - Node.js with `pnpm.cmd` available on Windows
