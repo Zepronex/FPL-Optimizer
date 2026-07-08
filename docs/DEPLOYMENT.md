@@ -2,6 +2,8 @@
 
 ScoutIQ is not currently deployed. This guide describes the services, commands, and operational steps needed to deploy it without changing the local-first development workflow.
 
+For variable details, see [Environment Reference](ENVIRONMENT.md). For release gates, see [Production Readiness](PRODUCTION_READINESS.md).
+
 ## Deployment Architecture
 
 ScoutIQ has four deployment concerns:
