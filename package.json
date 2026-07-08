@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\" \"pnpm --filter @fpl-optimizer/ml run dev\"",
-    "dev:app": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\"",
+    "dev:app": "node scripts/dev-app.mjs",
     "dev:all": "concurrently \"pnpm --filter @fpl-optimizer/api run dev\" \"pnpm --filter @fpl-optimizer/web run dev\" \"pnpm --filter @fpl-optimizer/ml run dev\"",
     "dev:api": "pnpm --filter @fpl-optimizer/api run dev",
     "dev:web": "pnpm --filter @fpl-optimizer/web run dev",
@@ -34,6 +34,8 @@
     "model:backtest": "python -m pipelines.expected_points.backtest",
     "model:predict": "python -m pipelines.expected_points.predict",
     "model:test": "python -m unittest discover pipelines/expected_points/tests",
+    "smoke:app": "node scripts/smoke-app.mjs",
+    "test:smoke": "node --test scripts/smoke-app.test.mjs",
     "test:api": "pnpm --filter @fpl-optimizer/api run test",
     "install:all": "pnpm install",
     "clean": "node -e \"const fs=require('fs'); for (const p of ['node_modules','apps/api/node_modules','apps/web/node_modules','apps/ml/node_modules','apps/api/dist','apps/web/dist','apps/web/.vite']) fs.rmSync(p,{recursive:true,force:true});\"",

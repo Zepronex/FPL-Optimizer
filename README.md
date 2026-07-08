@@ -10,20 +10,56 @@ An intelligent Fantasy Premier League team optimization tool that analyzes playe
 - **Recommendation Explanations**: Explain optimizer outputs without changing optimizer decisions
 - **Real-time Data**: Uses official FPL API for up-to-date player and fixture information
 
-## Quick Start
+## Local Demo Quick Start
 
-```bash
-# Install dependencies
-pnpm install
+```powershell
+pnpm.cmd install
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+if (!(Test-Path apps\api\.env)) { Copy-Item apps\api\.env.example apps\api\.env }
 
-# Setup ML service (optional, only for ML-backed strategy work)
-./setup_ml.sh
+docker compose up -d postgres
+pnpm.cmd run db:migrate
+pnpm.cmd run ingest:fpl
+pnpm.cmd run db:load:fpl
 
-# Start normal ScoutIQ development servers
+pnpm.cmd run ingest:fpl:history
+pnpm.cmd run pipeline:features
+pnpm.cmd run model:train
+pnpm.cmd run model:backtest
+pnpm.cmd run model:predict
+pnpm.cmd run db:load:predictions
+
 pnpm.cmd run dev:app
 ```
 
+`pnpm.cmd run dev:app` starts only the API and web app. It does not require an OpenAI API key and does not start the optional ML service.
+
 Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+With `dev:app` running, verify the local demo from a second terminal:
+
+```powershell
+pnpm.cmd run smoke:app
+```
+
+Expected local URLs:
+
+- [http://localhost:3000](http://localhost:3000)
+- [http://localhost:3000/evaluation](http://localhost:3000/evaluation)
+- [http://localhost:3001/api/health](http://localhost:3001/api/health)
+
+If port 3000, 3001, or 5432 is already in use, stop the conflicting process or configure an alternate port before starting the demo. If Vite reports an access-denied error resolving `apps\web\vite.config.ts` in a restricted shell, rerun `pnpm.cmd run dev:app` from a normal PowerShell terminal.
+
+The default local explanation path uses deterministic fallback mode and works without provider credentials. To test live OpenAI explanations locally, put private values only in your local `.env` file:
+
+```powershell
+SCOUTIQ_AGENT_ENABLED=true
+SCOUTIQ_AGENT_PROVIDER=openai
+OPENAI_API_KEY=<private key>
+OPENAI_MODEL=<model name>
+```
+
+See [Local Demo Walkthrough](docs/LOCAL_DEMO.md) for the full reviewer demo path and troubleshooting notes.
 
 ### Optional ML Strategy Setup
 
@@ -56,6 +92,7 @@ The current rebuild adds deterministic ingestion, Bronze/Silver/Gold feature pre
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
 - [Prediction Serving and Optimizer Recommendations](docs/PREDICTION_SERVING.md)
+- [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
 
 ## Model Evaluation Dashboard
 
