@@ -47,7 +47,7 @@ function App() {
 
   if (isApiConnected === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <LoadingSpinner size="lg" text="Connecting to API..." />
       </div>
     );
@@ -75,12 +75,13 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b border-gray-200">
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-white shadow-sm border-b border-teal-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center h-16">
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-fpl-dark">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 rounded-full bg-fpl-green" />
+                <h1 className="text-2xl font-bold text-gray-950">
                   ScoutIQ
                 </h1>
               </div>
@@ -95,31 +96,31 @@ function App() {
               <nav className="flex space-x-6 ml-auto">
                 <Link
                   to="/squad"
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-green transition-colors font-medium"
                 >
                   Squad Builder
                 </Link>
                 <Link
                   to="/top-players"
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-green transition-colors font-medium"
                 >
                   Top Players
                 </Link>
                 <Link
                   to="/analyze"
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-green transition-colors font-medium"
                 >
                   Team Analysis
                 </Link>
                 <Link
                   to="/evaluation"
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-green transition-colors font-medium"
                 >
                   Evaluation
                 </Link>
                 <Link
                   to="/"
-                  className="text-gray-600 hover:text-fpl-dark transition-colors font-medium"
+                  className="text-gray-600 hover:text-fpl-green transition-colors font-medium"
                 >
                   Home
                 </Link>
@@ -143,7 +144,7 @@ function App() {
           </Suspense>
         </main>
 
-        <footer className="bg-white border-t border-gray-200 mt-16">
+        <footer className="bg-white border-t border-teal-100 mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-gray-500 text-sm">
               <p>ScoutIQ - FPL decision support with transparent model evaluation</p>

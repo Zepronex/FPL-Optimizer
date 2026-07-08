@@ -22,6 +22,13 @@ const POSITION_ICONS: Record<Pos, JSX.Element> = {
 
 const POSITIONS: Pos[] = ['GK', 'DEF', 'MID', 'FWD'];
 
+const POSITION_ACCENTS: Record<Pos, string> = {
+  GK: 'border-t-fpl-green',
+  DEF: 'border-t-blue-600',
+  MID: 'border-t-amber-600',
+  FWD: 'border-t-red-600'
+};
+
 const TopPlayersPage = () => {
   const [summary, setSummary] = useState<PredictionSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,10 +112,10 @@ const TopPlayersPage = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-teal-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="flex items-center gap-3 text-3xl font-bold text-gray-900">
-            <BarChart3 className="h-8 w-8 text-slate-700" />
+            <BarChart3 className="h-8 w-8 text-fpl-green" />
             Top Players
           </h1>
           <p className="mt-2 max-w-3xl text-gray-600">
@@ -126,9 +133,9 @@ const TopPlayersPage = () => {
 
       {summary && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <MetricCard label="Prediction Run" value={`#${summary.run.id}`} />
-          <MetricCard label="Target Gameweek" value={String(summary.run.targetGameweekId)} />
-          <MetricCard label="Players Loaded" value={String(summary.run.predictionCount)} />
+          <MetricCard label="Prediction Run" value={`#${summary.run.id}`} accentClass="border-t-fpl-green" valueClass="text-teal-700" />
+          <MetricCard label="Target Gameweek" value={String(summary.run.targetGameweekId)} accentClass="border-t-blue-600" valueClass="text-blue-700" />
+          <MetricCard label="Players Loaded" value={String(summary.run.predictionCount)} accentClass="border-t-amber-600" valueClass="text-amber-700" />
         </div>
       )}
 
@@ -170,10 +177,20 @@ const TopPlayersPage = () => {
   );
 };
 
-const MetricCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-lg border border-gray-200 bg-white p-5">
+const MetricCard = ({
+  label,
+  value,
+  accentClass,
+  valueClass
+}: {
+  label: string;
+  value: string;
+  accentClass: string;
+  valueClass: string;
+}) => (
+  <div className={`rounded-lg border border-gray-200 border-t-4 bg-white p-5 ${accentClass}`}>
     <p className="text-sm font-medium text-gray-600">{label}</p>
-    <p className="mt-2 text-2xl font-semibold text-gray-900">{value}</p>
+    <p className={`mt-2 text-2xl font-semibold ${valueClass}`}>{value}</p>
   </div>
 );
 
@@ -190,8 +207,8 @@ const FilterButton = ({
     onClick={onClick}
     className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
       active
-        ? 'border-slate-800 bg-slate-800 text-white'
-        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+        ? 'border-fpl-green bg-fpl-green text-white'
+        : 'border-gray-200 bg-white text-gray-700 hover:bg-teal-50 hover:text-fpl-green'
     }`}
   >
     {children}
@@ -199,7 +216,7 @@ const FilterButton = ({
 );
 
 const PositionPanel = ({ position, players }: { position: Pos; players: PredictionRow[] }) => (
-  <div className="card">
+  <div className={`card border-t-4 ${POSITION_ACCENTS[position]}`}>
     <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
       {POSITION_ICONS[position]}
       Top {POSITION_LABELS[position]}

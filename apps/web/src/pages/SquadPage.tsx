@@ -58,7 +58,7 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header with Analyze Button */}
-      <div className="text-center">
+      <div className="mx-auto max-w-4xl border-b border-teal-100 pb-6 text-center">
         <h1 className="text-2xl sm:text-4xl font-bold text-fpl-dark mb-3 sm:mb-4">
           Squad Builder
         </h1>
