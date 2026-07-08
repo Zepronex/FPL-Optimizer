@@ -1,5 +1,7 @@
 # ScoutIQ
 
+[![CI](https://github.com/Zepronex/FPL-Optimizer/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/Zepronex/FPL-Optimizer/actions/workflows/ci.yml)
+
 ScoutIQ is an AI and data engineering project for Fantasy Premier League decision support. It combines official FPL data ingestion, PostgreSQL storage, feature engineering, expected-points modelling, deterministic optimization, and controlled recommendation explanations into one local-first demo.
 
 The project exists to show how a sports decision platform can be built with reproducible data pipelines and transparent model evaluation instead of opaque recommendations. It is designed as a recruiter-readable engineering portfolio project for junior AI, data, and software roles.
@@ -143,6 +145,16 @@ pnpm.cmd run model:test
 pnpm.cmd run build
 pnpm.cmd run build:web
 ```
+
+## Continuous Integration
+
+GitHub Actions runs `.github/workflows/ci.yml` on pull requests and pushes to `dev`. The workflow installs Node dependencies with `pnpm`, installs Python dependencies from `apps/ml/requirements.txt`, and runs the API build, web build, API tests, smoke helper tests, pipeline tests, and expected-points model tests.
+
+CI does not require `OPENAI_API_KEY`, Azure OpenAI credentials, local `.env` files, Docker, PostgreSQL, or live FPL API calls. Explanation-agent tests use mocked provider responses or deterministic fallback behavior, so provider access is not needed for review validation.
+
+CI proves the repository is buildable and testable. It does not create new model-performance claims; those remain based on local evaluation artifacts and loaded evaluation records.
+
+To reproduce the CI checks from Windows PowerShell, install dependencies and run the validation commands above. In GitHub Actions the same scripts run through `pnpm` instead of `pnpm.cmd`.
 
 Core script reference:
 

@@ -37,6 +37,26 @@ Use these commands from the repository root. The examples use `pnpm.cmd` because
 
 For documentation-only changes, `test:smoke` and `git diff --check` are usually enough before an intermediate commit. Before merging product or data-path changes, run the relevant build and test commands above.
 
+## CI Reproduction
+
+GitHub Actions validates pull requests and pushes to `dev` with `.github/workflows/ci.yml`. It uses Node 20, pnpm 9, Python 3.12, and Python dependencies from `apps/ml/requirements.txt`.
+
+CI runs without OpenAI or Azure OpenAI keys, local `.env` files, Docker, PostgreSQL, or live FPL API calls. Explanation-agent coverage uses mocked provider responses and deterministic fallback behavior.
+
+To reproduce the CI checks locally from Windows PowerShell:
+
+```powershell
+pnpm.cmd install --frozen-lockfile
+python -m pip install -r apps\ml\requirements.txt
+pnpm.cmd run build
+pnpm.cmd run build:api
+pnpm.cmd run build:web
+pnpm.cmd run test:api
+pnpm.cmd run test:smoke
+pnpm.cmd run pipeline:test
+pnpm.cmd run model:test
+```
+
 ## Database And Ingestion
 
 | Command | Purpose |
