@@ -1,4 +1,4 @@
-// Shared types for FPL Optimizer Web App
+// Shared types for the ScoutIQ web app
 
 export type Pos = 'GK' | 'DEF' | 'MID' | 'FWD';
 

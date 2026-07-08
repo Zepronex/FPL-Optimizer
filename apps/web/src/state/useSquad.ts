@@ -6,7 +6,7 @@ const SQUAD_STORAGE_KEY = 'scoutiq-squad-builder-state';
 const initialSquad: Squad = {
   startingXI: [],
   bench: [],
-  bank: 0
+  bank: 100
 };
 
 // Position order for sorting (GK first, then DEF, MID, FWD)
@@ -88,9 +88,11 @@ export const useSquad = () => {
           return prev;
         }
 
+        const startingXI = sortPlayersByPosition([...prev.startingXI, newSlot]);
         const newSquad = {
           ...prev,
-          startingXI: sortPlayersByPosition([...prev.startingXI, newSlot])
+          startingXI,
+          bank: calculateRemainingBank(startingXI, prev.bench)
         };
         return newSquad;
       } else {
@@ -99,9 +101,11 @@ export const useSquad = () => {
           return prev;
         }
 
+        const bench = sortPlayersByPosition([...prev.bench, newSlot]);
         const newSquad = {
           ...prev,
-          bench: sortPlayersByPosition([...prev.bench, newSlot])
+          bench,
+          bank: calculateRemainingBank(prev.startingXI, bench)
         };
         return newSquad;
       }
@@ -109,11 +113,16 @@ export const useSquad = () => {
   }, []);
 
   const removePlayer = useCallback((playerId: number) => {
-    setSquad(prev => ({
-      ...prev,
-      startingXI: prev.startingXI.filter(slot => slot.id !== playerId),
-      bench: prev.bench.filter(slot => slot.id !== playerId)
-    }));
+    setSquad(prev => {
+      const startingXI = prev.startingXI.filter(slot => slot.id !== playerId);
+      const bench = prev.bench.filter(slot => slot.id !== playerId);
+      return {
+        ...prev,
+        startingXI,
+        bench,
+        bank: calculateRemainingBank(startingXI, bench)
+      };
+    });
   }, []);
 
   const movePlayer = useCallback((playerId: number, fromStarting: boolean) => {
@@ -128,10 +137,14 @@ export const useSquad = () => {
           return prev;
         }
         
+        const startingXI = prev.startingXI.filter(slot => slot.id !== playerId);
+        const bench = sortPlayersByPosition([...prev.bench, player]);
+
         return {
           ...prev,
-          startingXI: prev.startingXI.filter(slot => slot.id !== playerId),
-          bench: sortPlayersByPosition([...prev.bench, player])
+          startingXI,
+          bench,
+          bank: calculateRemainingBank(startingXI, bench)
         };
       } else {
         const player = prev.bench.find(slot => slot.id === playerId);
@@ -146,10 +159,14 @@ export const useSquad = () => {
           return prev;
         }
         
+        const bench = prev.bench.filter(slot => slot.id !== playerId);
+        const startingXI = sortPlayersByPosition([...prev.startingXI, player]);
+
         return {
           ...prev,
-          bench: prev.bench.filter(slot => slot.id !== playerId),
-          startingXI: sortPlayersByPosition([...prev.startingXI, player])
+          bench,
+          startingXI,
+          bank: calculateRemainingBank(startingXI, bench)
         };
       }
     });
@@ -213,6 +230,11 @@ function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): n
   return players.filter(player => player.pos === position).length;
 }
 
+function calculateRemainingBank(startingXI: readonly SquadSlot[], bench: readonly SquadSlot[]): number {
+  const spent = [...startingXI, ...bench].reduce((sum, player) => sum + player.price, 0);
+  return Math.max(0, Math.round((100 - spent) * 10) / 10);
+}
+
 function readStoredSquad(): Squad {
   if (typeof window === 'undefined') return initialSquad;
 
@@ -221,7 +243,12 @@ function readStoredSquad(): Squad {
     if (!stored) return initialSquad;
 
     const parsed: unknown = JSON.parse(stored);
-    return isSquad(parsed) ? parsed : initialSquad;
+    return isSquad(parsed)
+      ? {
+          ...parsed,
+          bank: calculateRemainingBank(parsed.startingXI, parsed.bench)
+        }
+      : initialSquad;
   } catch {
     return initialSquad;
   }

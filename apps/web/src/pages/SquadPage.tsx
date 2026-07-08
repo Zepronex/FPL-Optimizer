@@ -87,7 +87,7 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
           Squad Builder
         </h1>
         <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
-          Build your Fantasy Premier League squad and review model-backed analysis with deterministic suggestions.
+          Build a 15-player squad, validate the rules, and review prediction-backed recommendations.
         </p>
         
         {/* Analyze Button - Moved to top */}
