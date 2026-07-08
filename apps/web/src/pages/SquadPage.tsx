@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import WeightsPanel from '../components/WeightsPanel';
 import { apiClient } from '../lib/api';
-import { Squad } from '../lib/types';
+import { ApiResponse, Squad, SquadAnalysis } from '../lib/types';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -16,6 +16,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
   const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisCommands, setAnalysisCommands] = useState<string[]>([]);
 
   // Check if we need to load a generated team for editing
   useEffect(() => {
@@ -49,9 +50,16 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
 
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setAnalysisCommands([]);
 
     try {
       const response = await apiClient.analyzeSquad(squad, weights);
+
+      if (!response.success || !response.data) {
+        setAnalysisError(formatAnalysisError(response));
+        setAnalysisCommands(response.requiredCommands || []);
+        return;
+      }
       
       // Store results and original squad in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
@@ -60,8 +68,8 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       // Navigate to analyze page
       navigate('/analyze');
     } catch {
-      // Analysis failed
-      setAnalysisError('Analysis failed. Please try again.');
+      setAnalysisError('Could not analyze the squad. Confirm that the local API is running and prediction data is loaded.');
+      setAnalysisCommands([]);
     } finally {
       setIsAnalyzing(false);
     }
@@ -131,12 +139,21 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
               <p className="text-red-700 mt-1">
                 {squadError || weightsError || analysisError}
               </p>
+              {analysisCommands.length > 0 && analysisError && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-red-800">Run the local data pipeline:</p>
+                  <pre className="mt-2 overflow-x-auto rounded-md bg-white p-3 text-xs text-gray-800">
+                    {analysisCommands.join('\n')}
+                  </pre>
+                </div>
+              )}
             </div>
             <button
               onClick={() => {
                 clearSquadError();
                 clearWeightsError();
                 setAnalysisError(null);
+                setAnalysisCommands([]);
               }}
               className="text-red-600 hover:text-red-800"
             >
@@ -161,5 +178,15 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
     </div>
   );
 };
+
+function formatAnalysisError(response: ApiResponse<SquadAnalysis>): string {
+  if (response.error) return response.error;
+
+  if (Array.isArray(response.details) && response.details.every(item => typeof item === 'string')) {
+    return response.details.join(' ');
+  }
+
+  return 'Could not analyze the squad. Check the squad and local prediction data before trying again.';
+}
 
 export default SquadPage;

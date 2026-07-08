@@ -1,11 +1,11 @@
 import { Squad, SquadSlot, EnrichedPlayer, Suggestion, AnalysisWeights } from '../types';
 import { ScoringService } from './scoring';
-import { DataMerger } from './merge';
 
 export class SquadAnalyzer {
   static async analyzeSquad(
     squad: Squad,
-    weights: AnalysisWeights = ScoringService.DEFAULT_WEIGHTS
+    weights: AnalysisWeights = ScoringService.DEFAULT_WEIGHTS,
+    allPlayers: EnrichedPlayer[]
   ): Promise<{
     results: Array<{
       player: EnrichedPlayer;
@@ -18,9 +18,6 @@ export class SquadAnalyzer {
     bankLeft: number;
     totalScore: number;
   }> {
-    // Get all enriched players
-    const allPlayers = await DataMerger.getAllEnrichedPlayers();
-    
     // Create a map for quick player lookup
     const playerMap = new Map(allPlayers.map(p => [p.id, p]));
     

@@ -8,9 +8,19 @@ interface SearchResultsProps {
   onPlayerSelect: (player: EnrichedPlayer) => void;
   onPlayerScore: (player: EnrichedPlayer) => void;
   isScoring: boolean;
+  emptyMessage?: string;
+  tone?: 'info' | 'error';
 }
 
-const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isScoring }: SearchResultsProps) => {
+const SearchResults = ({
+  results,
+  isLoading,
+  onPlayerSelect,
+  onPlayerScore,
+  isScoring,
+  emptyMessage = 'No players found',
+  tone = 'info'
+}: SearchResultsProps) => {
   if (isLoading) {
     return (
       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-80 overflow-y-auto z-50">
@@ -23,11 +33,15 @@ const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isSc
   }
 
   if (results.length === 0) {
+    const toneClass = tone === 'error'
+      ? 'text-red-700'
+      : 'text-gray-500';
+
     return (
       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50">
-        <div className="p-4 text-center text-gray-500">
+        <div className={`p-4 text-center ${toneClass}`}>
           <User className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm">No players found</p>
+          <p className="text-sm">{emptyMessage}</p>
         </div>
       </div>
     );

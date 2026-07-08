@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {
   ApiResponse,
+  EnrichedPlayer,
   GeneratedTeamData,
   Squad,
   AnalysisWeights,
@@ -55,8 +56,14 @@ export const apiClient = {
   },
 
   async searchPlayer(name: string): Promise<PlayersResponse> {
-    const response = await api.get(`/players/search?name=${encodeURIComponent(name)}`);
-    return response.data;
+    try {
+      const response = await api.get(`/players/search?name=${encodeURIComponent(name)}`);
+      return response.data;
+    } catch (error) {
+      const errorResponse = toPlayersResponse(error);
+      if (errorResponse) return errorResponse;
+      throw error;
+    }
   },
 
   async getPlayerById(id: number): Promise<PlayerSearchResult> {
@@ -71,8 +78,15 @@ export const apiClient = {
 
   // Analysis API
   async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<ApiResponse<SquadAnalysis>> {
-    const response = await api.post('/analyze', { squad, weights });
-    return response.data;
+    try {
+      const response = await api.post('/analyze', { squad, weights });
+      return response.data;
+    } catch (error) {
+      return toApiResponse<SquadAnalysis>(
+        error,
+        'Could not analyze the squad. Confirm that the local API is running and prediction data is loaded.'
+      );
+    }
   },
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
@@ -186,5 +200,38 @@ export const apiClient = {
     return response.data;
   }
 };
+
+function toPlayersResponse(error: unknown): PlayersResponse | null {
+  if (!axios.isAxiosError(error)) return null;
+
+  const payload = error.response?.data;
+  if (isApiResponse<EnrichedPlayer[]>(payload)) return payload;
+
+  return {
+    success: false,
+    data: [],
+    count: 0,
+    error: 'Could not reach the ScoutIQ API. Confirm that pnpm.cmd run dev:app is still running.'
+  };
+}
+
+function toApiResponse<T>(error: unknown, fallbackError: string): ApiResponse<T> {
+  if (axios.isAxiosError(error)) {
+    const payload = error.response?.data;
+    if (isApiResponse<T>(payload)) return payload;
+  }
+
+  return {
+    success: false,
+    error: fallbackError
+  };
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const payload = value as Partial<ApiResponse<T>>;
+  return typeof payload.success === 'boolean';
+}
 
 export default apiClient;

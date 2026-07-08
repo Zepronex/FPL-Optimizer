@@ -10,7 +10,7 @@ export type EnrichedPlayer = {
   pos: Pos;
   price: number;
   form: number;
-  status: 'a' | 'd' | 'i' | 's';
+  status: 'a' | 'd' | 'i' | 'n' | 's' | 'u';
   xg90: number;
   xa90: number;
   expMin: number;
@@ -84,6 +84,7 @@ export type ApiResponse<T> = {
   data?: T;
   error?: string;
   details?: unknown;
+  requiredCommands?: string[];
 };
 
 export type CountedApiResponse<T> = ApiResponse<T> & {
@@ -410,4 +411,5 @@ export type PlayersResponse = {
   data?: EnrichedPlayer[];
   count?: number;
   error?: string;
+  requiredCommands?: string[];
 };

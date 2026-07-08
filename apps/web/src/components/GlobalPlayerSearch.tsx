@@ -18,6 +18,8 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<EnrichedPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('No players found');
+  const [statusTone, setStatusTone] = useState<'info' | 'error'>('info');
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -42,17 +44,29 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
       searchPlayers();
     } else {
       setResults([]);
+      setStatusMessage('No players found');
+      setStatusTone('info');
     }
   }, [debouncedQuery]);
 
   const searchPlayers = async () => {
     setIsLoading(true);
+    setStatusMessage('No players found');
+    setStatusTone('info');
+
     try {
       const response = await apiClient.searchPlayer(debouncedQuery);
       if (response.success && response.data) {
         setResults(response.data.slice(0, 8)); // Limit to 8 results
+      } else {
+        setResults([]);
+        setStatusMessage(response.error || 'Could not load player search results.');
+        setStatusTone('error');
       }
     } catch {
+      setResults([]);
+      setStatusMessage('Could not load player search results. Confirm that the local API is running.');
+      setStatusTone('error');
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +118,8 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
           onPlayerSelect={handlePlayerClick}
           onPlayerScore={() => {}} // placeholder function
           isScoring={false}
+          emptyMessage={statusMessage}
+          tone={statusTone}
         />
       )}
     </div>
