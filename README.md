@@ -23,7 +23,7 @@ The current model is transparent but not clearly better than the historical base
 
 ScoutIQ is split into separate layers:
 
-- `apps/web`: React and Vite frontend for squad workflows, optimizer recommendations, agent transparency, and the evaluation dashboard
+- `apps/web`: React and Vite frontend for squad workflows, top-player projections, optimizer recommendations, agent transparency, and the evaluation dashboard
 - `apps/api`: Express and TypeScript API for ingestion, database loading, prediction serving, optimizer endpoints, agent explanations, health checks, and evaluation routes
 - `db/migrations`: PostgreSQL schema for normalized FPL records, prediction runs, player predictions, and model evaluations
 - `pipelines/databricks`: local JSONL and Databricks-compatible Bronze/Silver/Gold transformations
@@ -94,12 +94,15 @@ Then open:
 
 - `http://localhost:3000`
 - `http://localhost:3000/analyze`
+- `http://localhost:3000/top-players`
 - `http://localhost:3000/evaluation`
 - `http://localhost:3001/api/health`
 
 What to look for:
 
 - Home page: the React app loads and connects to the API.
+- Squad Builder: manual analysis uses default scoring weights internally; users do not tune scoring sliders in the demo flow.
+- Top Players: prediction-backed rows are served from PostgreSQL, not the optional legacy ML service.
 - Team Analysis: a complete analyzed squad can show deterministic optimizer output for starting XI, bench order, captaincy, transfers, projected points, and constraint status.
 - Recommendation explanation panel: the agent explains an optimizer result that already exists. In the default local demo, deterministic fallback mode is acceptable and expected when provider credentials are not configured.
 - Model Evaluation: the dashboard shows MAE, RMSE, baseline comparison, data coverage, recent runs, setup warnings, and limitation messaging.
@@ -155,6 +158,8 @@ pnpm.cmd run dev:app
 Open:
 
 - `http://localhost:3000`
+- `http://localhost:3000/squad`
+- `http://localhost:3000/top-players`
 - `http://localhost:3000/analyze`
 - `http://localhost:3000/evaluation`
 - `http://localhost:3001/api/health`
@@ -229,6 +234,8 @@ pnpm.cmd run db:load:predictions
 - The current model does not clearly outperform the baseline across tracked metrics.
 - Public FPL API data limits the available player, team, injury, and tactical context.
 - Optimizer recommendations depend on complete prediction rows and valid constraints.
+- Manual squad analysis uses backend default scoring weights; the demo does not expose user-tuned analysis sliders.
+- Automated generated-team review is unavailable in the current web demo path.
 - The LLM explanation agent explains existing optimizer output; it does not choose players, transfers, captaincy, bench order, or chips.
 - Local model and prediction artifacts are generated under gitignored `data/` paths and are not committed.
 - Production deployment, scheduled ingestion, and production monitoring are not yet documented as complete.

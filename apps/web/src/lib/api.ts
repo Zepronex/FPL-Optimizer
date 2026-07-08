@@ -2,13 +2,11 @@ import axios from 'axios';
 import {
   ApiResponse,
   EnrichedPlayer,
-  GeneratedTeamData,
   Squad,
   AnalysisWeights,
   SquadAnalysis,
   PlayersResponse,
   PlayerSearchResult,
-  WeightPreset,
   CountedApiResponse,
   AgentPublicStatus,
   EvaluationDataHealth,
@@ -92,21 +90,6 @@ export const apiClient = {
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
     const response = await api.post('/analyze/validate', { squad });
-    return response.data;
-  },
-
-  async getDefaultWeights(): Promise<ApiResponse<AnalysisWeights>> {
-    const response = await api.get('/analyze/weights');
-    return response.data;
-  },
-
-  async getWeightPresets(): Promise<ApiResponse<WeightPreset[]>> {
-    const response = await api.get('/analyze/presets');
-    return response.data;
-  },
-
-  async generateTeam(strategy: string, budget: number = 100): Promise<ApiResponse<GeneratedTeamData>> {
-    const response = await api.post('/generate', { strategy, budget });
     return response.data;
   },
 
@@ -201,11 +184,6 @@ export const apiClient = {
     return response.data;
   },
 
-  // Optional legacy ML service health check.
-  async getMLHealth() {
-    const response = await api.get('/ml/health');
-    return response.data;
-  }
 };
 
 function toPlayersResponse(error: unknown): PlayersResponse | null {

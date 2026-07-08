@@ -1,4 +1,4 @@
-# FPL Optimizer v2 Target Architecture
+# ScoutIQ Target Architecture
 
 This document describes the intended v2 architecture. It is a planning artifact, not a request to rewrite the current application during cleanup work.
 

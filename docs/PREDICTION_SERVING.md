@@ -101,6 +101,8 @@ Prediction responses include:
 
 Top predictions are sorted by `predictedPoints` descending, then player name and fixture id for deterministic ties. `position` accepts `GK`, `DEF`, `MID`, or `FWD`; `limit` is capped at 100.
 
+The Top Players web page uses `GET /api/predictions/top` from PostgreSQL prediction-serving data. It does not call the optional legacy ML service.
+
 ## Evaluation Dashboard API
 
 The `/api/evaluation/*` endpoints shape prediction-serving and evaluation records for the web dashboard.
@@ -160,7 +162,7 @@ Replace the sample ids with a complete squad that has prediction rows loaded.
 
 ## Frontend Recommendations
 
-The web app shows optimizer recommendations on the squad analysis page after a squad has been analyzed. It sends the stored 15-player squad ids and bank to the optimizer, then displays:
+The web app shows optimizer recommendations on the squad analysis page after a squad has been analyzed. Manual analysis uses backend default scoring weights internally instead of user-tuned sliders. It sends the stored 15-player squad ids and bank to the optimizer, then displays:
 
 - recommended starting XI and bench order
 - captain and vice captain
@@ -197,7 +199,7 @@ The ML service is optional for normal frontend/API development. Start it separat
 Current limitations:
 
 - no chip strategy
-- no explanation or LLM layer
+- generated-team review is unavailable in the current web demo path
 - transfer UI does not yet expose free-transfer or hit controls
 - recommendations depend on prediction rows being present for all squad players
 

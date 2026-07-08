@@ -54,12 +54,6 @@ export type AnalysisWeights = {
   ownership: number;
 };
 
-export type WeightPreset = {
-  name: string;
-  description: string;
-  weights: AnalysisWeights;
-};
-
 export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent' | 'not-playing';
 
 export type AnalysisResult = {
@@ -431,18 +425,6 @@ export type SquadOptimizationRequest = {
   gameweekId?: number;
   budget?: number;
   reservedBank?: number;
-};
-
-export type GeneratedTeamData = {
-  squad: Squad;
-  strategy: string;
-  weights: AnalysisWeights;
-  budget: number;
-  totalCost?: number;
-  expectedPoints?: number;
-  mlPredictions?: unknown[];
-  fallback?: boolean;
-  error?: string;
 };
 
 export type PlayerSearchResult = {
