@@ -1,7 +1,7 @@
 {
   "name": "@fpl-optimizer/ml",
   "version": "1.0.0",
-  "description": "FPL Optimizer ML Service",
+  "description": "ScoutIQ optional legacy ML service",
   "main": "main.py",
   "scripts": {
     "dev": "python -m uvicorn main:app --reload --port 3002",

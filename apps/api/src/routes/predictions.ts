@@ -7,6 +7,7 @@ import {
   readPlayerPredictions,
   readTopPredictions
 } from '../db/predictionQueries';
+import { PLAYER_CANDIDATE_REQUIRED_COMMANDS } from '../db/playerQueries';
 
 const PositionSchema = z.enum(['GK', 'DEF', 'MID', 'FWD']);
 const PositiveIdSchema = z.coerce.number().int().positive();
@@ -26,7 +27,8 @@ export function createPredictionsRouter(client: Queryable = createDbPool()): Exp
       if (!summary) {
         return res.status(404).json({
           success: false,
-          error: 'No prediction runs loaded'
+          error: 'No prediction runs loaded',
+          requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
         });
       }
 
@@ -72,7 +74,8 @@ export function createPredictionsRouter(client: Queryable = createDbPool()): Exp
       if (!summary) {
         return res.status(404).json({
           success: false,
-          error: 'No prediction run loaded for gameweek'
+          error: 'No prediction run loaded for gameweek',
+          requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
         });
       }
 
@@ -93,7 +96,8 @@ export function createPredictionsRouter(client: Queryable = createDbPool()): Exp
       if (!summary) {
         return res.status(404).json({
           success: false,
-          error: 'No prediction runs loaded'
+          error: 'No prediction runs loaded',
+          requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
         });
       }
 

@@ -16,6 +16,10 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   const forwards = startingXI.filter(slot => slot?.pos === 'FWD');
 
   const PlayerSlot = ({ slot, position }: { slot: SquadSlot | null; position: string }) => {
+    const slotClass = slot
+      ? 'border-teal-200 bg-teal-50 shadow-sm'
+      : 'border-dashed border-slate-300 bg-white hover:bg-slate-50';
+
     // adjust text size based on name length for better fit
     const getTextSize = (name: string) => {
       if (name.length <= 10) return 'text-sm';
@@ -32,10 +36,10 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
 
     return (
       <div className="relative group flex-shrink-0">
-        <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-white hover:bg-gray-50 transition-colors shadow-sm">
+        <div className={`w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 border-2 rounded-lg flex items-center justify-center transition-colors ${slotClass}`}>
           {slot ? (
             <div className="text-center p-1 w-full h-full flex flex-col justify-center">
-              <div className={`font-semibold ${getTextSize(slot.name || '')} break-words overflow-hidden`} title={slot.name}>
+              <div className={`font-semibold text-gray-950 ${getTextSize(slot.name || '')} break-words overflow-hidden`} title={slot.name}>
                 {truncateName(slot.name || `Player ${slot.id}`)}
               </div>
               <div className="text-xs text-gray-600 mt-1">{slot.teamShort}</div>
@@ -50,8 +54,8 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
               )}
             </div>
           ) : (
-            <div className="text-gray-400 text-sm text-center">
-              <div className="font-medium">{position}</div>
+            <div className="text-slate-400 text-sm text-center">
+              <div className="font-medium text-slate-500">{position}</div>
               <div>Empty</div>
             </div>
           )}
@@ -61,9 +65,9 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+    <div className="bg-white rounded-lg border border-teal-100 p-3 sm:p-6">
       <div className="text-center mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800">Starting XI Formation</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Starting XI Formation</h3>
       </div>
       
       {/* Simple Position Rows - Mobile Optimized */}

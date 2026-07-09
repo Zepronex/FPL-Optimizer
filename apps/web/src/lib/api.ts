@@ -2,19 +2,18 @@ import axios from 'axios';
 import {
   ApiResponse,
   EnrichedPlayer,
-  GeneratedTeamData,
   Squad,
   AnalysisWeights,
   SquadAnalysis,
   PlayersResponse,
   PlayerSearchResult,
-  WeightPreset,
   CountedApiResponse,
   AgentPublicStatus,
   EvaluationDataHealth,
   EvaluationLatest,
   EvaluationRuns,
   OptimizerResult,
+  PredictionSummary,
   ExplainRecommendationRequest,
   RecommendationExplanation,
   SquadOptimizationRequest,
@@ -90,23 +89,15 @@ export const apiClient = {
   },
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
-    const response = await api.post('/analyze/validate', { squad });
-    return response.data;
-  },
-
-  async getDefaultWeights(): Promise<ApiResponse<AnalysisWeights>> {
-    const response = await api.get('/analyze/weights');
-    return response.data;
-  },
-
-  async getWeightPresets(): Promise<ApiResponse<WeightPreset[]>> {
-    const response = await api.get('/analyze/presets');
-    return response.data;
-  },
-
-  async generateTeam(strategy: string, budget: number = 100): Promise<ApiResponse<GeneratedTeamData>> {
-    const response = await api.post('/generate', { strategy, budget });
-    return response.data;
+    try {
+      const response = await api.post('/analyze/validate', { squad });
+      return response.data;
+    } catch (error) {
+      return toApiResponse<{ valid: boolean; errors: string[] }>(
+        error,
+        'Could not validate the squad. Confirm that the local API is running and prediction data is loaded.'
+      );
+    }
   },
 
   // Suggestions API
@@ -182,23 +173,24 @@ export const apiClient = {
     return response.data;
   },
 
+  async getTopPredictions(limit: number = 100): Promise<CountedApiResponse<PredictionSummary>> {
+    try {
+      const response = await api.get(`/predictions/top?limit=${encodeURIComponent(String(limit))}`);
+      return response.data;
+    } catch (error) {
+      return toApiResponse<PredictionSummary>(
+        error,
+        'Prediction data is missing. Run the prediction pipeline and load predictions into PostgreSQL.'
+      ) as CountedApiResponse<PredictionSummary>;
+    }
+  },
+
   // Health check
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
   },
 
-  // ML API
-  async getTopPlayers(limit?: number) {
-    const params = limit ? `?limit=${limit}` : '';
-    const response = await api.get(`/ml/top-players${params}`);
-    return response.data;
-  },
-
-  async getMLHealth() {
-    const response = await api.get('/ml/health');
-    return response.data;
-  }
 };
 
 function toPlayersResponse(error: unknown): PlayersResponse | null {

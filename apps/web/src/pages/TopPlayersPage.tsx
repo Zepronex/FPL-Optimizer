@@ -1,99 +1,87 @@
-import { useState, useEffect } from 'react';
-import { Brain, TrendingUp, Target, Shield, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { BarChart3, RefreshCw, Shield, Target, TrendingUp, Zap } from 'lucide-react';
 import { apiClient } from '../lib/api';
+import { Pos, PredictionRow, PredictionSummary } from '../lib/types';
+import { formatPrice, formatScore, getPositionColor } from '../lib/format';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
+const POSITION_LABELS: Record<Pos, string> = {
+  GK: 'Goalkeepers',
+  DEF: 'Defenders',
+  MID: 'Midfielders',
+  FWD: 'Forwards'
+};
 
-interface TopPlayersData {
-  top_players_by_position: {
-    [position: number]: TopPlayerPrediction[];
-  };
-  total_players_analyzed: number;
-  gameweek: number;
-}
+const POSITION_ICONS: Record<Pos, JSX.Element> = {
+  GK: <Shield className="w-5 h-5" />,
+  DEF: <Target className="w-5 h-5" />,
+  MID: <Zap className="w-5 h-5" />,
+  FWD: <TrendingUp className="w-5 h-5" />
+};
 
-interface TopPlayerPrediction {
-  player_id: number;
-  name: string;
-  position: number;
-  price: number;
-  team: number;
-  predicted_points: number;
-  confidence: number;
-}
+const POSITIONS: Pos[] = ['GK', 'DEF', 'MID', 'FWD'];
+
+const POSITION_ACCENTS: Record<Pos, string> = {
+  GK: 'border-t-fpl-green',
+  DEF: 'border-t-blue-600',
+  MID: 'border-t-amber-600',
+  FWD: 'border-t-red-600'
+};
 
 const TopPlayersPage = () => {
-  const [topPlayers, setTopPlayers] = useState<TopPlayersData | null>(null);
+  const [summary, setSummary] = useState<PredictionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPosition, setSelectedPosition] = useState<string>('all');
-
-  const positionNames = {
-    1: 'Goalkeepers',
-    2: 'Defenders', 
-    3: 'Midfielders',
-    4: 'Forwards'
-  };
-
-  const positionIcons = {
-    1: <Shield className="w-5 h-5" />,
-    2: <Target className="w-5 h-5" />,
-    3: <Zap className="w-5 h-5" />,
-    4: <TrendingUp className="w-5 h-5" />
-  };
+  const [requiredCommands, setRequiredCommands] = useState<string[]>([]);
+  const [selectedPosition, setSelectedPosition] = useState<Pos | 'all'>('all');
 
   const fetchTopPlayers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Call the API endpoint through apiClient
-      const response = await apiClient.getTopPlayers();
-      
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch top players');
-      }
+    setLoading(true);
+    setError(null);
+    setRequiredCommands([]);
 
-      setTopPlayers(response.data);
-    } catch (err) {
-      console.error('Error fetching top players:', err);
-      setError('Failed to load top players. Make sure the ML service is running.');
-    } finally {
+    const response = await apiClient.getTopPredictions(100);
+
+    if (!response.success || !response.data) {
+      setSummary(null);
+      setError(response.error || 'Could not load prediction-backed top players.');
+      setRequiredCommands(response.requiredCommands || []);
       setLoading(false);
+      return;
     }
+
+    setSummary(response.data);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchTopPlayers();
   }, []);
 
-  const getFilteredPlayers = () => {
-    if (!topPlayers) return [];
-    
-    if (selectedPosition === 'all') {
-      // Return all players from all positions
-      const allPlayers: TopPlayerPrediction[] = [];
-      for (const position in topPlayers.top_players_by_position) {
-        allPlayers.push(...topPlayers.top_players_by_position[Number(position)]);
-      }
-      return allPlayers.sort((a, b) => b.predicted_points - a.predicted_points);
-    }
-    
-    const positionId = parseInt(selectedPosition);
-    return topPlayers.top_players_by_position[positionId] || [];
-  };
+  const groupedPlayers = useMemo(() => {
+    const groups: Record<Pos, PredictionRow[]> = {
+      GK: [],
+      DEF: [],
+      MID: [],
+      FWD: []
+    };
 
-  const getTopPlayersByPosition = (position: number, limit: number = 5) => {
-    if (!topPlayers) return [];
-    
-    return (topPlayers.top_players_by_position[position] || []).slice(0, limit);
-  };
+    for (const player of summary?.predictions ?? []) {
+      groups[player.position].push(player);
+    }
+
+    return groups;
+  }, [summary]);
+
+  const filteredPlayers = selectedPosition === 'all'
+    ? [...(summary?.predictions ?? [])].sort(comparePredictions)
+    : groupedPlayers[selectedPosition];
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner size="lg" text="Loading top players..." />
+        <LoadingSpinner size="lg" text="Loading top predicted players..." />
       </div>
     );
   }
@@ -101,211 +89,189 @@ const TopPlayersPage = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <ErrorMessage 
-          message={error}
-          action={{
-            label: 'Retry',
-            onClick: fetchTopPlayers
-          }}
-        />
+        <div className="w-full max-w-2xl">
+          <ErrorMessage
+            message={error}
+            action={{
+              label: 'Retry',
+              onClick: fetchTopPlayers
+            }}
+          />
+          {requiredCommands.length > 0 && (
+            <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+              <p className="text-sm font-medium text-gray-800">Run the local prediction pipeline:</p>
+              <pre className="mt-3 overflow-x-auto rounded-md bg-gray-50 p-3 text-xs text-gray-800">
+                {requiredCommands.join('\n')}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Brain className="w-8 h-8 text-blue-700" />
-                Top Players
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Model-backed projections for the next gameweek based on loaded prediction data
-              </p>
-            </div>
-            <button
-              onClick={fetchTopPlayers}
-              className="btn-primary flex items-center gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              Refresh Predictions
-            </button>
-          </div>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 border-b border-teal-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-gray-900">
+            <BarChart3 className="h-8 w-8 text-fpl-green" />
+            Top Players
+          </h1>
+          <p className="mt-2 max-w-3xl text-gray-600">
+            Highest expected-points projections from the latest PostgreSQL prediction run.
+          </p>
         </div>
+        <button
+          onClick={fetchTopPlayers}
+          className="btn-primary flex items-center justify-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </button>
       </div>
 
-      {/* Stats Cards */}
-      {topPlayers && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Brain className="w-6 h-6 text-blue-700" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Players Analyzed</p>
-                  <p className="text-2xl font-bold text-gray-900">{topPlayers.total_players_analyzed}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Target className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Predicting Gameweek</p>
-                  <p className="text-2xl font-bold text-gray-900">{topPlayers.gameweek}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {summary && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <MetricCard label="Prediction Run" value={`#${summary.run.id}`} accentClass="border-t-fpl-green" valueClass="text-teal-700" />
+          <MetricCard label="Target Gameweek" value={String(summary.run.targetGameweekId)} accentClass="border-t-blue-600" valueClass="text-blue-700" />
+          <MetricCard label="Players Loaded" value={String(summary.run.predictionCount)} accentClass="border-t-amber-600" valueClass="text-amber-700" />
         </div>
       )}
 
-      {/* Position Filter */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedPosition('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedPosition === 'all'
-                ? 'bg-blue-700 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+      <div className="flex flex-wrap gap-2">
+        <FilterButton active={selectedPosition === 'all'} onClick={() => setSelectedPosition('all')}>
+          All Players
+        </FilterButton>
+        {POSITIONS.map(position => (
+          <FilterButton
+            key={position}
+            active={selectedPosition === position}
+            onClick={() => setSelectedPosition(position)}
           >
-            All Players
-          </button>
-          {Object.entries(positionNames).map(([id, name]) => (
-            <button
-              key={id}
-              onClick={() => setSelectedPosition(id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                selectedPosition === id
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {positionIcons[parseInt(id) as keyof typeof positionIcons]}
-              {name}
-            </button>
+            <span className="flex items-center gap-2">
+              {POSITION_ICONS[position]}
+              {POSITION_LABELS[position]}
+            </span>
+          </FilterButton>
+        ))}
+      </div>
+
+      {selectedPosition === 'all' ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {POSITIONS.map(position => (
+            <PositionPanel
+              key={position}
+              position={position}
+              players={groupedPlayers[position].slice(0, 5)}
+            />
           ))}
         </div>
-      </div>
-
-      {/* Top Players by Position */}
-      {selectedPosition === 'all' && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Object.entries(positionNames).map(([id, name]) => {
-              const positionId = parseInt(id);
-              const topPlayersForPosition = getTopPlayersByPosition(positionId, 5);
-              
-              if (topPlayersForPosition.length === 0) return null;
-              
-              return (
-                <div key={id} className="bg-white rounded-lg shadow">
-                  <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      {positionIcons[positionId as keyof typeof positionIcons]}
-                      Top 5 {name}
-                    </h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      {topPlayersForPosition.map((player, index) => (
-                        <div key={player.player_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-bold text-blue-700">#{index + 1}</span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{player.name}</p>
-                              <p className="text-sm text-gray-600">GBP {player.price.toFixed(1)}m</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-blue-700">
-                              {player.predicted_points.toFixed(1)} pts
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {Math.round(player.confidence * 100)}% confidence
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      ) : (
+        <div className="card">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">{POSITION_LABELS[selectedPosition]}</h2>
+          <PlayerList players={filteredPlayers} />
         </div>
       )}
-
-      {/* Filtered Players List */}
-      {selectedPosition !== 'all' && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {positionNames[parseInt(selectedPosition) as keyof typeof positionNames]} - All Players
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3">
-                {getFilteredPlayers().map((player, index) => (
-                  <div key={player.player_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-blue-700">#{index + 1}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{player.name}</p>
-                        <p className="text-sm text-gray-600">GBP {player.price.toFixed(1)}m</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-blue-700">
-                        {player.predicted_points.toFixed(1)} pts
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {Math.round(player.confidence * 100)}% confidence
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">About These Predictions</h3>
-            <p className="text-gray-600 mb-4">
-              These predictions use historical FPL features, player form, fixture difficulty, expected goals,
-              expected assists, and availability context to estimate next-gameweek points.
-            </p>
-            <div className="flex justify-center gap-4 text-sm text-gray-500">
-              <span>Analyzed {topPlayers?.total_players_analyzed || 0} players</span>
-              <span>Confidence scoring</span>
-              <span>Updated weekly</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
+
+const MetricCard = ({
+  label,
+  value,
+  accentClass,
+  valueClass
+}: {
+  label: string;
+  value: string;
+  accentClass: string;
+  valueClass: string;
+}) => (
+  <div className={`rounded-lg border border-gray-200 border-t-4 bg-white p-5 ${accentClass}`}>
+    <p className="text-sm font-medium text-gray-600">{label}</p>
+    <p className={`mt-2 text-2xl font-semibold ${valueClass}`}>{value}</p>
+  </div>
+);
+
+const FilterButton = ({
+  active,
+  onClick,
+  children
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <button
+    onClick={onClick}
+    className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+      active
+        ? 'border-fpl-green bg-fpl-green text-white'
+        : 'border-gray-200 bg-white text-gray-700 hover:bg-teal-50 hover:text-fpl-green'
+    }`}
+  >
+    {children}
+  </button>
+);
+
+const PositionPanel = ({ position, players }: { position: Pos; players: PredictionRow[] }) => (
+  <div className={`card border-t-4 ${POSITION_ACCENTS[position]}`}>
+    <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+      {POSITION_ICONS[position]}
+      Top {POSITION_LABELS[position]}
+    </h2>
+    <PlayerList players={players} />
+  </div>
+);
+
+const PlayerList = ({ players }: { players: PredictionRow[] }) => {
+  if (players.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+        No prediction rows are available for this position.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {players.map((player, index) => (
+        <div
+          key={`${player.playerId}-${player.fixtureId ?? 'season'}`}
+          className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">
+              {index + 1}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-gray-900">{player.playerName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                <span className={`badge ${getPositionColor(player.position)}`}>{player.position}</span>
+                <span>{player.teamShortName}</span>
+                <span>{formatPrice(player.price)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="ml-4 text-right">
+            <p className="text-lg font-semibold text-gray-900">{formatScore(player.predictedPoints)} pts</p>
+            {player.confidence !== null && (
+              <p className="text-xs text-gray-500">{Math.round(player.confidence * 100)}% confidence</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+function comparePredictions(left: PredictionRow, right: PredictionRow): number {
+  if (right.predictedPoints !== left.predictedPoints) {
+    return right.predictedPoints - left.predictedPoints;
+  }
+
+  return left.playerName.localeCompare(right.playerName);
+}
 
 export default TopPlayersPage;

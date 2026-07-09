@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  AnalysisWeights,
   OptimizerSquadInput,
   Pos,
   SquadAnalysis,
@@ -11,10 +10,8 @@ import {
   TransferRecommendation
 } from '../lib/types';
 import PlayerRow from '../components/PlayerRow';
-import WeightsPanel from '../components/WeightsPanel';
 import { formatScore, formatPrice, getFormationString } from '../lib/format';
 import { apiClient } from '../lib/api';
-import { useWeights } from '../state/useWeights';
 import OptimizerRecommendations from '../components/OptimizerRecommendations';
 
 type OptimizerRecommendationState = {
@@ -79,13 +76,6 @@ const AnalyzePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isReAnalyzing, setIsReAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const weightsState = useWeights();
-
-  const isAnalysisWeights = (value: unknown): value is AnalysisWeights => {
-    if (!isRecord(value)) return false;
-    return ['form', 'xg90', 'xa90', 'expMin', 'next3Ease', 'avgPoints', 'value', 'ownership']
-      .every((key) => typeof value[key] === 'number');
-  };
 
   const isPos = (value: unknown): value is Pos => {
     return value === 'GK' || value === 'DEF' || value === 'MID' || value === 'FWD';
@@ -121,8 +111,7 @@ const AnalyzePage = () => {
       typeof value.flaggedPlayers === 'number' &&
       typeof value.bankLeft === 'number' &&
       typeof value.totalScore === 'number' &&
-      typeof value.timestamp === 'string' &&
-      isAnalysisWeights(value.weights)
+      typeof value.timestamp === 'string'
     );
   };
 
@@ -156,12 +145,6 @@ const AnalyzePage = () => {
           }
           setAnalysis(analysisData);
           setOriginalSquad(squadData);
-          
-          // Set the weights from the analysis
-          if (analysisData.weights) {
-            // Store the weights in localStorage so they persist
-            localStorage.setItem('fpl-optimizer-weights', JSON.stringify(analysisData.weights));
-          }
         } else {
           setError('No analysis results found. Please analyze your squad first.');
         }
@@ -254,7 +237,7 @@ const AnalyzePage = () => {
     setError(null);
 
     try {
-      const response = await apiClient.analyzeSquad(originalSquad, weightsState.weights);
+      const response = await apiClient.analyzeSquad(originalSquad);
       
       // Store results in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
@@ -345,10 +328,10 @@ const AnalyzePage = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Re-analyzing...
+                Re-running...
               </>
             ) : (
-              'Re-analyze with New Weights'
+              'Re-run Analysis'
             )}
           </button>
           <button 
@@ -378,10 +361,7 @@ const AnalyzePage = () => {
         </div>
       )}
 
-      {/* Main Content with Weights Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Analysis Results */}
-        <div className="lg:col-span-3 space-y-8">
+      <div className="space-y-8">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="card text-center">
@@ -424,29 +404,6 @@ const AnalyzePage = () => {
             predictionRunIds={optimizerState?.predictionRunIds}
             emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."
           />
-
-          {/* Weights Display */}
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Analysis Weights</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(analysis.weights).map(([key, value]) => (
-                <div key={key} className="text-center">
-                  <div className="text-lg font-semibold text-fpl-dark">
-                    {(value * 100).toFixed(0)}%
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize">
-                    {key === 'xg90' ? 'xG/90' :
-                     key === 'xa90' ? 'xA/90' :
-                     key === 'expMin' ? 'Minutes' :
-                     key === 'next3Ease' ? 'Fixtures' :
-                     key === 'avgPoints' ? 'Avg Points' :
-                     key === 'ownership' ? 'Ownership' :
-                     key.charAt(0).toUpperCase() + key.slice(1)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Starting XI */}
           <div className="card">
@@ -504,12 +461,6 @@ const AnalyzePage = () => {
             </div>
           </div>
         </div>
-
-        {/* Weights Panel */}
-        <div className="lg:col-span-1">
-          <WeightsPanel weightsState={weightsState} />
-        </div>
-      </div>
     </div>
   );
 };

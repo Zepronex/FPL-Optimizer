@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import { useDebounce } from '../hooks/useDebounce';
+import { formatPrice, getPositionColor } from '../lib/format';
 
 interface PlayerSearchProps {
   onAddPlayer: (player: EnrichedPlayer, isStarting: boolean) => void;
@@ -107,8 +108,10 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
             >
               <div className="flex-1">
                 <div className="font-semibold">{player.name}</div>
-                <div className="text-sm text-gray-600">
-                  {player.teamShort}
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                  <span className={`badge ${getPositionColor(player.pos)}`}>{player.pos}</span>
+                  <span>{player.teamShort}</span>
+                  <span>{formatPrice(player.price)}</span>
                 </div>
               </div>
               <div className="flex space-x-2">

@@ -13,7 +13,8 @@ import {
 const squadSlotSchema = z.object({
   id: z.number().int().positive(),
   pos: z.enum(['GK', 'DEF', 'MID', 'FWD']),
-  price: z.number().positive().max(15)
+  price: z.number().positive().max(15),
+  teamId: z.number().int().positive().optional()
 });
 
 const squadSchema = z.object({
@@ -70,10 +71,14 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
       // Validate squad formation and constraints after enrichment from authoritative local data.
       const validation = SquadAnalyzer.validateSquad(enrichedSquad);
       if (!validation.valid) {
+        const errors = validation.errors.length > 0
+          ? validation.errors
+          : ['Invalid squad configuration.'];
+
         return res.status(400).json({
           success: false,
-          error: 'Invalid squad configuration',
-          details: validation.errors
+          error: errors[0],
+          details: errors
         });
       }
 
@@ -119,7 +124,28 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
   router.post('/validate', async (req, res) => {
     try {
       const { squad } = z.object({ squad: squadSchema }).parse(req.body);
-      const validation = SquadAnalyzer.validateSquad(squad);
+      const playerPool = await readSquadBuilderPlayers(client);
+
+      if (playerPool.length === 0) {
+        return res.status(503).json({
+          success: false,
+          error: 'Prediction data is missing. Run the prediction pipeline and load predictions into PostgreSQL.',
+          requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
+        });
+      }
+
+      const unknownPlayerIds = getUnknownPlayerIds(squad, playerPool);
+      if (unknownPlayerIds.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Selected player data could not be found in prediction rows. Reload data and try again.',
+          details: { playerIds: unknownPlayerIds },
+          requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
+        });
+      }
+
+      const enrichedSquad = enrichSquadFromPlayerPool(squad, playerPool);
+      const validation = SquadAnalyzer.validateSquad(enrichedSquad);
 
       res.json({
         success: true,
@@ -137,9 +163,10 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
         });
       }
 
-      res.status(500).json({
+      res.status(503).json({
         success: false,
-        error: 'Failed to validate squad'
+        error: 'Could not load local prediction data for squad validation. Start PostgreSQL and run the documented data pipeline.',
+        requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
       });
     }
   });
@@ -174,11 +201,14 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
 
 function enrichSquadFromPlayerPool(squad: Squad, playerPool: EnrichedPlayer[]): Squad {
   const playerMap = new Map(playerPool.map(player => [player.id, player]));
+  const startingXI = squad.startingXI.map(slot => enrichSlot(slot, playerMap));
+  const bench = squad.bench.map(slot => enrichSlot(slot, playerMap));
+  const bank = roundMoney(100 - calculateSquadCost([...startingXI, ...bench]));
 
   return {
-    startingXI: squad.startingXI.map(slot => enrichSlot(slot, playerMap)),
-    bench: squad.bench.map(slot => enrichSlot(slot, playerMap)),
-    bank: squad.bank
+    startingXI,
+    bench,
+    bank
   };
 }
 
@@ -191,7 +221,8 @@ function enrichSlot(slot: SquadSlot, playerMap: Map<number, EnrichedPlayer>): Sq
     pos: player.pos,
     price: player.price,
     name: player.name,
-    teamShort: player.teamShort
+    teamShort: player.teamShort,
+    teamId: player.teamId
   };
 }
 
@@ -210,6 +241,14 @@ function normalizeWeights(weights: AnalysisWeights): AnalysisWeights {
   return Object.fromEntries(
     Object.entries(weights).map(([key, value]) => [key, value / totalWeight])
   ) as AnalysisWeights;
+}
+
+function calculateSquadCost(slots: readonly SquadSlot[]): number {
+  return slots.reduce((sum, slot) => sum + slot.price, 0);
+}
+
+function roundMoney(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
 export const analyzeRouter = createAnalyzeRouter();

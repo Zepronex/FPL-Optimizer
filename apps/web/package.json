@@ -1,7 +1,7 @@
 {
   "name": "@fpl-optimizer/web",
   "version": "1.0.0",
-  "description": "FPL Optimizer Web UI",
+  "description": "ScoutIQ Web UI",
   "private": true,
   "type": "module",
   "scripts": {

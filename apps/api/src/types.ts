@@ -1,4 +1,4 @@
-// Shared types for FPL Optimizer
+// Shared types for ScoutIQ API data
 
 export type Pos = 'GK' | 'DEF' | 'MID' | 'FWD';
 
@@ -28,6 +28,7 @@ export type SquadSlot = {
   price: number;
   name?: string;
   teamShort?: string;
+  teamId?: number;
 };
 
 export type Squad = {
