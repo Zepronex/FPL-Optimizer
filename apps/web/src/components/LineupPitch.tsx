@@ -26,13 +26,6 @@ type LineupPitchProps = {
   showPrices?: boolean;
 };
 
-const POSITION_LABELS: Record<Pos, string> = {
-  GK: 'Goalkeeper',
-  DEF: 'Defenders',
-  MID: 'Midfielders',
-  FWD: 'Forwards'
-};
-
 const POSITION_ORDER: Pos[] = ['GK', 'DEF', 'MID', 'FWD'];
 
 const LineupPitch = ({
@@ -65,7 +58,6 @@ const LineupPitch = ({
           {POSITION_ORDER.map(position => (
             <PitchRow
               key={position}
-              label={POSITION_LABELS[position]}
               players={groupedPlayers[position]}
               position={position}
               onRemovePlayer={onRemovePlayer}
@@ -98,16 +90,14 @@ const LineupPitch = ({
 };
 
 type PitchRowProps = {
-  label: string;
   players: readonly LineupPlayer[];
   position: Pos;
   onRemovePlayer?: (playerId: number) => void;
   showPrices: boolean;
 };
 
-const PitchRow = ({ label, players, position, onRemovePlayer, showPrices }: PitchRowProps) => (
+const PitchRow = ({ players, position, onRemovePlayer, showPrices }: PitchRowProps) => (
   <div>
-    <div className="mb-2 text-center text-xs font-semibold uppercase text-gray-500">{label}</div>
     <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
       {players.length > 0 ? (
         players.map(player => (

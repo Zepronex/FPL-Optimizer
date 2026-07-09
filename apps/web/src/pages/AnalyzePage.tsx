@@ -58,14 +58,14 @@ const getOptimizerErrorMessage = (value: unknown): string => {
     case 'squad_predictions_missing':
       return 'Some squad players do not have prediction rows. Re-run the prediction pipeline and reload predictions into PostgreSQL.';
     case 'invalid_squad':
-      return 'The squad is invalid for optimizer rules. Check squad size, position counts, budget, duplicates, and max three players per club.';
+      return 'The squad is invalid. Check squad size, position counts, budget, duplicates, and max three players per club.';
     case 'invalid_optimizer_request':
-      return 'The optimizer request is invalid. Check that the stored squad has 15 valid players.';
+      return 'The recommendation request is invalid. Check that the stored squad has 15 valid players.';
     case 'available_players_required':
     case 'prediction_candidates_required':
       return 'Prediction candidates are unavailable. Load prediction-serving data before requesting transfer recommendations.';
     default:
-      return 'Could not load optimizer recommendations. Check that the API is running and the prediction database is reachable.';
+      return 'Could not load recommendations. Check that the API is running and the prediction database is reachable.';
   }
 };
 
@@ -202,7 +202,7 @@ const AnalyzePage = () => {
     const playerIds = [...originalSquad.startingXI, ...originalSquad.bench].map(player => player.id);
     if (playerIds.length !== 15) {
       setOptimizerState(null);
-      setOptimizerError('Optimizer recommendations require a complete 15-player squad.');
+      setOptimizerError('Recommendations require a complete 15-player squad.');
       return;
     }
 
@@ -401,12 +401,12 @@ const AnalyzePage = () => {
         <SummaryMetric
           label="Total Score"
           value={formatScoreOutOf(scoreSummary.totalScore, 100)}
-          helper={scoreSummary.scoreSource === 'optimizer' ? 'Position-relative display score' : 'Stored analysis score'}
+          helper={scoreSummary.scoreSource === 'optimizer' ? 'Comparison score' : 'Stored squad score'}
         />
         <SummaryMetric
           label="Average Player Score"
           value={formatScoreOutOf(scoreSummary.averagePlayerScore, 10)}
-          helper={scoreSummary.scoreSource === 'optimizer' ? 'Starter average' : 'Stored analysis average'}
+          helper={scoreSummary.scoreSource === 'optimizer' ? 'Starter average' : 'Squad average'}
         />
         <SummaryMetric label="Bank Remaining" value={formatPrice(analysis.bankLeft)} />
         <SummaryMetric label="Formation" value={formation ?? 'Pending'} />
@@ -415,8 +415,8 @@ const AnalyzePage = () => {
       <LineupPitch
         title="Recommended Starting XI"
         subtitle={recommendation
-          ? 'Optimizer-selected starters with position-relative display scores and raw expected points.'
-          : 'Stored squad shown while optimizer recommendation data is loading or unavailable.'}
+          ? 'Best current XI and bench order.'
+          : 'Stored squad shown while recommendations load.'}
         starters={lineupStarters}
         bench={lineupBench}
         formation={formation}
@@ -429,11 +429,11 @@ const AnalyzePage = () => {
         transferRecommendations={optimizerState?.transfers}
         isLoading={isOptimizerLoading}
         error={optimizerError}
-        contextNote="Assumes 1 free transfer and no points hits."
+        contextNote="Assumes 1 free transfer and no hits."
         onRetry={() => setOptimizerRefreshKey(current => current + 1)}
         targetGameweekId={optimizerState?.targetGameweekId}
         predictionRunIds={optimizerState?.predictionRunIds}
-        emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."
+        emptyMessage="Recommendations will appear when prediction data is available for this squad."
       />
     </div>
   );
@@ -472,8 +472,8 @@ const ScoreLegend = ({ scoreSource }: { scoreSource: 'optimizer' | 'analysis' })
     </div>
     <p className="mt-3 text-xs text-gray-500">
       {scoreSource === 'optimizer'
-        ? 'Scores are normalized for comparison within the current prediction pool. Raw expected points remain available as model output.'
-        : 'Stored analysis scores are shown until optimizer display scores are available.'}
+        ? 'Scores compare players in the current prediction pool. xPts is the raw model output.'
+        : 'Stored analysis scores are shown until comparison scores are available.'}
     </p>
   </div>
 );

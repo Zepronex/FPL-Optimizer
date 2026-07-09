@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
-  CheckCircle2,
   FileText,
-  RefreshCw,
-  ShieldCheck
+  RefreshCw
 } from 'lucide-react';
 import {
-  ConstraintValidationResult,
   OptimizerSquadSlot,
   PlayerPrediction,
   RecommendationExplanation,
@@ -31,7 +28,7 @@ type OptimizerRecommendationsProps = {
   predictionRunIds?: number[];
 };
 
-const DEFAULT_EMPTY_MESSAGE = 'No optimizer recommendation is available for this squad yet.';
+const DEFAULT_EMPTY_MESSAGE = 'No recommendation is available for this squad yet.';
 const EMPTY_TRANSFER_RECOMMENDATIONS: TransferRecommendation[] = [];
 
 const OptimizerRecommendations = ({
@@ -84,7 +81,7 @@ const OptimizerRecommendations = ({
       } catch {
         if (!cancelled) {
           setExplanation(null);
-          setExplanationError('Could not load the recommendation explanation. Optimizer recommendations remain unchanged.');
+          setExplanationError('Could not load the recommendation explanation. The recommendation is unchanged.');
         }
       } finally {
         if (!cancelled) {
@@ -103,7 +100,7 @@ const OptimizerRecommendations = ({
   if (isLoading) {
     return (
       <section className="rounded-lg border border-gray-200 bg-white p-5">
-        <LoadingSpinner text="Loading optimizer recommendations..." />
+        <LoadingSpinner text="Loading recommendations..." />
       </section>
     );
   }
@@ -112,9 +109,9 @@ const OptimizerRecommendations = ({
     return (
       <StatusPanel
         tone="error"
-        title="Optimizer unavailable"
+        title="Recommendation unavailable"
         message={error}
-        action={onRetry ? { label: 'Retry optimizer', onClick: onRetry } : undefined}
+        action={onRetry ? { label: 'Retry recommendation', onClick: onRetry } : undefined}
       />
     );
   }
@@ -125,7 +122,7 @@ const OptimizerRecommendations = ({
         tone="info"
         title="No recommendation"
         message={emptyMessage}
-        action={onRetry ? { label: 'Retry optimizer', onClick: onRetry } : undefined}
+        action={onRetry ? { label: 'Retry recommendation', onClick: onRetry } : undefined}
       />
     );
   }
@@ -148,8 +145,6 @@ const OptimizerRecommendations = ({
         error={explanationError}
         onRetry={() => setExplanationRefreshKey(current => current + 1)}
       />
-
-      {startingXi && <ConstraintDetails validation={startingXi.constraintSummary} />}
     </section>
   );
 };
@@ -228,7 +223,7 @@ const TransfersSection = ({ recommendations }: TransfersSectionProps) => {
       <StatusPanel
         tone="info"
         title="No transfer recommended"
-        message="The optimizer did not find a valid transfer that improves projected points under the current constraints."
+        message="No available transfer improves the projected points enough to recommend a move."
       />
     );
   }
@@ -313,9 +308,9 @@ type ExplanationDetailsProps = {
 
 const ExplanationDetails = ({ explanation, isLoading, error, onRetry }: ExplanationDetailsProps) => (
   <details className="rounded-lg border border-gray-200 bg-white p-4">
-    <summary className="cursor-pointer text-sm font-semibold text-gray-950">Explanation and limitations</summary>
+    <summary className="cursor-pointer text-sm font-semibold text-gray-950">Why this recommendation</summary>
     <div className="mt-4">
-      {isLoading && <LoadingSpinner text="Preparing recommendation explanation..." />}
+      {isLoading && <LoadingSpinner text="Preparing explanation..." />}
       {error && (
         <StatusPanel
           tone="warning"
@@ -328,7 +323,7 @@ const ExplanationDetails = ({ explanation, isLoading, error, onRetry }: Explanat
         <StatusPanel
           tone="info"
           title="Explanation pending"
-          message="Explanation text appears after the optimizer returns a recommendation payload."
+          message="Explanation text appears after the recommendation is available."
           action={{ label: 'Retry explanation', onClick: onRetry }}
         />
       )}
@@ -338,41 +333,20 @@ const ExplanationDetails = ({ explanation, isLoading, error, onRetry }: Explanat
 );
 
 const ExplanationContent = ({ explanation }: { explanation: RecommendationExplanation }) => (
-  <div className="space-y-4">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex items-start gap-3">
-        <div className="rounded-md bg-gray-100 p-2 text-gray-700">
-          <FileText className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-gray-950">Recommendation explanation</h3>
-          <p className="mt-1 text-sm text-gray-700">{explanation.summary}</p>
-        </div>
+  <div className="space-y-3">
+    <div className="flex items-start gap-3">
+      <div className="rounded-md bg-gray-100 p-2 text-gray-700">
+        <FileText className="h-5 w-5" />
       </div>
-      <div className="w-fit rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-        <div className="font-semibold text-gray-900">{formatAgentModeLabel(explanation)}</div>
-        <div>{explanation.agentStatus.message}</div>
+      <div>
+        <h3 className="font-semibold text-gray-950">Recommendation note</h3>
+        <p className="mt-1 text-sm text-gray-700">{explanation.summary}</p>
       </div>
     </div>
-
-    {explanation.agentStatus.mode === 'deterministic_fallback' && (
-      <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
-        {explanation.fallbackReason ?? explanation.agentStatus.message}
-      </div>
-    )}
 
     <div className="grid gap-3 lg:grid-cols-2">
       <ExplanationList title="Recommended actions" items={explanation.recommendedActions} />
       <ExplanationList title="Risks" items={explanation.risks} />
-      <ExplanationList title="Data limitations" items={explanation.dataLimitations} />
-      <ExplanationList title="Constraint summary" items={explanation.constraintSummary} />
-    </div>
-
-    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
-      <div className="flex items-start gap-2">
-        <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
-        <p className="text-sm text-gray-700">{explanation.disclaimer}</p>
-      </div>
     </div>
   </div>
 );
@@ -393,71 +367,6 @@ const ExplanationList = ({ title, items }: { title: string; items: string[] }) =
       </ul>
     </div>
   );
-};
-
-const ConstraintDetails = ({ validation }: { validation: ConstraintValidationResult }) => (
-  <details className="rounded-lg border border-gray-200 bg-white p-4">
-    <summary className="cursor-pointer text-sm font-semibold text-gray-950">Optimizer constraint details</summary>
-    <div className="mt-3 flex items-start gap-2 text-sm text-gray-700">
-      {validation.valid ? (
-        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-700" />
-      ) : (
-        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-700" />
-      )}
-      <div>
-        <p>
-          {validation.valid
-            ? `All ${validation.checks.length} optimizer checks passed.`
-            : `${validation.violations.length} constraint issue(s) need attention.`}
-        </p>
-        {!validation.valid && (
-          <ul className="mt-2 space-y-1">
-            {validation.violations.slice(0, 3).map(violation => (
-              <li key={`${violation.code}-${violation.key}`}>
-                {humanizeKey(violation.key)}: expected {formatConstraintValue(violation.expected)}, got {formatConstraintValue(violation.actual)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  </details>
-);
-
-const formatAgentModeLabel = (explanation: RecommendationExplanation): string => {
-  if (explanation.agentStatus.mode === 'deterministic_fallback') {
-    return 'Deterministic fallback';
-  }
-
-  return `${formatProviderName(explanation.agentStatus.provider)} provider`;
-};
-
-const formatProviderName = (provider: RecommendationExplanation['agentStatus']['provider']): string => {
-  switch (provider) {
-    case 'openai':
-      return 'OpenAI';
-    case 'azure_openai':
-      return 'Azure OpenAI';
-    case 'deterministic_fallback':
-      return 'Deterministic fallback';
-  }
-};
-
-const humanizeKey = (value: string): string => {
-  return value
-    .split('_')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-};
-
-const formatConstraintValue = (value: number | string | Record<string, number>): string => {
-  if (typeof value === 'number' || typeof value === 'string') {
-    return String(value);
-  }
-
-  return Object.entries(value)
-    .map(([key, entryValue]) => `${key}: ${entryValue}`)
-    .join(', ');
 };
 
 export default OptimizerRecommendations;
