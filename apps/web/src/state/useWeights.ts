@@ -13,6 +13,9 @@ const defaultWeights: AnalysisWeights = {
   ownership: 0.05
 };
 
+const WEIGHTS_STORAGE_KEY = 'scoutiq-weights';
+const LEGACY_WEIGHTS_STORAGE_KEY = 'fpl-optimizer-weights';
+
 export const useWeights = () => {
   const [weights, setWeights] = useState<AnalysisWeights>(defaultWeights);
   const [presets, setPresets] = useState<WeightPreset[]>([]);
@@ -21,11 +24,13 @@ export const useWeights = () => {
 
   // Load weights from localStorage on mount
   useEffect(() => {
-    const savedWeights = localStorage.getItem('fpl-optimizer-weights');
+    const savedWeights = localStorage.getItem(WEIGHTS_STORAGE_KEY) ?? localStorage.getItem(LEGACY_WEIGHTS_STORAGE_KEY);
     if (savedWeights) {
       try {
         const parsed = JSON.parse(savedWeights);
         setWeights(parsed);
+        localStorage.setItem(WEIGHTS_STORAGE_KEY, JSON.stringify(parsed));
+        localStorage.removeItem(LEGACY_WEIGHTS_STORAGE_KEY);
       } catch {
         // Failed to parse saved weights, using defaults
       }
@@ -49,7 +54,7 @@ export const useWeights = () => {
 
   // Save weights to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('fpl-optimizer-weights', JSON.stringify(weights));
+    localStorage.setItem(WEIGHTS_STORAGE_KEY, JSON.stringify(weights));
   }, [weights]);
 
   const updateWeight = useCallback((key: keyof AnalysisWeights, value: number) => {
@@ -100,10 +105,6 @@ export const useWeights = () => {
     setWeights(preset.weights);
   }, []);
 
-  const getPresetByName = useCallback((name: string): WeightPreset | undefined => {
-    return presets.find(preset => preset.name === name);
-  }, [presets]);
-
   return {
     weights,
     presets,
@@ -113,8 +114,7 @@ export const useWeights = () => {
     resetToDefaults,
     normalizeWeights,
     clearError,
-    applyPreset,
-    getPresetByName
+    applyPreset
   };
 };
 

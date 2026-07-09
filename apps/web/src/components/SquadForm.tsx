@@ -52,7 +52,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
               onClick={clearError}
               className="text-red-600 hover:text-red-800"
             >
-              ×
+              x
             </button>
           </div>
         </div>

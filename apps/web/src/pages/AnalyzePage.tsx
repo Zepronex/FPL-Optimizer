@@ -160,7 +160,7 @@ const AnalyzePage = () => {
           // Set the weights from the analysis
           if (analysisData.weights) {
             // Store the weights in localStorage so they persist
-            localStorage.setItem('fpl-optimizer-weights', JSON.stringify(analysisData.weights));
+            localStorage.setItem('scoutiq-weights', JSON.stringify(analysisData.weights));
           }
         } else {
           setError('No analysis results found. Please analyze your squad first.');
@@ -372,7 +372,7 @@ const AnalyzePage = () => {
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-800"
             >
-              ×
+              x
             </button>
           </div>
         </div>
