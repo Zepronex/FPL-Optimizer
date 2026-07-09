@@ -22,6 +22,9 @@ describe('players route', () => {
     assert.equal(response.body.success, true);
     assert.equal(response.body.count, 1);
     assert.equal(response.body.data[0].name, 'Gabriel Martinelli');
+    assert.equal(response.body.data[0].pos, 'MID');
+    assert.equal(response.body.data[0].teamShort, 'ARS');
+    assert.equal(response.body.data[0].price, 7.5);
   });
 
   it('returns an explicit empty result when no player matches the search', async () => {

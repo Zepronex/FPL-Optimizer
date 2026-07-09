@@ -1,8 +1,23 @@
 import { Pos } from '../types';
 
-export type Formation = '3-4-3' | '3-5-2' | '4-4-2' | '4-3-3' | '4-5-1' | '5-3-2' | '5-4-1';
+export type Formation =
+  | '3-4-3'
+  | '3-5-2'
+  | '4-4-2'
+  | '4-3-3'
+  | '4-5-1'
+  | '5-2-3'
+  | '5-3-2'
+  | '5-4-1';
 
 export type PlayerAvailability = 'available' | 'doubtful' | 'unavailable' | 'unknown';
+
+export type OptimizerDisplayScore = {
+  rawExpectedPoints: number | null;
+  contextualScoreOutOf10: number | null;
+  positionPercentile: number | null;
+  positionPoolSize: number;
+};
 
 export type PlayerCandidate = {
   playerId: number;
@@ -17,6 +32,7 @@ export type PlayerCandidate = {
   targetGameweekId?: number;
   fixtureId?: number | null;
   availability?: PlayerAvailability;
+  displayScore?: OptimizerDisplayScore;
 };
 
 export type SquadSlot = PlayerCandidate & {
@@ -76,6 +92,9 @@ export type StartingXI = {
   bench: SquadSlot[];
   captaincy: CaptaincyRecommendation;
   totalPredictedPoints: number;
+  rawExpectedPoints?: number;
+  averagePlayerScoreOutOf10?: number | null;
+  normalizedTeamScoreOutOf100?: number | null;
   constraintSummary: ConstraintValidationResult;
 };
 

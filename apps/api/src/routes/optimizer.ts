@@ -6,6 +6,7 @@ import {
   readLatestPredictionSummary
 } from '../db/predictionQueries';
 import { PredictionSummary } from '../types';
+import { decorateStartingXiScores, decorateTransferScores } from '../optimizer/displayScores';
 import { OptimizerInputError } from '../optimizer/errors';
 import { predictionsToCandidates } from '../optimizer/predictionAdapter';
 import { buildSquadFromCandidates } from '../optimizer/squadBuilder';
@@ -91,7 +92,8 @@ export function createOptimizerRouter(client: Queryable = createDbPool()): Expre
         ? await readPredictionContext(client, request.gameweekId)
         : null;
       const squad = resolveSquad(request.squad, predictionContext?.candidates);
-      const startingXi = optimizeStartingXi(squad);
+      const comparisonPool = predictionContext?.candidates ?? squad.slots;
+      const startingXi = decorateStartingXiScores(optimizeStartingXi(squad), comparisonPool);
 
       res.json({
         success: true,
@@ -119,17 +121,19 @@ export function createOptimizerRouter(client: Queryable = createDbPool()): Expre
         throw new OptimizerRouteError(400, 'available_players_required');
       }
 
+      const comparisonPool = uniquePlayersById([...currentSquad.slots, ...availablePlayers]);
+      const currentStartingXi = decorateStartingXiScores(optimizeStartingXi(currentSquad), comparisonPool);
       const recommendations = recommendTransfers({
         currentSquad,
         availablePlayers,
         freeTransfers: request.freeTransfers,
         maxHits: request.maxHits
-      });
+      }).map(recommendation => decorateTransferScores(recommendation, comparisonPool));
 
       res.json({
         success: true,
         data: {
-          currentStartingXi: optimizeStartingXi(currentSquad),
+          currentStartingXi,
           recommendations,
           predictionRunIds: predictionRunIdsFromCandidates([...currentSquad.slots, ...availablePlayers]),
           targetGameweekId: targetGameweekFromCandidates([...currentSquad.slots, ...availablePlayers])
@@ -157,7 +161,7 @@ export function createOptimizerRouter(client: Queryable = createDbPool()): Expre
         budget: request.budget,
         reservedBank: request.reservedBank
       });
-      const startingXi = optimizeStartingXi(squad);
+      const startingXi = decorateStartingXiScores(optimizeStartingXi(squad), candidates);
 
       res.json({
         success: true,
@@ -229,6 +233,16 @@ function toSquad(players: readonly PlayerCandidate[], budget: number, bank: numb
       slotIndex: index
     }))
   };
+}
+
+function uniquePlayersById<T extends PlayerCandidate>(players: readonly T[]): T[] {
+  const playerById = new Map<number, T>();
+  for (const player of players) {
+    if (!playerById.has(player.playerId)) {
+      playerById.set(player.playerId, player);
+    }
+  }
+  return [...playerById.values()];
 }
 
 function isPlayerCandidate(value: PlayerCandidate | undefined): value is PlayerCandidate {

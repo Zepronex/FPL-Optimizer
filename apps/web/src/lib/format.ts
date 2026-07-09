@@ -137,13 +137,13 @@ export const isValidFormation = (startingXI: FormationSlot[]): boolean => {
   // Must have exactly 1 goalkeeper
   if (positionCounts.GK !== 1) return false;
   
-  // Must have 3-5 defenders, 3-5 midfielders, 1-3 forwards
+  // Must have 3-5 defenders, 2-5 midfielders, 1-3 forwards
   const defCount = positionCounts.DEF || 0;
   const midCount = positionCounts.MID || 0;
   const fwdCount = positionCounts.FWD || 0;
   
   return defCount >= 3 && defCount <= 5 &&
-         midCount >= 3 && midCount <= 5 &&
+         midCount >= 2 && midCount <= 5 &&
          fwdCount >= 1 && fwdCount <= 3;
 };
 

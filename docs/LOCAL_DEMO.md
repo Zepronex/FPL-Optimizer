@@ -96,6 +96,8 @@ Open `http://localhost:3000`.
 Review these pages:
 
 - Home: confirms the web app loads and can reach the API health endpoint.
+- Squad Builder: supports prediction-backed player search, FPL rule validation, and manual analysis using backend default scoring weights.
+- Top Players: shows top expected-points rows from PostgreSQL prediction serving and does not require the optional ML service.
 - Team Analysis: shows the squad analysis workflow and prediction-backed optimizer recommendation area when a complete squad and prediction data are available.
 - Evaluation: shows latest walk-forward backtest data, baseline comparison, coverage, recent runs, limitations, and setup warnings when data is missing.
 
@@ -103,6 +105,8 @@ Direct URLs:
 
 ```text
 http://localhost:3000
+http://localhost:3000/squad
+http://localhost:3000/top-players
 http://localhost:3000/evaluation
 http://localhost:3001/api/health
 ```

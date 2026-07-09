@@ -28,6 +28,7 @@ export type SquadSlot = {
   price: number;
   name?: string;
   teamShort?: string;
+  teamId?: number;
 };
 
 export type Squad = {
@@ -54,12 +55,6 @@ export type AnalysisWeights = {
   ownership: number;
 };
 
-export type WeightPreset = {
-  name: string;
-  description: string;
-  weights: AnalysisWeights;
-};
-
 export type PlayerLabel = 'perfect' | 'good' | 'poor' | 'urgent' | 'not-playing';
 
 export type AnalysisResult = {
@@ -75,6 +70,7 @@ export type SquadAnalysis = {
   flaggedPlayers: number;
   bankLeft: number;
   totalScore: number;
+  // Returned for auditability; manual analysis uses backend defaults instead of user-tuned controls.
   weights: AnalysisWeights;
   timestamp: string;
 };
@@ -91,9 +87,24 @@ export type CountedApiResponse<T> = ApiResponse<T> & {
   count?: number;
 };
 
-export type Formation = '3-4-3' | '3-5-2' | '4-4-2' | '4-3-3' | '4-5-1' | '5-3-2' | '5-4-1';
+export type Formation =
+  | '3-4-3'
+  | '3-5-2'
+  | '4-4-2'
+  | '4-3-3'
+  | '4-5-1'
+  | '5-2-3'
+  | '5-3-2'
+  | '5-4-1';
 
 export type PlayerAvailability = 'available' | 'doubtful' | 'unavailable' | 'unknown';
+
+export type OptimizerDisplayScore = {
+  rawExpectedPoints: number | null;
+  contextualScoreOutOf10: number | null;
+  positionPercentile: number | null;
+  positionPoolSize: number;
+};
 
 export type PlayerPrediction = {
   id?: number;
@@ -111,6 +122,7 @@ export type PlayerPrediction = {
   targetGameweekId?: number;
   fixtureId?: number | null;
   availability?: PlayerAvailability;
+  displayScore?: OptimizerDisplayScore;
 };
 
 export type PredictionRun = {
@@ -196,6 +208,9 @@ export type StartingXIRecommendation = {
   bench: OptimizerSquadSlot[];
   captaincy: CaptaincyRecommendation;
   totalPredictedPoints: number;
+  rawExpectedPoints?: number;
+  averagePlayerScoreOutOf10?: number | null;
+  normalizedTeamScoreOutOf100?: number | null;
   constraintSummary: ConstraintValidationResult;
 };
 
@@ -379,6 +394,42 @@ export type EvaluationDataHealth = {
   playerGameweekHistory: PlayerGameweekHistoryArtifact | null;
   requiredCommands: string[];
   warnings: string[];
+};
+
+export type PredictionRunMetadata = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PredictionRow = {
+  id: number;
+  predictionRunId: number;
+  playerId: number;
+  playerName: string;
+  position: Pos;
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  price: number;
+  status: string;
+  targetGameweekId: number;
+  fixtureId: number | null;
+  predictedPoints: number;
+  baselinePredictedPoints: number | null;
+  confidence: number | null;
+  uncertainty: number | null;
+};
+
+export type PredictionSummary = {
+  run: PredictionRunMetadata;
+  predictions: PredictionRow[];
+  count: number;
 };
 
 export type OptimizerResult = {
