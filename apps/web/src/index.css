@@ -53,14 +53,6 @@
     @apply animate-pulse bg-gray-200 rounded;
   }
   
-  .fpl-gradient {
-    @apply bg-fpl-green;
-  }
-  
-  .fpl-gradient-dark {
-    @apply bg-gray-900;
-  }
-  
   .slider {
     -webkit-appearance: none;
     appearance: none;

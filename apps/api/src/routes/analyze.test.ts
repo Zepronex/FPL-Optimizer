@@ -8,7 +8,7 @@ import { PLAYER_CANDIDATE_REQUIRED_COMMANDS } from '../db/playerQueries';
 import { createAnalyzeRouter } from './analyze';
 
 describe('analyze route', () => {
-  it('analyzes a complete squad from prediction-backed local player data without the optional ML service', async () => {
+  it('analyzes a complete squad from prediction-backed local player data without calling the legacy ranking service', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();

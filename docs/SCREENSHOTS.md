@@ -49,7 +49,7 @@ Before capturing:
 | File | URL | What to show |
 | --- | --- | --- |
 | `docs/assets/screenshots/home.png` | `http://localhost:3000` | Home page or analysis entry point with the app loaded and API connected. |
-| `docs/assets/screenshots/optimizer-result.png` | `http://localhost:3000/analyze` | Squad analysis result with optimizer recommendations, starting XI, bench order, captaincy, and constraint status visible. |
+| `docs/assets/screenshots/optimizer-result.png` | `http://localhost:3000/analyze` | Squad analysis result with optimizer recommendations, starting XI, bench order, captaincy, and rule status visible. |
 | `docs/assets/screenshots/explanation-agent.png` | `http://localhost:3000/analyze` | Recommendation explanation panel with the explanation mode visible. Deterministic fallback is acceptable for the local demo. |
 | `docs/assets/screenshots/evaluation-dashboard.png` | `http://localhost:3000/evaluation` | Model Evaluation page showing MAE, RMSE, baseline comparison, data coverage, and limitation messaging. |
 | `docs/assets/screenshots/ci-green.png` | GitHub Actions workflow page | Optional real passing CI run for `.github/workflows/ci.yml`. Capture only after the workflow is actually green. |

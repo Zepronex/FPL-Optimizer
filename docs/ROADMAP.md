@@ -44,7 +44,7 @@ Prediction-backed recommendations require:
 - generated feature rows
 - trained and backtested model artifacts
 - loaded prediction rows in PostgreSQL
-- complete squad inputs that satisfy optimizer constraints
+- complete squad inputs that satisfy optimizer rules
 
 When these dependencies are missing, the UI should show setup guidance rather than invented recommendations.
 
@@ -74,7 +74,7 @@ No secrets, API keys, service account files, local `.env` files, or database dum
 
 ### Richer Recommendation Context
 
-- Surface clearer constraint reasons when optimizer inputs are incomplete.
+- Surface clearer rule reasons when optimizer inputs are incomplete.
 - Add better scenario comparison without changing the deterministic optimizer contract.
 - Keep chip strategy out of scope until there is a dedicated tested implementation.
 
