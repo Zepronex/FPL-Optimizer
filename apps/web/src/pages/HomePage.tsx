@@ -1,110 +1,136 @@
-import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Database, LineChart, Search, ShieldCheck } from 'lucide-react';
-
-const workflowCards = [
-  {
-    icon: <Search className="h-5 w-5" />,
-    title: 'Build Squad',
-    description: 'Search prediction-backed players and assemble a valid 15-player squad.',
-    accentClass: 'border-t-fpl-green',
-    iconClass: 'border-teal-100 bg-teal-50 text-teal-700'
-  },
-  {
-    icon: <ShieldCheck className="h-5 w-5" />,
-    title: 'Validate Rules',
-    description: 'Apply FPL squad composition, budget, and starting-XI formation checks.',
-    accentClass: 'border-t-blue-600',
-    iconClass: 'border-blue-100 bg-blue-50 text-blue-700'
-  },
-  {
-    icon: <LineChart className="h-5 w-5" />,
-    title: 'Review Decisions',
-    description: 'Use deterministic optimizer outputs for XI, bench, captaincy, and transfers.',
-    accentClass: 'border-t-amber-600',
-    iconClass: 'border-amber-100 bg-amber-50 text-amber-700'
-  },
-  {
-    icon: <BarChart3 className="h-5 w-5" />,
-    title: 'Check Evidence',
-    description: 'Inspect model quality, baseline comparison, and data coverage.',
-    accentClass: 'border-t-sky-700',
-    iconClass: 'border-sky-100 bg-sky-50 text-sky-700'
-  }
-];
-
-const demoSteps = [
-  { label: 'Squad Builder', className: 'border-l-fpl-green text-teal-700' },
-  { label: 'Analysis Results', className: 'border-l-blue-600 text-blue-700' },
-  { label: 'Explanation', className: 'border-l-amber-600 text-amber-700' },
-  { label: 'Evaluation Dashboard', className: 'border-l-sky-700 text-sky-700' }
-];
 
 const HomePage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-10">
-      <section className="border-b border-teal-100 pb-8 pl-5 border-l-4 border-l-fpl-green">
-        <h1 className="text-4xl font-bold text-gray-950">ScoutIQ</h1>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-gray-600">
-          FPL decision support built around prediction serving, deterministic optimizer rules,
-          and transparent model evaluation.
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <div className="text-center">
+        <h1 className="text-5xl font-bold text-fpl-dark mb-6">
+          ScoutIQ Fantasy Premier League Review
+        </h1>
+        <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
+          Build a data-backed FPL squad with transparent analysis, deterministic recommendations, and comprehensive player insights.
+          Review the assumptions behind each decision before making changes.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={() => navigate('/squad')} className="btn-primary">
-            Open Squad Builder
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={() => navigate('/squad')}
+            className="btn-primary text-lg px-8 py-3"
+          >
+            Squad Builder
           </button>
-          <button onClick={() => navigate('/evaluation')} className="btn-secondary">
+          <button
+            onClick={() => navigate('/evaluation')}
+            className="bg-white text-fpl-dark border-2 border-fpl-dark px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+          >
+            Evaluation
+          </button>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="card-fpl text-center">
+          <div className="w-16 h-16 bg-fpl-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-fpl-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Model-Backed Analysis</h3>
+          <p className="text-gray-600">
+            Get detailed insights on your squad with advanced analytics covering form, fixtures, value, and potential points. 
+            The scoring model summarizes player performance patterns to support informed decisions.
+          </p>
+        </div>
+
+        <div className="card-fpl text-center">
+          <div className="w-16 h-16 bg-fpl-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-fpl-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Deterministic Optimizer</h3>
+          <p className="text-gray-600">
+            Review starting XI, bench order, captaincy, and transfer options produced from loaded prediction data
+            and FPL rule checks.
+          </p>
+        </div>
+
+        <div className="card-fpl text-center">
+          <div className="w-16 h-16 bg-fpl-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-fpl-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Player Search & Insights</h3>
+          <p className="text-gray-600">
+            Search through thousands of Premier League players with detailed stats, price history, and performance metrics. 
+            Find the perfect players for your squad with our comprehensive database.
+          </p>
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="bg-gray-50 rounded-lg p-8">
+        <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-fpl-dark text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              1
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Build Your Squad</h3>
+            <p className="text-gray-600">
+              Create your squad by searching the prediction-backed player database and selecting starters and bench players.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-fpl-dark text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              2
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Analyze & Optimize</h3>
+            <p className="text-gray-600">
+              Get detailed analysis of your squad with insights on formation, budget allocation, and player performance. 
+              Review backend-validated results from the loaded prediction data.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-fpl-dark text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              3
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Get Suggestions</h3>
+            <p className="text-gray-600">
+              Receive personalized recommendations for transfers, captain choices, and tactical adjustments. 
+              Recommendations summarize the best available moves from the loaded scoring data and rule checks.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="text-center bg-fpl-dark text-white rounded-lg p-8">
+        <h2 className="text-3xl font-bold mb-4">Ready to Review Your Squad?</h2>
+        <p className="text-xl mb-6 opacity-90">
+          Use transparent model output, deterministic rule checks, and squad analysis before making transfer decisions.
+        </p>
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={() => navigate('/squad')}
+            className="bg-white text-fpl-dark px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Build Squad
+          </button>
+          <button
+            onClick={() => navigate('/evaluation')}
+            className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-fpl-dark transition-colors"
+          >
             View Evaluation
           </button>
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {workflowCards.map(card => (
-          <WorkflowCard key={card.title} {...card} />
-        ))}
-      </section>
-
-      <section className="rounded-lg border border-teal-100 bg-white p-6">
-        <div className="flex items-center gap-3">
-          <Database className="h-5 w-5 text-fpl-green" />
-          <h2 className="text-xl font-semibold text-gray-950">Demo Flow</h2>
-        </div>
-        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-          {demoSteps.map((step, index) => (
-            <div key={step.label} className={`rounded-lg border border-gray-200 border-l-4 bg-slate-50 p-4 ${step.className}`}>
-              <p className="text-sm font-semibold">Step {index + 1}</p>
-              <p className="mt-2 font-semibold text-gray-950">{step.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
     </div>
   );
 };
-
-const WorkflowCard = ({
-  icon,
-  title,
-  description,
-  accentClass,
-  iconClass
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  accentClass: string;
-  iconClass: string;
-}) => (
-  <div className={`rounded-lg border border-gray-200 border-t-4 bg-white p-5 ${accentClass}`}>
-    <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${iconClass}`}>
-      {icon}
-    </div>
-    <h2 className="mt-4 text-lg font-semibold text-gray-950">{title}</h2>
-    <p className="mt-2 text-sm leading-6 text-gray-600">{description}</p>
-  </div>
-);
 
 export default HomePage;

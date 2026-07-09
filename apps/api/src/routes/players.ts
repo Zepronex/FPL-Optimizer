@@ -6,7 +6,6 @@ import {
   readSquadBuilderPlayers,
   searchEnrichedPlayers
 } from '../db/playerQueries';
-import { FPLDataFetcher } from '../lib/fetchers/fpl';
 
 // Validation schemas
 const searchSchema = z.object({
@@ -119,24 +118,6 @@ export function createPlayersRouter(client: Queryable = createDbPool()): Express
       }
 
       sendPlayerDataError(res);
-    }
-  });
-
-  // POST /api/players/refresh - Refresh player data (admin endpoint)
-  router.post('/refresh', async (_req, res) => {
-    try {
-      // In a real app, you'd check for admin authentication here
-      await FPLDataFetcher.refreshAllData();
-
-      res.json({
-        success: true,
-        message: 'Player data refreshed successfully'
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        error: 'Failed to refresh player data'
-      });
     }
   });
 

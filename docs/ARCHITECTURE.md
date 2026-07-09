@@ -8,7 +8,6 @@ This document describes the current repository architecture and local data flow.
 apps/
   api/                 Express and TypeScript API
   web/                 React and Vite frontend
-  ml/                  Optional legacy Python ML service
 db/
   migrations/          PostgreSQL schema migrations
 docs/                  Architecture, setup, pipeline, and demo docs
@@ -21,7 +20,7 @@ scripts/               Windows-friendly local workflow helpers
 data/                  Gitignored local ingestion, feature, model, and prediction outputs
 ```
 
-The normal local application path is `apps/api` plus `apps/web`. The optional `apps/ml` service is separate and is not required for the core local demo.
+The normal local application path is `apps/api` plus `apps/web`. Expected-points training, backtesting, and prediction generation run through the `pipelines/` commands and load outputs into PostgreSQL.
 
 ## High-Level Flow
 
@@ -157,7 +156,7 @@ pnpm.cmd run db:load:predictions
 pnpm.cmd run dev:app
 ```
 
-`pnpm.cmd run dev:app` starts the API and web app only. It does not require an OpenAI API key and does not start the optional ML service.
+`pnpm.cmd run dev:app` starts the API and web app only. It does not require an OpenAI API key.
 
 Useful local validation commands:
 

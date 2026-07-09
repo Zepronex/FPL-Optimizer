@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
 import { apiClient } from '../lib/api';
 import { ApiResponse, SquadAnalysis } from '../lib/types';
-import { validateSquadForAnalysis } from '../lib/squadValidation';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
@@ -11,65 +10,20 @@ interface SquadPageProps {
 
 const SquadPage = ({ squadState }: SquadPageProps) => {
   const navigate = useNavigate();
-  const { squad } = squadState;
+  const { squad, error: squadError, clearError: clearSquadError } = squadState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisCommands, setAnalysisCommands] = useState<string[]>([]);
-  const [remoteValidation, setRemoteValidation] = useState<{
-    status: 'idle' | 'checking' | 'valid' | 'invalid';
-    message: string | null;
-  }>({ status: 'idle', message: null });
-
-  const localValidation = useMemo(() => validateSquadForAnalysis(squad), [squad]);
-  const canAnalyze = localValidation.valid && remoteValidation.status === 'valid' && !isAnalyzing;
-
-  useEffect(() => {
-    setAnalysisError(null);
-    setAnalysisCommands([]);
-
-    if (!localValidation.valid) {
-      setRemoteValidation({ status: 'idle', message: null });
-      return;
-    }
-
-    let cancelled = false;
-    setRemoteValidation({ status: 'checking', message: 'Checking squad rules against prediction data...' });
-
-    apiClient.validateSquad(squad).then(response => {
-      if (cancelled) return;
-
-      const message = formatValidationResponse(response);
-      const isValid = response.success && response.data?.valid === true;
-
-      setRemoteValidation({
-        status: isValid ? 'valid' : 'invalid',
-        message
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [localValidation.valid, squad]);
 
   const handleAnalyze = async () => {
-    const currentLocalValidation = validateSquadForAnalysis(squad);
-    if (!currentLocalValidation.valid) {
-      setAnalysisError(currentLocalValidation.errors[0]);
+    if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {
+      setAnalysisError('Please complete your squad (11 starting XI + 4 bench players)');
       return;
     }
 
     setIsAnalyzing(true);
     setAnalysisError(null);
     setAnalysisCommands([]);
-
-    const validationResponse = await apiClient.validateSquad(squad);
-    if (!validationResponse.success || validationResponse.data?.valid !== true) {
-      setAnalysisError(formatValidationResponse(validationResponse));
-      setAnalysisCommands(validationResponse.requiredCommands || []);
-      setIsAnalyzing(false);
-      return;
-    }
 
     try {
       const response = await apiClient.analyzeSquad(squad);
@@ -98,19 +52,19 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header with Analyze Button */}
-      <div className="mx-auto max-w-4xl border-b border-teal-100 pb-6 text-center">
+      <div className="text-center">
         <h1 className="text-2xl sm:text-4xl font-bold text-fpl-dark mb-3 sm:mb-4">
           Squad Builder
         </h1>
         <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
-          Build a 15-player squad, validate the rules, and review prediction-backed recommendations.
+          Build your Fantasy Premier League squad and review model-backed analysis with deterministic suggestions.
         </p>
         
         {/* Analyze Button - Moved to top */}
         <div className="flex flex-col items-center space-y-3 px-4">
           <button
             onClick={handleAnalyze}
-            disabled={!canAnalyze}
+            disabled={isAnalyzing || squad.startingXI.length !== 11 || squad.bench.length !== 4}
             className="btn-primary text-lg sm:text-xl px-6 sm:px-10 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
           >
             {isAnalyzing ? (
@@ -128,25 +82,19 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
           
           {/* Progress indicators */}
           <div className="flex flex-col items-center space-y-1">
-            {!localValidation.valid && (
+            {squad.startingXI.length !== 11 && (
               <p className="text-sm text-orange-600 font-medium">
-                {localValidation.errors[0]}
+                Complete your starting XI ({squad.startingXI.length}/11 players)
               </p>
             )}
-
-            {localValidation.valid && remoteValidation.status === 'checking' && (
-              <p className="text-sm text-blue-700 font-medium">
-                {remoteValidation.message}
+            
+            {squad.bench.length !== 4 && squad.startingXI.length === 11 && (
+              <p className="text-sm text-orange-600 font-medium">
+                Complete your bench ({squad.bench.length}/4 players)
               </p>
             )}
-
-            {localValidation.valid && remoteValidation.status === 'invalid' && (
-              <p className="text-sm text-red-700 font-medium">
-                {remoteValidation.message}
-              </p>
-            )}
-
-            {localValidation.valid && remoteValidation.status === 'valid' && (
+            
+            {squad.startingXI.length === 11 && squad.bench.length === 4 && (
               <p className="text-sm text-green-600 font-medium">
                 Squad complete! Ready to analyze
               </p>
@@ -156,13 +104,13 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
       </div>
 
       {/* Error Display */}
-      {analysisError && (
+      {(squadError || analysisError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-red-800 font-medium">Error</h3>
               <p className="text-red-700 mt-1">
-                {analysisError}
+                {squadError || analysisError}
               </p>
               {analysisCommands.length > 0 && analysisError && (
                 <div className="mt-3">
@@ -175,17 +123,19 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
             </div>
             <button
               onClick={() => {
+                clearSquadError();
                 setAnalysisError(null);
                 setAnalysisCommands([]);
               }}
               className="text-red-600 hover:text-red-800"
             >
-              ×
+              x
             </button>
           </div>
         </div>
       )}
 
+      {/* Main Content */}
       <div>
         <SquadForm squadState={squadState} />
       </div>
@@ -194,43 +144,13 @@ const SquadPage = ({ squadState }: SquadPageProps) => {
 };
 
 function formatAnalysisError(response: ApiResponse<SquadAnalysis>): string {
-  const detailsMessage = formatDetails(response.details);
-  if (detailsMessage) return detailsMessage;
-
   if (response.error) return response.error;
 
+  if (Array.isArray(response.details) && response.details.every(item => typeof item === 'string')) {
+    return response.details.join(' ');
+  }
+
   return 'Could not analyze the squad. Check the squad and local prediction data before trying again.';
-}
-
-function formatValidationResponse(response: ApiResponse<{ valid: boolean; errors: string[] }>): string {
-  if (response.success && response.data) {
-    return response.data.errors[0] || 'Squad validation failed.';
-  }
-
-  const detailsMessage = formatDetails(response.details);
-  if (detailsMessage) return detailsMessage;
-
-  return response.error || 'Could not validate the squad.';
-}
-
-function formatDetails(details: unknown): string | null {
-  if (Array.isArray(details) && details.every(item => typeof item === 'string')) {
-    return details[0] ?? null;
-  }
-
-  if (isPlayerIdsDetails(details)) {
-    return 'Selected player data could not be found in prediction rows. Reload data and try again.';
-  }
-
-  return null;
-}
-
-function isPlayerIdsDetails(details: unknown): details is { playerIds: number[] } {
-  return (
-    typeof details === 'object' &&
-    details !== null &&
-    Array.isArray((details as { playerIds?: unknown }).playerIds)
-  );
 }
 
 export default SquadPage;

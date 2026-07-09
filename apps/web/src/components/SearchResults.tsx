@@ -1,13 +1,11 @@
-import { User, TrendingUp } from 'lucide-react';
 import { EnrichedPlayer } from '../lib/types';
 import { formatPrice } from '../lib/format';
+import { User } from 'lucide-react';
 
 interface SearchResultsProps {
   results: EnrichedPlayer[];
   isLoading: boolean;
   onPlayerSelect: (player: EnrichedPlayer) => void;
-  onPlayerScore?: (player: EnrichedPlayer) => void;
-  isScoring?: boolean;
   emptyMessage?: string;
   tone?: 'info' | 'error';
 }
@@ -16,8 +14,6 @@ const SearchResults = ({
   results,
   isLoading,
   onPlayerSelect,
-  onPlayerScore,
-  isScoring,
   emptyMessage = 'No players found',
   tone = 'info'
 }: SearchResultsProps) => {
@@ -62,31 +58,19 @@ const SearchResults = ({
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-900 truncate">{player.name}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                <span>{player.teamShort}</span>
-                <span>{formatPrice(player.price)}</span>
+              <div className="text-sm text-gray-600">
+                {player.teamShort} - {formatPrice(player.price)}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {onPlayerScore && (
-              <button
-                onClick={() => onPlayerScore(player)}
-                disabled={isScoring}
-                className="flex items-center space-x-1 text-xs bg-fpl-green text-white px-2 py-1 rounded hover:bg-green-600 transition-colors disabled:opacity-50"
-              >
-                <TrendingUp className="w-3 h-3" />
-                <span>Score</span>
-              </button>
-            )}
-            <button
-              onClick={() => onPlayerSelect(player)}
-              className="text-xs bg-fpl-dark text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
-            >
-              <span>View</span>
-            </button>
-          </div>
+          <button
+            onClick={() => onPlayerSelect(player)}
+            className="flex items-center space-x-1 text-xs bg-fpl-dark text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
+          >
+            <User className="w-3 h-3" />
+            <span>View</span>
+          </button>
         </div>
       ))}
     </div>

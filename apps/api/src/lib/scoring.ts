@@ -147,75 +147,8 @@ export class ScoringService {
     return 'urgent';
   }
 
-  static normalizeScores(players: EnrichedPlayer[], weights: AnalysisWeights): EnrichedPlayer[] {
-    return players.map(player => ({
-      ...player,
-      score: this.calculatePlayerScore(player, weights)
-    }));
-  }
-
-  static getPositionAverages(players: EnrichedPlayer[]): Record<string, number> {
-    const positionGroups: Record<string, number[]> = {
-      GK: [],
-      DEF: [],
-      MID: [],
-      FWD: []
-    };
-
-    players.forEach(player => {
-      if (player.score !== undefined) {
-        positionGroups[player.pos].push(player.score);
-      }
-    });
-
-    const averages: Record<string, number> = {};
-    Object.entries(positionGroups).forEach(([pos, scores]) => {
-      if (scores.length > 0) {
-        averages[pos] = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-      } else {
-        averages[pos] = 0;
-      }
-    });
-
-    return averages;
-  }
-
-  static getLabelCounts(players: EnrichedPlayer[]): Record<PlayerLabel, number> {
-    const counts: Record<PlayerLabel, number> = {
-      perfect: 0,
-      good: 0,
-      poor: 0,
-      urgent: 0,
-      'not-playing': 0
-    };
-
-    players.forEach(player => {
-      if (player.score !== undefined) {
-        const label = this.getPlayerLabel(player.score, player);
-        counts[label]++;
-      }
-    });
-
-    return counts;
-  }
-
-  static calculateTotalScore(players: EnrichedPlayer[]): number {
-    return players.reduce((sum, player) => sum + (player.score || 0), 0);
-  }
-
-  static calculateAverageScore(players: EnrichedPlayer[]): number {
-    const validScores = players.filter(p => p.score !== undefined);
-    if (validScores.length === 0) return 0;
-    
-    return this.calculateTotalScore(validScores) / validScores.length;
-  }
-
   static getWeightPresets(): WeightPreset[] {
     return this.WEIGHT_PRESETS;
-  }
-
-  static getPresetByName(name: string): WeightPreset | null {
-    return this.WEIGHT_PRESETS.find(preset => preset.name === name) || null;
   }
 }
 

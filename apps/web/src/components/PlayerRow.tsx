@@ -178,7 +178,7 @@ const PlayerRow = ({ result, isBench = false }: PlayerRowProps) => {
           {label !== 'perfect' && !hasSuggestions && (
             <div className="p-4 border-t border-gray-200 text-center">
               <p className="text-gray-600">
-                No suitable replacements found within budget constraints.
+                No suitable replacements found within budget and squad rules.
               </p>
             </div>
           )}

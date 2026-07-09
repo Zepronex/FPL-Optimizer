@@ -3,7 +3,6 @@ import {
   ApiResponse,
   EnrichedPlayer,
   Squad,
-  AnalysisWeights,
   SquadAnalysis,
   PlayersResponse,
   PlayerSearchResult,
@@ -12,8 +11,8 @@ import {
   EvaluationDataHealth,
   EvaluationLatest,
   EvaluationRuns,
-  OptimizerResult,
   PredictionSummary,
+  OptimizerResult,
   ExplainRecommendationRequest,
   RecommendationExplanation,
   SquadOptimizationRequest,
@@ -76,9 +75,9 @@ export const apiClient = {
   },
 
   // Analysis API
-  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<ApiResponse<SquadAnalysis>> {
+  async analyzeSquad(squad: Squad): Promise<ApiResponse<SquadAnalysis>> {
     try {
-      const response = await api.post('/analyze', { squad, weights });
+      const response = await api.post('/analyze', { squad });
       return response.data;
     } catch (error) {
       return toApiResponse<SquadAnalysis>(
@@ -89,37 +88,7 @@ export const apiClient = {
   },
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
-    try {
-      const response = await api.post('/analyze/validate', { squad });
-      return response.data;
-    } catch (error) {
-      return toApiResponse<{ valid: boolean; errors: string[] }>(
-        error,
-        'Could not validate the squad. Confirm that the local API is running and prediction data is loaded.'
-      );
-    }
-  },
-
-  // Suggestions API
-  async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
-    const response = await api.post('/suggestions', {
-      playerId,
-      position,
-      maxPrice,
-      excludeIds,
-      limit
-    });
-    return response.data;
-  },
-
-  // Fixtures API
-  async getFixtures() {
-    const response = await api.get('/fixtures');
-    return response.data;
-  },
-
-  async getCurrentGameweek() {
-    const response = await api.get('/fixtures/current');
+    const response = await api.post('/analyze/validate', { squad });
     return response.data;
   },
 
@@ -173,15 +142,15 @@ export const apiClient = {
     return response.data;
   },
 
-  async getTopPredictions(limit: number = 100): Promise<CountedApiResponse<PredictionSummary>> {
+  async getTopPredictions(limit: number = 100): Promise<ApiResponse<PredictionSummary>> {
     try {
       const response = await api.get(`/predictions/top?limit=${encodeURIComponent(String(limit))}`);
       return response.data;
     } catch (error) {
       return toApiResponse<PredictionSummary>(
         error,
-        'Prediction data is missing. Run the prediction pipeline and load predictions into PostgreSQL.'
-      ) as CountedApiResponse<PredictionSummary>;
+        'Could not load top players. Confirm that PostgreSQL is running and prediction data is loaded.'
+      );
     }
   },
 
@@ -189,8 +158,7 @@ export const apiClient = {
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
-  },
-
+  }
 };
 
 function toPlayersResponse(error: unknown): PlayersResponse | null {

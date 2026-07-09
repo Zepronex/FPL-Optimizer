@@ -70,7 +70,7 @@ Before a production-like demo, the database should contain:
 - player prediction rows
 - model evaluation rows
 
-The API should serve these records from PostgreSQL. The frontend should not depend on mock recommendation data, the optional old ML service, or local-only files in normal web serving.
+The API should serve these records from PostgreSQL. The frontend should not depend on mock recommendation data, removed legacy services, or local-only files in normal web serving.
 
 ## Claims Boundary
 

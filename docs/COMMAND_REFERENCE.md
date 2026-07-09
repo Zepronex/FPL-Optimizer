@@ -10,10 +10,8 @@ Use these commands from the repository root. The examples use `pnpm.cmd` because
 | `pnpm.cmd run dev:app` | Start the API and web app for normal local development and demos. |
 | `pnpm.cmd run dev:api` | Start only the API service. |
 | `pnpm.cmd run dev:web` | Start only the web app. |
-| `pnpm.cmd run dev:ml` | Start the optional ML service when working on that path. |
-| `pnpm.cmd run dev:all` | Start API, web, and optional ML services together. |
 
-`dev:app` is the default command for ScoutIQ demo work. It does not require an OpenAI API key and does not start the optional ML service.
+`dev:app` is the default command for ScoutIQ demo work. It starts the API and web app only and does not require an OpenAI API key.
 
 ## Smoke Checks
 
@@ -39,7 +37,7 @@ For documentation-only changes, `test:smoke` and `git diff --check` are usually 
 
 ## CI Reproduction
 
-GitHub Actions validates pull requests and pushes to `dev` with `.github/workflows/ci.yml`. It uses Node 20, pnpm 9, Python 3.12, and Python dependencies from `apps/ml/requirements.txt`.
+GitHub Actions validates pull requests and pushes to `dev` with `.github/workflows/ci.yml`. It uses Node 20, pnpm 9, and Python 3.12 for pipeline and model tests.
 
 CI runs without OpenAI or Azure OpenAI keys, local `.env` files, Docker, PostgreSQL, or live FPL API calls. Explanation-agent coverage uses mocked provider responses and deterministic fallback behavior.
 
@@ -47,7 +45,6 @@ To reproduce the CI checks locally from Windows PowerShell:
 
 ```powershell
 pnpm.cmd install --frozen-lockfile
-python -m pip install -r apps\ml\requirements.txt
 pnpm.cmd run build
 pnpm.cmd run build:api
 pnpm.cmd run build:web

@@ -107,6 +107,7 @@ export type OptimizerDisplayScore = {
 };
 
 export type PlayerPrediction = {
+  id?: number;
   playerId: number;
   playerName: string;
   position: Pos;
@@ -115,6 +116,8 @@ export type PlayerPrediction = {
   teamShortName?: string;
   price: number;
   predictedPoints: number;
+  baselinePredictedPoints?: number | null;
+  confidence?: number | null;
   predictionRunId?: number;
   targetGameweekId?: number;
   fixtureId?: number | null;

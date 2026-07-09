@@ -8,17 +8,17 @@ export default {
     extend: {
       colors: {
         fpl: {
-          green: '#0f766e',
-          'green-dark': '#115e59',
-          'green-light': '#14b8a6',
+          green: '#00ff85',
+          'green-dark': '#00cc6a',
+          'green-light': '#33ff99',
           dark: '#111827',
-          'dark-light': '#374151',
-          gold: '#b45309',
-          'gold-dark': '#92400e',
-          red: '#dc2626',
-          'red-light': '#ef4444',
-          blue: '#1d4ed8',
-          'blue-light': '#2563eb',
+          'dark-light': '#1f2937',
+          gold: '#ffd700',
+          'gold-dark': '#ffb700',
+          red: '#ef4444',
+          'red-light': '#f87171',
+          blue: '#3b82f6',
+          'blue-light': '#60a5fa',
         }
       }
     },

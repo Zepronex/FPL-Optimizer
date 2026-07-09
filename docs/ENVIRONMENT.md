@@ -41,23 +41,11 @@ This reference covers configuration used by the current ScoutIQ codebase and the
 | `VITE_API_BASE_URL` | Example-only | The current web client hardcodes relative `/api` requests in `apps/web/src/lib/api.ts`. A separate-origin deployment must use `/api` rewrites or update the client before relying on this variable. |
 | `VITE_APP_NAME` | Example-only | Not read by the current web code. |
 
-## Optional Old ML Service Variables
-
-The normal ScoutIQ web and API flow does not require the optional `apps/ml` service. `apps/ml/.env.example` contains local service placeholders, but the current normal app flow should use `pnpm.cmd run dev:app` and should not require `pnpm.cmd run dev:ml`.
-
-| Variable | Current status | Notes |
-| --- | --- | --- |
-| `ML_HOST` | Optional old ML service placeholder | Not required for normal API or web serving. |
-| `ML_PORT` | Optional old ML service placeholder | The current workspace script starts uvicorn on port `3002`. |
-| `DATA_DIR` | Optional old ML service placeholder | Not part of the current expected-points serving path. |
-| `MODEL_DIR` | Optional old ML service placeholder | Not part of the current expected-points serving path. |
-
 ## Reserved Or Example-Only API Variables
 
 `apps/api/.env.example` includes operational placeholders that are not currently read by `apps/api/src`:
 
 - `FPL_API_BASE_URL`
-- `ML_SERVICE_URL`
 - `CACHE_TTL_SECONDS`
 - `RATE_LIMIT_WINDOW_MS`
 - `RATE_LIMIT_MAX_REQUESTS`

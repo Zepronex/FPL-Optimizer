@@ -5,11 +5,7 @@ import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import dotenv from 'dotenv';
 import { playersRouter } from './routes/players';
-import { fixturesRouter } from './routes/fixtures';
 import { analyzeRouter } from './routes/analyze';
-import { suggestionsRouter } from './routes/suggestions';
-import { generateRouter } from './routes/generate';
-import { mlRouter } from './routes/ml';
 import { predictionsRouter } from './routes/predictions';
 import { modelRouter } from './routes/model';
 import { evaluationRouter } from './routes/evaluation';
@@ -80,18 +76,13 @@ const strictLimiter = rateLimit({
 });
 
 // Apply strict rate limiting to expensive endpoints
-app.use('/api/generate', strictLimiter);
 app.use('/api/analyze', strictLimiter);
 app.use('/api/optimizer', strictLimiter);
 app.use('/api/agent', strictLimiter);
 
 // Routes
 app.use('/api/players', playersRouter);
-app.use('/api/fixtures', fixturesRouter);
 app.use('/api/analyze', analyzeRouter);
-app.use('/api/suggestions', suggestionsRouter);
-app.use('/api/generate', generateRouter);
-app.use('/api/ml', mlRouter);
 app.use('/api/predictions', predictionsRouter);
 app.use('/api/model', modelRouter);
 app.use('/api/evaluation', evaluationRouter);

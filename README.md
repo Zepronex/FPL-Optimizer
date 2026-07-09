@@ -102,7 +102,7 @@ What to look for:
 
 - Home page: the React app loads and connects to the API.
 - Squad Builder: manual analysis uses default scoring weights internally; users do not tune scoring sliders in the demo flow.
-- Top Players: prediction-backed rows are served from PostgreSQL, not the optional legacy ML service.
+- Top Players: prediction-backed rows are served from PostgreSQL, not a legacy side service.
 - Team Analysis: a complete analyzed squad can show deterministic optimizer output for starting XI, bench order, captaincy, transfers, projected points, and constraint status.
 - Recommendation explanation panel: the agent explains an optimizer result that already exists. In the default local demo, deterministic fallback mode is acceptable and expected when provider credentials are not configured.
 - Model Evaluation: the dashboard shows MAE, RMSE, baseline comparison, data coverage, recent runs, setup warnings, and limitation messaging.
@@ -194,7 +194,7 @@ pnpm.cmd run build:web
 
 ## Continuous Integration
 
-GitHub Actions runs `.github/workflows/ci.yml` on pull requests and pushes to `dev`. The workflow installs Node dependencies with `pnpm`, installs Python dependencies from `apps/ml/requirements.txt`, and runs the API build, web build, API tests, smoke helper tests, pipeline tests, and expected-points model tests.
+GitHub Actions runs `.github/workflows/ci.yml` on pull requests and pushes to `dev`. The workflow installs Node dependencies with `pnpm`, sets up Python for pipeline and model tests, and runs the API build, web build, API tests, smoke helper tests, pipeline tests, and expected-points model tests.
 
 CI does not require `OPENAI_API_KEY`, Azure OpenAI credentials, local `.env` files, Docker, PostgreSQL, or live FPL API calls. Explanation-agent tests use mocked provider responses or deterministic fallback behavior, so provider access is not needed for review validation.
 
@@ -262,6 +262,7 @@ pnpm.cmd run db:load:predictions
 - [Screenshot Capture Guide](docs/SCREENSHOTS.md)
 - [Release Notes](docs/RELEASE_NOTES.md)
 - [Release Checklist](docs/RELEASE_CHECKLIST.md)
+- [Final Audit](docs/FINAL_AUDIT.md)
 - [Prediction Serving](docs/PREDICTION_SERVING.md)
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
