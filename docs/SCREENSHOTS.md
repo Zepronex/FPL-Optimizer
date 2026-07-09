@@ -50,8 +50,9 @@ Before capturing:
 | --- | --- | --- |
 | `docs/assets/screenshots/home.png` | `http://localhost:3000` | Home page or analysis entry point with the app loaded and API connected. |
 | `docs/assets/screenshots/optimizer-result.png` | `http://localhost:3000/analyze` | Squad analysis result with optimizer recommendations, starting XI, bench order, captaincy, and constraint status visible. |
-| `docs/assets/screenshots/explanation-agent.png` | `http://localhost:3000/analyze` | Recommendation explanation panel with the explanation mode visible. Deterministic fallback is acceptable for the local demo. |
+| `docs/assets/screenshots/top-players.png` | `http://localhost:3000/top-players` | Top Players page showing prediction-backed player ranking output. |
 | `docs/assets/screenshots/evaluation-dashboard.png` | `http://localhost:3000/evaluation` | Model Evaluation page showing MAE, RMSE, baseline comparison, data coverage, and limitation messaging. |
+| `docs/assets/screenshots/explanation-agent.png` | `http://localhost:3000/analyze` | Optional future screenshot of the recommendation explanation panel with the explanation mode visible. Deterministic fallback is acceptable for the local demo. |
 | `docs/assets/screenshots/ci-green.png` | GitHub Actions workflow page | Optional real passing CI run for `.github/workflows/ci.yml`. Capture only after the workflow is actually green. |
 
 ## Suggested Capture Flow
@@ -59,9 +60,10 @@ Before capturing:
 1. Open `http://localhost:3000` and save `docs/assets/screenshots/home.png`.
 2. Build or load a complete 15-player squad, run analysis, then open `http://localhost:3000/analyze`.
 3. Capture the optimizer result area as `docs/assets/screenshots/optimizer-result.png`.
-4. Capture the recommendation explanation panel as `docs/assets/screenshots/explanation-agent.png`.
+4. Open `http://localhost:3000/top-players` and save `docs/assets/screenshots/top-players.png`.
 5. Open `http://localhost:3000/evaluation` and save `docs/assets/screenshots/evaluation-dashboard.png`.
-6. Optionally capture a real passing GitHub Actions run as `docs/assets/screenshots/ci-green.png`.
+6. Optionally capture the recommendation explanation panel as `docs/assets/screenshots/explanation-agent.png`.
+7. Optionally capture a real passing GitHub Actions run as `docs/assets/screenshots/ci-green.png`.
 
 ## Review Checklist
 
