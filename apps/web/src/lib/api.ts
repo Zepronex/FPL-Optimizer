@@ -1,5 +1,26 @@
 import axios from 'axios';
-import { Squad, AnalysisWeights, SquadAnalysis, EnrichedPlayer, PlayersResponse, PlayerSearchResult } from './types';
+import {
+  ApiResponse,
+  EnrichedPlayer,
+  Squad,
+  SquadAnalysis,
+  PlayersResponse,
+  PlayerSearchResult,
+  CountedApiResponse,
+  AgentPublicStatus,
+  EvaluationDataHealth,
+  EvaluationLatest,
+  EvaluationRuns,
+  PredictionSummary,
+  OptimizerResult,
+  ExplainRecommendationRequest,
+  RecommendationExplanation,
+  SquadOptimizationRequest,
+  StartingXIOptimizerResult,
+  StartingXIRecommendationRequest,
+  TransferOptimizerResult,
+  TransferRecommendationRequest
+} from './types';
 
 const API_BASE_URL = '/api';
 
@@ -33,8 +54,14 @@ export const apiClient = {
   },
 
   async searchPlayer(name: string): Promise<PlayersResponse> {
-    const response = await api.get(`/players/search?name=${encodeURIComponent(name)}`);
-    return response.data;
+    try {
+      const response = await api.get(`/players/search?name=${encodeURIComponent(name)}`);
+      return response.data;
+    } catch (error) {
+      const errorResponse = toPlayersResponse(error);
+      if (errorResponse) return errorResponse;
+      throw error;
+    }
   },
 
   async getPlayerById(id: number): Promise<PlayerSearchResult> {
@@ -48,71 +75,123 @@ export const apiClient = {
   },
 
   // Analysis API
-  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<{ success: boolean; data?: SquadAnalysis; error?: string }> {
-    const response = await api.post('/analyze', { squad, weights });
-    return response.data;
+  async analyzeSquad(squad: Squad): Promise<ApiResponse<SquadAnalysis>> {
+    try {
+      const response = await api.post('/analyze', { squad });
+      return response.data;
+    } catch (error) {
+      return toApiResponse<SquadAnalysis>(
+        error,
+        'Could not analyze the squad. Confirm that the local API is running and prediction data is loaded.'
+      );
+    }
   },
 
-  async validateSquad(squad: Squad): Promise<{ success: boolean; data?: { valid: boolean; errors: string[] }; error?: string }> {
+  async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
     const response = await api.post('/analyze/validate', { squad });
     return response.data;
   },
 
-  async getDefaultWeights(): Promise<{ success: boolean; data?: AnalysisWeights; error?: string }> {
-    const response = await api.get('/analyze/weights');
+  // Optimizer API
+  async getStartingXIRecommendation(
+    request: StartingXIRecommendationRequest
+  ): Promise<ApiResponse<StartingXIOptimizerResult>> {
+    const response = await api.post('/optimizer/starting-xi', request);
     return response.data;
   },
 
-  async getWeightPresets(): Promise<{ success: boolean; data?: any[]; error?: string }> {
-    const response = await api.get('/analyze/presets');
+  async getTransferRecommendations(
+    request: TransferRecommendationRequest
+  ): Promise<CountedApiResponse<TransferOptimizerResult>> {
+    const response = await api.post('/optimizer/transfers', request);
     return response.data;
   },
 
-  async generateTeam(strategy: string, budget: number = 100): Promise<{ success: boolean; data?: any; error?: string }> {
-    const response = await api.post('/generate', { strategy, budget });
+  async getSquadRecommendation(
+    request: SquadOptimizationRequest
+  ): Promise<ApiResponse<OptimizerResult>> {
+    const response = await api.post('/optimizer/squad', request);
     return response.data;
   },
 
-  // Suggestions API
-  async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
-    const response = await api.post('/suggestions', {
-      playerId,
-      position,
-      maxPrice,
-      excludeIds,
-      limit
-    });
+  async explainRecommendation(
+    request: ExplainRecommendationRequest
+  ): Promise<ApiResponse<RecommendationExplanation>> {
+    const response = await api.post('/agent/explain-recommendation', request);
     return response.data;
   },
 
-  // Fixtures API
-  async getFixtures() {
-    const response = await api.get('/fixtures');
+  async getAgentStatus(): Promise<ApiResponse<AgentPublicStatus>> {
+    const response = await api.get('/agent/status');
     return response.data;
   },
 
-  async getCurrentGameweek() {
-    const response = await api.get('/fixtures/current');
+  // Evaluation API
+  async getEvaluationLatest(): Promise<ApiResponse<EvaluationLatest>> {
+    const response = await api.get('/evaluation/latest');
     return response.data;
+  },
+
+  async getEvaluationRuns(limit: number = 5): Promise<CountedApiResponse<EvaluationRuns>> {
+    const response = await api.get(`/evaluation/runs?limit=${encodeURIComponent(String(limit))}`);
+    return response.data;
+  },
+
+  async getEvaluationDataHealth(): Promise<ApiResponse<EvaluationDataHealth>> {
+    const response = await api.get('/evaluation/data-health');
+    return response.data;
+  },
+
+  async getTopPredictions(limit: number = 100): Promise<ApiResponse<PredictionSummary>> {
+    try {
+      const response = await api.get(`/predictions/top?limit=${encodeURIComponent(String(limit))}`);
+      return response.data;
+    } catch (error) {
+      return toApiResponse<PredictionSummary>(
+        error,
+        'Could not load top players. Confirm that PostgreSQL is running and prediction data is loaded.'
+      );
+    }
   },
 
   // Health check
   async healthCheck() {
     const response = await api.get('/health');
     return response.data;
-  },
-
-  // ML API
-  async getTopPlayers(limit?: number) {
-    const params = limit ? `?limit=${limit}` : '';
-    const response = await api.get(`/ml/top-players${params}`);
-    return response.data;
-  },
-
-  async getMLHealth() {
-    const response = await api.get('/ml/health');
-    return response.data;
   }
 };
+
+function toPlayersResponse(error: unknown): PlayersResponse | null {
+  if (!axios.isAxiosError(error)) return null;
+
+  const payload = error.response?.data;
+  if (isApiResponse<EnrichedPlayer[]>(payload)) return payload;
+
+  return {
+    success: false,
+    data: [],
+    count: 0,
+    error: 'Could not reach the ScoutIQ API. Confirm that pnpm.cmd run dev:app is still running.'
+  };
+}
+
+function toApiResponse<T>(error: unknown, fallbackError: string): ApiResponse<T> {
+  if (axios.isAxiosError(error)) {
+    const payload = error.response?.data;
+    if (isApiResponse<T>(payload)) return payload;
+  }
+
+  return {
+    success: false,
+    error: fallbackError
+  };
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const payload = value as Partial<ApiResponse<T>>;
+  return typeof payload.success === 'boolean';
+}
 
 export default apiClient;

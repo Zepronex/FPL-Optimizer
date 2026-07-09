@@ -15,7 +15,6 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
     squad, 
     addPlayer, 
     removePlayer, 
-    setBank, 
     clearSquad, 
     error,
     clearError
@@ -52,7 +51,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
               onClick={clearError}
               className="text-red-600 hover:text-red-800"
             >
-              ×
+              x
             </button>
           </div>
         </div>
@@ -63,7 +62,7 @@ const SquadForm = ({ squadState }: SquadFormProps) => {
 
       <PlayerSearch onAddPlayer={handleAddPlayer} />
 
-      <BudgetDisplay squad={squad} onSetBank={setBank} />
+      <BudgetDisplay squad={squad} />
 
       <FootballPitch startingXI={squad.startingXI} onRemovePlayer={removePlayer} />
 

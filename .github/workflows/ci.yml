@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      SCOUTIQ_AGENT_ENABLED: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API and web
+        run: pnpm run build
+
+      - name: Build API
+        run: pnpm run build:api
+
+      - name: Build web
+        run: pnpm run build:web
+
+      - name: Run API tests
+        run: pnpm run test:api
+
+      - name: Run smoke helper tests
+        run: pnpm run test:smoke
+
+      - name: Run pipeline tests
+        run: pnpm run pipeline:test
+
+      - name: Run model tests
+        run: pnpm run model:test

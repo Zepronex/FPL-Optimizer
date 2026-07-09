@@ -1,44 +1,37 @@
 import { useState, useEffect } from 'react';
 import { Brain, TrendingUp, Target, Shield, Zap } from 'lucide-react';
 import { apiClient } from '../lib/api';
+import { PlayerPrediction, Pos } from '../lib/types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 
 
 interface TopPlayersData {
-  top_players_by_position: {
-    [position: number]: Array<{
-      player_id: number;
-      name: string;
-      position: number;
-      price: number;
-      team: number;
-      predicted_points: number;
-      confidence: number;
-    }>;
-  };
+  predictions: PlayerPrediction[];
   total_players_analyzed: number;
   gameweek: number;
 }
+
+type SelectedPosition = 'all' | Pos;
 
 const TopPlayersPage = () => {
   const [topPlayers, setTopPlayers] = useState<TopPlayersData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPosition, setSelectedPosition] = useState<string>('all');
+  const [selectedPosition, setSelectedPosition] = useState<SelectedPosition>('all');
 
-  const positionNames = {
-    1: 'Goalkeepers',
-    2: 'Defenders', 
-    3: 'Midfielders',
-    4: 'Forwards'
+  const positionNames: Record<Pos, string> = {
+    GK: 'Goalkeepers',
+    DEF: 'Defenders',
+    MID: 'Midfielders',
+    FWD: 'Forwards'
   };
 
-  const positionIcons = {
-    1: <Shield className="w-5 h-5" />,
-    2: <Target className="w-5 h-5" />,
-    3: <Zap className="w-5 h-5" />,
-    4: <TrendingUp className="w-5 h-5" />
+  const positionIcons: Record<Pos, JSX.Element> = {
+    GK: <Shield className="w-5 h-5" />,
+    DEF: <Target className="w-5 h-5" />,
+    MID: <Zap className="w-5 h-5" />,
+    FWD: <TrendingUp className="w-5 h-5" />
   };
 
   const fetchTopPlayers = async () => {
@@ -46,17 +39,19 @@ const TopPlayersPage = () => {
       setLoading(true);
       setError(null);
       
-      // Call the API endpoint through apiClient
-      const response = await apiClient.getTopPlayers();
+      const response = await apiClient.getTopPredictions(100);
       
-      if (!response.success) {
+      if (!response.success || !response.data) {
         throw new Error(response.error || 'Failed to fetch top players');
       }
 
-      setTopPlayers(response.data);
+      setTopPlayers({
+        predictions: response.data.predictions,
+        total_players_analyzed: response.data.count ?? response.data.predictions.length,
+        gameweek: response.data.run.targetGameweekId
+      });
     } catch (err) {
-      console.error('Error fetching top players:', err);
-      setError('Failed to load top players. Make sure the ML service is running.');
+      setError(err instanceof Error ? err.message : 'Failed to load top players from prediction data.');
     } finally {
       setLoading(false);
     }
@@ -70,22 +65,21 @@ const TopPlayersPage = () => {
     if (!topPlayers) return [];
     
     if (selectedPosition === 'all') {
-      // Return all players from all positions
-      const allPlayers = [];
-      for (const position in topPlayers.top_players_by_position) {
-        allPlayers.push(...topPlayers.top_players_by_position[position]);
-      }
-      return allPlayers.sort((a, b) => b.predicted_points - a.predicted_points);
+      return [...topPlayers.predictions].sort((a, b) => b.predictedPoints - a.predictedPoints);
     }
     
-    const positionId = parseInt(selectedPosition);
-    return topPlayers.top_players_by_position[positionId] || [];
+    return topPlayers.predictions
+      .filter(player => player.position === selectedPosition)
+      .sort((a, b) => b.predictedPoints - a.predictedPoints);
   };
 
-  const getTopPlayersByPosition = (position: number, limit: number = 5) => {
+  const getTopPlayersByPosition = (position: Pos, limit: number = 5) => {
     if (!topPlayers) return [];
     
-    return (topPlayers.top_players_by_position[position] || []).slice(0, limit);
+    return topPlayers.predictions
+      .filter(player => player.position === position)
+      .sort((a, b) => b.predictedPoints - a.predictedPoints)
+      .slice(0, limit);
   };
 
   if (loading) {
@@ -118,11 +112,11 @@ const TopPlayersPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <Brain className="w-8 h-8 text-purple-600" />
+                <Brain className="w-8 h-8 text-blue-700" />
                 Top Players
               </h1>
               <p className="mt-2 text-gray-600">
-                AI-powered predictions for the next gameweek based on machine learning analysis
+                Model-backed projections for the next gameweek based on loaded prediction data
               </p>
             </div>
             <button
@@ -142,8 +136,8 @@ const TopPlayersPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Brain className="w-6 h-6 text-purple-600" />
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Brain className="w-6 h-6 text-blue-700" />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Players Analyzed</p>
@@ -174,26 +168,29 @@ const TopPlayersPage = () => {
             onClick={() => setSelectedPosition('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               selectedPosition === 'all'
-                ? 'bg-purple-600 text-white'
+                ? 'bg-blue-700 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
             All Players
           </button>
-          {Object.entries(positionNames).map(([id, name]) => (
+          {Object.entries(positionNames).map(([id, name]) => {
+            const position = id as Pos;
+            return (
             <button
               key={id}
-              onClick={() => setSelectedPosition(id)}
+              onClick={() => setSelectedPosition(position)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 selectedPosition === id
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-blue-700 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {positionIcons[parseInt(id) as keyof typeof positionIcons]}
+              {positionIcons[position]}
               {name}
             </button>
-          ))}
+          );
+          })}
         </div>
       </div>
 
@@ -202,8 +199,8 @@ const TopPlayersPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {Object.entries(positionNames).map(([id, name]) => {
-              const positionId = parseInt(id);
-              const topPlayersForPosition = getTopPlayersByPosition(positionId, 5);
+              const position = id as Pos;
+              const topPlayersForPosition = getTopPlayersByPosition(position, 5);
               
               if (topPlayersForPosition.length === 0) return null;
               
@@ -211,30 +208,32 @@ const TopPlayersPage = () => {
                 <div key={id} className="bg-white rounded-lg shadow">
                   <div className="p-6 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      {positionIcons[positionId as keyof typeof positionIcons]}
+                      {positionIcons[position]}
                       Top 5 {name}
                     </h3>
                   </div>
                   <div className="p-6">
                     <div className="space-y-4">
                       {topPlayersForPosition.map((player, index) => (
-                        <div key={player.player_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div key={`${player.playerId}-${player.fixtureId ?? 'season'}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-bold text-purple-600">#{index + 1}</span>
+                            <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-blue-700">#{index + 1}</span>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{player.name}</p>
-                              <p className="text-sm text-gray-600">£{player.price.toFixed(1)}m</p>
+                              <p className="font-medium text-gray-900">{player.playerName}</p>
+                              <p className="text-sm text-gray-600">GBP {player.price.toFixed(1)}m</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-bold text-purple-600">
-                              {player.predicted_points.toFixed(1)} pts
+                            <p className="text-lg font-bold text-blue-700">
+                              {player.predictedPoints.toFixed(1)} pts
                             </p>
-                            <p className="text-xs text-gray-500">
-                              {Math.round(player.confidence * 100)}% confidence
-                            </p>
+                            {player.confidence !== undefined && player.confidence !== null && (
+                              <p className="text-xs text-gray-500">
+                                {Math.round(player.confidence * 100)}% confidence
+                              </p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -253,29 +252,31 @@ const TopPlayersPage = () => {
           <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                {positionNames[parseInt(selectedPosition) as keyof typeof positionNames]} - All Players
+                {positionNames[selectedPosition]} - All Players
               </h3>
             </div>
             <div className="p-6">
               <div className="space-y-3">
                 {getFilteredPlayers().map((player, index) => (
-                  <div key={player.player_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={`${player.playerId}-${player.fixtureId ?? 'season'}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-purple-600">#{index + 1}</span>
+                      <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-blue-700">#{index + 1}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{player.name}</p>
-                        <p className="text-sm text-gray-600">£{player.price.toFixed(1)}m</p>
+                        <p className="font-medium text-gray-900">{player.playerName}</p>
+                        <p className="text-sm text-gray-600">GBP {player.price.toFixed(1)}m</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-purple-600">
-                        {player.predicted_points.toFixed(1)} pts
+                      <p className="text-lg font-bold text-blue-700">
+                        {player.predictedPoints.toFixed(1)} pts
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {Math.round(player.confidence * 100)}% confidence
-                      </p>
+                      {player.confidence !== undefined && player.confidence !== null && (
+                        <p className="text-xs text-gray-500">
+                          {Math.round(player.confidence * 100)}% confidence
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -291,14 +292,13 @@ const TopPlayersPage = () => {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">About These Predictions</h3>
             <p className="text-gray-600 mb-4">
-              These predictions are generated using machine learning algorithms trained on historical FPL data. 
-              The model analyzes player form, fixture difficulty, expected goals/assists, and other key metrics 
-              to predict performance for the next gameweek.
+              These predictions use historical FPL features, player form, fixture difficulty, expected goals,
+              expected assists, and availability context to estimate next-gameweek points from loaded PostgreSQL predictions.
             </p>
             <div className="flex justify-center gap-4 text-sm text-gray-500">
-              <span>• Analyzed {topPlayers?.total_players_analyzed || 0} players</span>
-              <span>• Dynamic confidence scoring</span>
-              <span>• Updated weekly</span>
+              <span>Analyzed {topPlayers?.total_players_analyzed || 0} players</span>
+              <span>Confidence scoring</span>
+              <span>Updated weekly</span>
             </div>
           </div>
         </div>

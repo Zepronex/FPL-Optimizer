@@ -1,11 +1,12 @@
-import { useState, useCallback } from 'react';
-import { Squad, SquadSlot, EnrichedPlayer, Pos } from '../lib/types';
+import { useState, useCallback, useEffect } from 'react';
+import { Squad, SquadSlot, Pos } from '../lib/types';
 
-// Default empty squad state
+const SQUAD_STORAGE_KEY = 'scoutiq-squad-builder-state';
+
 const initialSquad: Squad = {
   startingXI: [],
   bench: [],
-  bank: 0
+  bank: 100
 };
 
 // Position order for sorting (GK first, then DEF, MID, FWD)
@@ -16,18 +17,44 @@ const POSITION_ORDER: Record<Pos, number> = {
   'FWD': 4
 };
 
+const SQUAD_POSITION_LIMITS: Record<Pos, number> = {
+  GK: 2,
+  DEF: 5,
+  MID: 5,
+  FWD: 3
+};
+
+const STARTING_XI_POSITION_LIMITS: Record<Pos, number> = {
+  GK: 1,
+  DEF: 5,
+  MID: 5,
+  FWD: 3
+};
+
+const MAX_PLAYERS_PER_TEAM = 3;
+
+const POSITION_LABELS: Record<Pos, { singular: string; plural: string }> = {
+  GK: { singular: 'goalkeeper', plural: 'goalkeepers' },
+  DEF: { singular: 'defender', plural: 'defenders' },
+  MID: { singular: 'midfielder', plural: 'midfielders' },
+  FWD: { singular: 'forward', plural: 'forwards' }
+};
+
 // Sort players by position order
 const sortPlayersByPosition = (players: SquadSlot[]): SquadSlot[] => {
   return [...players].sort((a, b) => POSITION_ORDER[a.pos] - POSITION_ORDER[b.pos]);
 };
 
 export const useSquad = () => {
-  const [squad, setSquad] = useState<Squad>(initialSquad);
-  const [isLoading, setIsLoading] = useState(false);
+  const [squad, setSquad] = useState<Squad>(() => readStoredSquad());
+  const [isLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const addPlayer = useCallback((player: EnrichedPlayer, isStarting: boolean = true) => {
-    // Clear any existing errors before attempting to add player
+  useEffect(() => {
+    writeStoredSquad(squad);
+  }, [squad]);
+
+  const addPlayer = useCallback((player: SquadSlot, isStarting: boolean = true) => {
     setError(null);
     
     setSquad(prev => {
@@ -36,45 +63,62 @@ export const useSquad = () => {
         pos: player.pos,
         price: player.price,
         name: player.name,
-        teamShort: player.teamShort
+        teamShort: player.teamShort,
+        teamId: player.teamId
       };
 
+      if (prev.startingXI.some(slot => slot.id === player.id) ||
+          prev.bench.some(slot => slot.id === player.id)) {
+        setError('Player is already in squad');
+        return prev;
+      }
+
+      const squadPositionCount = countPlayersByPosition([...prev.startingXI, ...prev.bench], player.pos);
+      if (squadPositionCount >= SQUAD_POSITION_LIMITS[player.pos]) {
+        const limit = SQUAD_POSITION_LIMITS[player.pos];
+        setError(`Full squad can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
+        return prev;
+      }
+
+      if (player.teamId !== undefined) {
+        const teamCount = countPlayersByTeam([...prev.startingXI, ...prev.bench], player.teamId);
+        if (teamCount >= MAX_PLAYERS_PER_TEAM) {
+          setError('A squad can include at most 3 players from the same club.');
+          return prev;
+        }
+      }
+
       if (isStarting) {
-        // Validate starting XI capacity (max 11 players)
         if (prev.startingXI.length >= 11) {
           setError('Starting XI is full (11 players)');
           return prev;
         }
-        
-        // Prevent duplicate players in squad
-        if (prev.startingXI.some(slot => slot.id === player.id) || 
-            prev.bench.some(slot => slot.id === player.id)) {
-          setError('Player is already in squad');
+
+        const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
+        if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
+          const limit = STARTING_XI_POSITION_LIMITS[player.pos];
+          setError(`Starting XI can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
           return prev;
         }
 
+        const startingXI = sortPlayersByPosition([...prev.startingXI, newSlot]);
         const newSquad = {
           ...prev,
-          startingXI: sortPlayersByPosition([...prev.startingXI, newSlot])
+          startingXI,
+          bank: calculateRemainingBank(startingXI, prev.bench)
         };
         return newSquad;
       } else {
-        // Check if we can add to bench (max 4 players)
         if (prev.bench.length >= 4) {
           setError('Bench is full (4 players)');
           return prev;
         }
-        
-        // Check if player is already in squad
-        if (prev.startingXI.some(slot => slot.id === player.id) || 
-            prev.bench.some(slot => slot.id === player.id)) {
-          setError('Player is already in squad');
-          return prev;
-        }
 
+        const bench = sortPlayersByPosition([...prev.bench, newSlot]);
         const newSquad = {
           ...prev,
-          bench: sortPlayersByPosition([...prev.bench, newSlot])
+          bench,
+          bank: calculateRemainingBank(prev.startingXI, bench)
         };
         return newSquad;
       }
@@ -82,34 +126,61 @@ export const useSquad = () => {
   }, []);
 
   const removePlayer = useCallback((playerId: number) => {
-    setSquad(prev => ({
-      ...prev,
-      startingXI: prev.startingXI.filter(slot => slot.id !== playerId),
-      bench: prev.bench.filter(slot => slot.id !== playerId)
-    }));
+    setSquad(prev => {
+      const startingXI = prev.startingXI.filter(slot => slot.id !== playerId);
+      const bench = prev.bench.filter(slot => slot.id !== playerId);
+      return {
+        ...prev,
+        startingXI,
+        bench,
+        bank: calculateRemainingBank(startingXI, bench)
+      };
+    });
   }, []);
 
   const movePlayer = useCallback((playerId: number, fromStarting: boolean) => {
+    setError(null);
+
     setSquad(prev => {
       if (fromStarting) {
-        // Move from starting XI to bench
         const player = prev.startingXI.find(slot => slot.id === playerId);
-        if (!player || prev.bench.length >= 4) return prev;
+        if (!player) return prev;
+        if (prev.bench.length >= 4) {
+          setError('Bench is full (4 players)');
+          return prev;
+        }
         
+        const startingXI = prev.startingXI.filter(slot => slot.id !== playerId);
+        const bench = sortPlayersByPosition([...prev.bench, player]);
+
         return {
           ...prev,
-          startingXI: prev.startingXI.filter(slot => slot.id !== playerId),
-          bench: sortPlayersByPosition([...prev.bench, player])
+          startingXI,
+          bench,
+          bank: calculateRemainingBank(startingXI, bench)
         };
       } else {
-        // Move from bench to starting XI
         const player = prev.bench.find(slot => slot.id === playerId);
-        if (!player || prev.startingXI.length >= 11) return prev;
+        if (!player) return prev;
+        if (prev.startingXI.length >= 11) {
+          setError('Starting XI is full (11 players)');
+          return prev;
+        }
+        const startingPositionCount = countPlayersByPosition(prev.startingXI, player.pos);
+        if (startingPositionCount >= STARTING_XI_POSITION_LIMITS[player.pos]) {
+          const limit = STARTING_XI_POSITION_LIMITS[player.pos];
+          setError(`Starting XI can include at most ${limit} ${formatPositionLabel(player.pos, limit)}`);
+          return prev;
+        }
         
+        const bench = prev.bench.filter(slot => slot.id !== playerId);
+        const startingXI = sortPlayersByPosition([...prev.startingXI, player]);
+
         return {
           ...prev,
-          bench: prev.bench.filter(slot => slot.id !== playerId),
-          startingXI: sortPlayersByPosition([...prev.startingXI, player])
+          bench,
+          startingXI,
+          bank: calculateRemainingBank(startingXI, bench)
         };
       }
     });
@@ -141,7 +212,7 @@ export const useSquad = () => {
 
       setSquad(parsedSquad);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('Invalid JSON format');
     }
   }, []);
@@ -168,3 +239,82 @@ export const useSquad = () => {
     clearError
   };
 };
+
+function countPlayersByPosition(players: readonly SquadSlot[], position: Pos): number {
+  return players.filter(player => player.pos === position).length;
+}
+
+function countPlayersByTeam(players: readonly SquadSlot[], teamId: number): number {
+  return players.filter(player => player.teamId === teamId).length;
+}
+
+function formatPositionLabel(position: Pos, count: number): string {
+  return count === 1 ? POSITION_LABELS[position].singular : POSITION_LABELS[position].plural;
+}
+
+function calculateRemainingBank(startingXI: readonly SquadSlot[], bench: readonly SquadSlot[]): number {
+  const spent = [...startingXI, ...bench].reduce((sum, player) => sum + player.price, 0);
+  return Math.max(0, Math.round((100 - spent) * 10) / 10);
+}
+
+function readStoredSquad(): Squad {
+  if (typeof window === 'undefined') return initialSquad;
+
+  try {
+    const stored = window.sessionStorage.getItem(SQUAD_STORAGE_KEY);
+    if (!stored) return initialSquad;
+
+    const parsed: unknown = JSON.parse(stored);
+    return isSquad(parsed)
+      ? {
+          ...parsed,
+          bank: calculateRemainingBank(parsed.startingXI, parsed.bench)
+        }
+      : initialSquad;
+  } catch {
+    return initialSquad;
+  }
+}
+
+function writeStoredSquad(squad: Squad): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.setItem(SQUAD_STORAGE_KEY, JSON.stringify(squad));
+  } catch {
+    // Ignore storage failures; in-memory state still works for the current session.
+  }
+}
+
+function isSquad(value: unknown): value is Squad {
+  if (!isRecord(value)) return false;
+
+  return (
+    Array.isArray(value.startingXI) &&
+    value.startingXI.every(isSquadSlot) &&
+    Array.isArray(value.bench) &&
+    value.bench.every(isSquadSlot) &&
+    typeof value.bank === 'number'
+  );
+}
+
+function isSquadSlot(value: unknown): value is SquadSlot {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.id === 'number' &&
+    isPos(value.pos) &&
+    typeof value.price === 'number' &&
+    (value.name === undefined || typeof value.name === 'string') &&
+    (value.teamShort === undefined || typeof value.teamShort === 'string') &&
+    (value.teamId === undefined || typeof value.teamId === 'number')
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPos(value: unknown): value is Pos {
+  return value === 'GK' || value === 'DEF' || value === 'MID' || value === 'FWD';
+}

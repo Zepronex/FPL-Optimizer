@@ -1,33 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EnrichedPlayer, AnalysisWeights } from '../lib/types';
-import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
+import { EnrichedPlayer } from '../lib/types';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
-import { ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import PlayerStats from '../components/PlayerStats';
-import PlayerSuggestions from '../components/PlayerSuggestions';
 
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [player, setPlayer] = useState<EnrichedPlayer | null>(null);
-  const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Default weights for scoring
-  const defaultWeights: AnalysisWeights = {
-    form: 0.2,
-    xg90: 0.15,
-    xa90: 0.15,
-    expMin: 0.15,
-    next3Ease: 0.1,
-    avgPoints: 0.15,
-    value: 0.05,
-    ownership: 0.05
-  };
 
   useEffect(() => {
     if (id) {
@@ -46,44 +30,13 @@ const PlayerDetailPage = () => {
       const playerResponse = await apiClient.getPlayerById(parseInt(id));
       if (playerResponse.success && playerResponse.data) {
         setPlayer(playerResponse.data);
-        // Load suggestions after player data is loaded
-        loadSuggestions(playerResponse.data);
       } else {
         setError('Player not found');
       }
-    } catch (error) {
+    } catch {
       setError('Failed to load player data');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadSuggestions = async (playerData: EnrichedPlayer) => {
-    setIsLoadingSuggestions(true);
-
-    try {
-      const response = await fetch('/api/suggestions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId: playerData.id,
-          position: playerData.pos,
-          maxPrice: playerData.price + 2, // Allow some flexibility in price
-          excludeIds: [],
-          limit: 5
-        }),
-      });
-
-      const data: { success: boolean; data?: SuggestionsResponse; error?: string } = await response.json();
-
-      if (data.success && data.data) {
-        setSuggestions(data.data.suggestions);
-      }
-    } catch (error) {
-    } finally {
-      setIsLoadingSuggestions(false);
     }
   };
 
@@ -119,7 +72,7 @@ const PlayerDetailPage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-2">Player Not Found</h1>
           <p className="text-red-600 mb-4">{error || 'The requested player could not be found.'}</p>
           <button 
@@ -198,12 +151,6 @@ const PlayerDetailPage = () => {
           <PlayerStats player={player} />
         </div>
 
-        {/* Alternative Players */}
-        <PlayerSuggestions 
-          suggestions={suggestions}
-          isLoading={isLoadingSuggestions}
-          onLoadMore={() => {}} // Not implemented yet
-        />
       </div>
     </div>
   );

@@ -1,16 +1,22 @@
 import { EnrichedPlayer } from '../lib/types';
 import { formatPrice } from '../lib/format';
-import { User, TrendingUp, DollarSign } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface SearchResultsProps {
   results: EnrichedPlayer[];
   isLoading: boolean;
   onPlayerSelect: (player: EnrichedPlayer) => void;
-  onPlayerScore: (player: EnrichedPlayer) => void;
-  isScoring: boolean;
+  emptyMessage?: string;
+  tone?: 'info' | 'error';
 }
 
-const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isScoring }: SearchResultsProps) => {
+const SearchResults = ({
+  results,
+  isLoading,
+  onPlayerSelect,
+  emptyMessage = 'No players found',
+  tone = 'info'
+}: SearchResultsProps) => {
   if (isLoading) {
     return (
       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-80 overflow-y-auto z-50">
@@ -23,11 +29,15 @@ const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isSc
   }
 
   if (results.length === 0) {
+    const toneClass = tone === 'error'
+      ? 'text-red-700'
+      : 'text-gray-500';
+
     return (
       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50">
-        <div className="p-4 text-center text-gray-500">
+        <div className={`p-4 text-center ${toneClass}`}>
           <User className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm">No players found</p>
+          <p className="text-sm">{emptyMessage}</p>
         </div>
       </div>
     );
@@ -49,28 +59,18 @@ const SearchResults = ({ results, isLoading, onPlayerSelect, onPlayerScore, isSc
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-900 truncate">{player.name}</div>
               <div className="text-sm text-gray-600">
-                {player.teamShort} • {formatPrice(player.price)}
+                {player.teamShort} - {formatPrice(player.price)}
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => onPlayerScore(player)}
-              disabled={isScoring}
-              className="flex items-center space-x-1 text-xs bg-fpl-green text-white px-2 py-1 rounded hover:bg-green-600 transition-colors disabled:opacity-50"
-            >
-              <TrendingUp className="w-3 h-3" />
-              <span>Score</span>
-            </button>
-            <button
-              onClick={() => onPlayerSelect(player)}
-              className="flex items-center space-x-1 text-xs bg-fpl-dark text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
-            >
-              <DollarSign className="w-3 h-3" />
-              <span>View</span>
-            </button>
-          </div>
+
+          <button
+            onClick={() => onPlayerSelect(player)}
+            className="flex items-center space-x-1 text-xs bg-fpl-dark text-white px-2 py-1 rounded hover:bg-gray-700 transition-colors"
+          >
+            <User className="w-3 h-3" />
+            <span>View</span>
+          </button>
         </div>
       ))}
     </div>

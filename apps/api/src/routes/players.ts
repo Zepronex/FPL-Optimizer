@@ -1,150 +1,147 @@
-import { Router } from 'express';
+import { Router, Response, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
-import { DataMerger } from '../lib/merge';
-import { FPLDataFetcher } from '../lib/fetchers/fpl';
-
-const router = Router();
+import { createDbPool, Queryable } from '../db/client';
+import {
+  PLAYER_CANDIDATE_REQUIRED_COMMANDS,
+  readSquadBuilderPlayers,
+  searchEnrichedPlayers
+} from '../db/playerQueries';
 
 // Validation schemas
 const searchSchema = z.object({
   name: z.string().min(1).max(100)
 });
 
-// GET /api/players - Get all players
-router.get('/', async (req, res) => {
-  try {
-    const players = await DataMerger.getAllEnrichedPlayers();
-    res.json({
-      success: true,
-      data: players,
-      count: players.length
-    });
-  } catch (error) {
-    // Error fetching players
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch players'
-    });
-  }
-});
+const positionSchema = z.enum(['GK', 'DEF', 'MID', 'FWD']);
+const playerIdSchema = z.coerce.number().int().positive();
 
-// GET /api/players/search?name=playerName - Search players by name
-router.get('/search', async (req, res) => {
-  try {
-    const { name } = searchSchema.parse(req.query);
-    const players = await DataMerger.searchPlayersByName(name);
-    
-    if (players.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'No players found',
-        data: []
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: players,
-      count: players.length
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid search parameters',
-        details: error.errors
-      });
-    }
-    
-    // Error searching players
-    res.status(500).json({
-      success: false,
-      error: 'Failed to search players'
-    });
-  }
-});
+export function createPlayersRouter(client: Queryable = createDbPool()): ExpressRouter {
+  const router: ExpressRouter = Router();
 
-// GET /api/players/:id - Get specific player by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const playerId = parseInt(req.params.id);
-    if (isNaN(playerId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid player ID'
-      });
-    }
-    
-    const players = await DataMerger.getAllEnrichedPlayers();
-    const player = players.find(p => p.id === playerId);
-    
-    if (!player) {
-      return res.status(404).json({
-        success: false,
-        error: 'Player not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: player
-    });
-  } catch (error) {
-    // Error fetching player
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch player'
-    });
-  }
-});
+  // GET /api/players - Get prediction-backed local players
+  router.get('/', async (_req, res) => {
+    try {
+      const players = await readSquadBuilderPlayers(client);
+      if (players.length === 0) return sendMissingPlayerData(res);
 
-// GET /api/players/position/:pos - Get players by position
-router.get('/position/:pos', async (req, res) => {
-  try {
-    const position = req.params.pos.toUpperCase();
-    const validPositions = ['GK', 'DEF', 'MID', 'FWD'];
-    
-    if (!validPositions.includes(position)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid position. Must be GK, DEF, MID, or FWD'
+      res.json({
+        success: true,
+        data: players,
+        count: players.length
       });
+    } catch (error) {
+      sendPlayerDataError(res);
     }
-    
-    const players = await DataMerger.getAllEnrichedPlayers();
-    const filteredPlayers = players.filter(p => p.pos === position);
-    
-    res.json({
-      success: true,
-      data: filteredPlayers,
-      count: filteredPlayers.length
-    });
-  } catch (error) {
-    // Error fetching players by position
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch players by position'
-    });
-  }
-});
+  });
 
-// POST /api/players/refresh - Refresh player data (admin endpoint)
-router.post('/refresh', async (req, res) => {
-  try {
-    // In a real app, you'd check for admin authentication here
-    await FPLDataFetcher.refreshAllData();
-    
-    res.json({
-      success: true,
-      message: 'Player data refreshed successfully'
-    });
-  } catch (error) {
-    // Error refreshing player data
-    res.status(500).json({
-      success: false,
-      error: 'Failed to refresh player data'
-    });
-  }
-});
+  // GET /api/players/search?name=playerName - Search prediction-backed local players by name
+  router.get('/search', async (req, res) => {
+    try {
+      const { name } = searchSchema.parse(req.query);
+      const players = await readSquadBuilderPlayers(client);
+      if (players.length === 0) return sendMissingPlayerData(res);
 
-export { router as playersRouter };
+      const matches = searchEnrichedPlayers(players, name);
+
+      res.json({
+        success: true,
+        data: matches,
+        count: matches.length
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid search parameters',
+          details: error.errors
+        });
+      }
+
+      sendPlayerDataError(res);
+    }
+  });
+
+  // GET /api/players/position/:pos - Get prediction-backed local players by position
+  router.get('/position/:pos', async (req, res) => {
+    try {
+      const position = positionSchema.parse(req.params.pos.toUpperCase());
+      const players = await readSquadBuilderPlayers(client);
+      if (players.length === 0) return sendMissingPlayerData(res);
+
+      const filteredPlayers = players.filter(player => player.pos === position);
+
+      res.json({
+        success: true,
+        data: filteredPlayers,
+        count: filteredPlayers.length
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid position. Must be GK, DEF, MID, or FWD',
+          details: error.errors
+        });
+      }
+
+      sendPlayerDataError(res);
+    }
+  });
+
+  // GET /api/players/:id - Get specific prediction-backed local player by ID
+  router.get('/:id', async (req, res) => {
+    try {
+      const playerId = playerIdSchema.parse(req.params.id);
+      const players = await readSquadBuilderPlayers(client);
+      if (players.length === 0) return sendMissingPlayerData(res);
+
+      const player = players.find(candidate => candidate.id === playerId);
+
+      if (!player) {
+        return res.status(404).json({
+          success: false,
+          error: 'Player not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: player
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid player ID',
+          details: error.errors
+        });
+      }
+
+      sendPlayerDataError(res);
+    }
+  });
+
+  return router;
+}
+
+function sendMissingPlayerData(res: Response): void {
+  res.status(503).json({
+    success: false,
+    error: 'No prediction-backed player candidates are loaded. Run the local data pipeline and load predictions into PostgreSQL.',
+    data: [],
+    count: 0,
+    requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
+  });
+}
+
+function sendPlayerDataError(res: Response): void {
+  res.status(503).json({
+    success: false,
+    error: 'Could not load local player data. Start PostgreSQL and run the documented data pipeline.',
+    data: [],
+    count: 0,
+    requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
+  });
+}
+
+export const playersRouter = createPlayersRouter();

@@ -3,38 +3,59 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
-import { formatPrice } from '../lib/format';
 import { useDebounce } from '../hooks/useDebounce';
+import { formatPrice, getPositionColor } from '../lib/format';
 
 interface PlayerSearchProps {
   onAddPlayer: (player: EnrichedPlayer, isStarting: boolean) => void;
 }
+
+type SearchStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
 const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<EnrichedPlayer[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [requiredCommands, setRequiredCommands] = useState<string[]>([]);
   
   // debounce search to reduce api calls while typing
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const handleSearch = async (query: string) => {
-    if (query.length < 2) {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 2) {
       setSearchResults([]);
+      setSearchStatus('idle');
+      setSearchError(null);
+      setRequiredCommands([]);
       return;
     }
 
     setIsSearching(true);
+    setSearchStatus('loading');
+    setSearchError(null);
+    setRequiredCommands([]);
+
     try {
-      const response = await apiClient.searchPlayer(query);
+      const response = await apiClient.searchPlayer(trimmedQuery);
       if (response.success && response.data && Array.isArray(response.data)) {
         setSearchResults(response.data);
+        setSearchStatus('loaded');
       } else {
         setSearchResults([]);
+        setSearchStatus('error');
+        setSearchError(response.error || 'Could not load player search results.');
+        setRequiredCommands(response.requiredCommands || []);
       }
-    } catch (error) {
+    } catch {
       setSearchResults([]);
+      setSearchStatus('error');
+      setSearchError('Could not load player search results. Confirm that the local API is running.');
+      setRequiredCommands([]);
     } finally {
       setIsSearching(false);
     }
@@ -49,7 +70,17 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
     onAddPlayer(player, isStarting);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchStatus('idle');
+    setSearchError(null);
+    setRequiredCommands([]);
   };
+
+  const showNoMatches = (
+    !isSearching &&
+    searchStatus === 'loaded' &&
+    debouncedSearchQuery.trim().length >= 2 &&
+    searchResults.length === 0
+  );
 
   return (
     <div className="mb-6">
@@ -64,6 +95,10 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
         />
       </div>
 
+      {searchQuery.length > 0 && searchQuery.trim().length < 2 && (
+        <p className="mt-2 text-sm text-gray-500">Enter at least 2 characters to search loaded players.</p>
+      )}
+
       {searchResults.length > 0 && (
         <div className="mt-2 border border-gray-200 rounded-lg bg-white shadow-lg max-h-60 overflow-y-auto">
           {searchResults.map((player) => (
@@ -73,8 +108,10 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
             >
               <div className="flex-1">
                 <div className="font-semibold">{player.name}</div>
-                <div className="text-sm text-gray-600">
-                  {player.teamShort}
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                  <span className={`badge ${getPositionColor(player.pos)}`}>{player.pos}</span>
+                  <span>{player.teamShort}</span>
+                  <span>{formatPrice(player.price)}</span>
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -99,6 +136,27 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showNoMatches && (
+        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-700">
+          No matching players were found for "{debouncedSearchQuery.trim()}".
+        </div>
+      )}
+
+      {!isSearching && searchStatus === 'error' && (
+        <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <p className="font-medium">Player search unavailable</p>
+          <p className="mt-1">{searchError}</p>
+          {requiredCommands.length > 0 && (
+            <div className="mt-3">
+              <p className="font-medium">Run the local data pipeline:</p>
+              <pre className="mt-2 overflow-x-auto rounded-md bg-white p-3 text-xs text-gray-800">
+                {requiredCommands.join('\n')}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 

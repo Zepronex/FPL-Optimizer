@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Migration checksums are computed from file bytes at runtime.
+db/migrations/*.sql text eol=lf

@@ -1,45 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
-import WeightsPanel from '../components/WeightsPanel';
 import { apiClient } from '../lib/api';
-import { Squad } from '../lib/types';
+import { ApiResponse, SquadAnalysis } from '../lib/types';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
-  weightsState: ReturnType<typeof import('../state/useWeights').useWeights>;
 }
 
-const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
+const SquadPage = ({ squadState }: SquadPageProps) => {
   const navigate = useNavigate();
   const { squad, error: squadError, clearError: clearSquadError } = squadState;
-  const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-
-  // Check if we need to load a generated team for editing
-  useEffect(() => {
-    const editGeneratedTeam = sessionStorage.getItem('edit-generated-team');
-    if (editGeneratedTeam) {
-      try {
-        const generatedSquad: Squad = JSON.parse(editGeneratedTeam);
-        
-        // Clear current squad and load the generated team
-        squadState.clearSquad();
-        generatedSquad.startingXI.forEach(player => {
-          squadState.addPlayer(player, true);
-        });
-        generatedSquad.bench.forEach(player => {
-          squadState.addPlayer(player, false);
-        });
-        squadState.setBank(generatedSquad.bank);
-        
-        // Clear the session storage
-        sessionStorage.removeItem('edit-generated-team');
-      } catch (error) {
-      }
-    }
-  }, [squadState]);
+  const [analysisCommands, setAnalysisCommands] = useState<string[]>([]);
 
   const handleAnalyze = async () => {
     if (squad.startingXI.length !== 11 || squad.bench.length !== 4) {
@@ -49,9 +23,16 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
 
     setIsAnalyzing(true);
     setAnalysisError(null);
+    setAnalysisCommands([]);
 
     try {
-      const response = await apiClient.analyzeSquad(squad, weights);
+      const response = await apiClient.analyzeSquad(squad);
+
+      if (!response.success || !response.data) {
+        setAnalysisError(formatAnalysisError(response));
+        setAnalysisCommands(response.requiredCommands || []);
+        return;
+      }
       
       // Store results and original squad in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
@@ -59,9 +40,9 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       
       // Navigate to analyze page
       navigate('/analyze');
-    } catch (error) {
-      // Analysis failed
-      setAnalysisError('Analysis failed. Please try again.');
+    } catch {
+      setAnalysisError('Could not analyze the squad. Confirm that the local API is running and prediction data is loaded.');
+      setAnalysisCommands([]);
     } finally {
       setIsAnalyzing(false);
     }
@@ -76,7 +57,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
           Squad Builder
         </h1>
         <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto mb-4 sm:mb-6 px-4">
-          Build your Fantasy Premier League squad and get AI-powered analysis with personalized suggestions to maximize your points potential.
+          Build your Fantasy Premier League squad and review model-backed analysis with deterministic suggestions.
         </p>
         
         {/* Analyze Button - Moved to top */}
@@ -123,43 +104,53 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       </div>
 
       {/* Error Display */}
-      {(squadError || weightsError || analysisError) && (
+      {(squadError || analysisError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-red-800 font-medium">Error</h3>
               <p className="text-red-700 mt-1">
-                {squadError || weightsError || analysisError}
+                {squadError || analysisError}
               </p>
+              {analysisCommands.length > 0 && analysisError && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-red-800">Run the local data pipeline:</p>
+                  <pre className="mt-2 overflow-x-auto rounded-md bg-white p-3 text-xs text-gray-800">
+                    {analysisCommands.join('\n')}
+                  </pre>
+                </div>
+              )}
             </div>
             <button
               onClick={() => {
                 clearSquadError();
-                clearWeightsError();
                 setAnalysisError(null);
+                setAnalysisCommands([]);
               }}
               className="text-red-600 hover:text-red-800"
             >
-              ×
+              x
             </button>
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        {/* Squad Input */}
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          <SquadForm squadState={squadState} />
-        </div>
-
-        {/* Weights Panel */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <WeightsPanel weightsState={weightsState} />
-        </div>
+      <div>
+        <SquadForm squadState={squadState} />
       </div>
     </div>
   );
 };
+
+function formatAnalysisError(response: ApiResponse<SquadAnalysis>): string {
+  if (response.error) return response.error;
+
+  if (Array.isArray(response.details) && response.details.every(item => typeof item === 'string')) {
+    return response.details.join(' ');
+  }
+
+  return 'Could not analyze the squad. Check the squad and local prediction data before trying again.';
+}
 
 export default SquadPage;

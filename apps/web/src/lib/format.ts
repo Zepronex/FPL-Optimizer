@@ -1,4 +1,4 @@
-import { PlayerLabel } from './types';
+import { PlayerLabel, Pos } from './types';
 
 export const formatPrice = (price: number): string => {
   // Round to avoid floating point precision issues
@@ -6,11 +6,11 @@ export const formatPrice = (price: number): string => {
   
   // If the decimal part is 0, show as whole number
   if (rounded % 1 === 0) {
-    return `£${rounded.toFixed(0)}m`;
+    return `GBP ${rounded.toFixed(0)}m`;
   }
   
   // Otherwise show with 1 decimal place
-  return `£${rounded.toFixed(1)}m`;
+  return `GBP ${rounded.toFixed(1)}m`;
 };
 
 export const formatScore = (score: number): string => {
@@ -77,7 +77,7 @@ export const getLabelText = (label: PlayerLabel): string => {
 export const getPositionColor = (position: string): string => {
   switch (position) {
     case 'GK':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-gray-100 text-gray-800';
     case 'DEF':
       return 'bg-blue-100 text-blue-800';
     case 'MID':
@@ -117,13 +117,16 @@ export const formatMinutes = (minutes: number): string => {
   return `${minutes}min`;
 };
 
-export const calculateTotalSquadValue = (squad: { startingXI: any[]; bench: any[]; bank: number }): number => {
+type PricedSlot = { price: number };
+type FormationSlot = { pos: Pos };
+
+export const calculateTotalSquadValue = (squad: { startingXI: PricedSlot[]; bench: PricedSlot[]; bank: number }): number => {
   const totalPlayerValue = [...squad.startingXI, ...squad.bench]
     .reduce((sum, slot) => sum + slot.price, 0);
   return totalPlayerValue + squad.bank;
 };
 
-export const isValidFormation = (startingXI: any[]): boolean => {
+export const isValidFormation = (startingXI: FormationSlot[]): boolean => {
   if (startingXI.length !== 11) return false;
   
   const positionCounts = startingXI.reduce((counts, slot) => {
@@ -134,17 +137,17 @@ export const isValidFormation = (startingXI: any[]): boolean => {
   // Must have exactly 1 goalkeeper
   if (positionCounts.GK !== 1) return false;
   
-  // Must have 3-5 defenders, 3-5 midfielders, 1-3 forwards
+  // Must have 3-5 defenders, 2-5 midfielders, 1-3 forwards
   const defCount = positionCounts.DEF || 0;
   const midCount = positionCounts.MID || 0;
   const fwdCount = positionCounts.FWD || 0;
   
   return defCount >= 3 && defCount <= 5 &&
-         midCount >= 3 && midCount <= 5 &&
+         midCount >= 2 && midCount <= 5 &&
          fwdCount >= 1 && fwdCount <= 3;
 };
 
-export const getFormationString = (startingXI: any[]): string => {
+export const getFormationString = (startingXI: FormationSlot[]): string => {
   if (!isValidFormation(startingXI)) return 'Invalid';
   
   const positionCounts = startingXI.reduce((counts, slot) => {

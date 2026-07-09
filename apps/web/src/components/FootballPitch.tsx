@@ -45,7 +45,7 @@ const FootballPitch = ({ startingXI, onRemovePlayer, isReadOnly = false }: Footb
                   onClick={() => onRemovePlayer(slot.id)}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 shadow-md"
                 >
-                  ×
+                  x
                 </button>
               )}
             </div>

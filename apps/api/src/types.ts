@@ -1,4 +1,4 @@
-// Shared types for FPL Optimizer
+// Shared types for ScoutIQ
 
 export type Pos = 'GK' | 'DEF' | 'MID' | 'FWD';
 
@@ -10,7 +10,7 @@ export type EnrichedPlayer = {
   pos: Pos;
   price: number;
   form: number;
-  status: 'a' | 'd' | 'i' | 's';
+  status: FPLStatus;
   xg90: number;
   xa90: number;
   expMin: number;
@@ -26,6 +26,9 @@ export type SquadSlot = {
   id: number;
   pos: Pos;
   price: number;
+  name?: string;
+  teamShort?: string;
+  teamId?: number;
 };
 
 export type Squad = {
@@ -75,35 +78,160 @@ export type SquadAnalysis = {
   totalScore: number;
 };
 
-export type FPLPlayer = {
+export type FPLStatus = 'a' | 'd' | 'i' | 'n' | 's' | 'u';
+
+export type PredictionRun = {
   id: number;
-  first_name: string;
-  second_name: string;
-  web_name: string;
-  team: number;
-  element_type: number;
-  now_cost: number;
-  form: string;
-  status: string;
-  expected_goals: string;
-  expected_assists: string;
-  expected_goal_involvements: string;
-  expected_goals_conceded: string;
-  minutes: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionFileHash: string;
+  modelArtifactHash: string | null;
+  featureSnapshotHash: string | null;
+  sourceSnapshotHash: string | null;
+  sourceGeneratedAt: string | null;
+  sourceRunId: number | null;
+  predictionCount: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type FPLTeam = {
+export type PlayerPrediction = {
   id: number;
-  name: string;
-  short_name: string;
+  predictionRunId: number;
+  playerId: number;
+  playerName: string;
+  position: Pos;
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  price: number;
+  status: FPLStatus;
+  chanceOfPlayingNextRound: number | null;
+  chanceOfPlayingThisRound: number | null;
+  targetGameweekId: number;
+  fixtureId: number | null;
+  predictedPoints: number;
+  baselinePredictedPoints: number | null;
+  confidence: number | null;
+  uncertainty: number | null;
+  sourceSnapshotHash: string | null;
+  featureSnapshotHash: string | null;
+  featureValues: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type FPLFixture = {
+export type PredictionSummary = {
+  run: PredictionRun;
+  predictions: PlayerPrediction[];
+  count: number;
+};
+
+export type ModelEvaluation = {
   id: number;
-  team_h: number;
-  team_a: number;
-  team_h_difficulty: number;
-  team_a_difficulty: number;
-  event: number;
+  evaluationKey: string;
+  modelName: string;
+  modelVersion: string;
+  evaluationType: string;
+  predictionCount: number;
+  metrics: Record<string, unknown>;
+  baselineMetrics: Record<string, unknown> | null;
+  metricsByPosition: Record<string, unknown> | null;
+  baselineMetricsByPosition: Record<string, unknown> | null;
+  evaluatedGameweeks: number[];
+  skippedGameweeks: number[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EvaluationMetricName = 'mae' | 'rmse';
+
+export type EvaluationMetricComparison = {
+  metric: EvaluationMetricName;
+  modelValue: number | null;
+  baselineValue: number | null;
+  differenceVsBaseline: number | null;
+  modelBeatsBaseline: boolean | null;
+  lowerIsBetter: true;
+};
+
+export type EvaluationRunSummary = {
+  id: number;
+  evaluationKey: string;
+  modelName: string;
+  modelVersion: string;
+  evaluationType: string;
+  backtestRows: number | null;
+  predictionCount: number;
+  mae: EvaluationMetricComparison;
+  rmse: EvaluationMetricComparison;
+  evaluatedGameweeks: number[];
+  skippedGameweeks: number[];
+  evaluatedGameweekCount: number;
+  skippedGameweekCount: number;
+  createdAt: string;
+  updatedAt: string;
+  warnings: string[];
+};
+
+export type EvaluationPredictionRunMetadata = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionCount: number;
+  sourceGeneratedAt: string | null;
+  sourceSnapshotHash: string | null;
+  featureSnapshotHash: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EvaluationLatest = {
+  latestRun: EvaluationRunSummary | null;
+  latestPredictionRun: EvaluationPredictionRunMetadata | null;
+  requiredCommands: string[];
+  limitations: string[];
+  warnings: string[];
+};
+
+export type EvaluationRuns = {
+  runs: EvaluationRunSummary[];
+  count: number;
+  warnings: string[];
+};
+
+export type EvaluationDataCoverageCounts = {
+  players: number;
+  teams: number;
+  gameweeks: number;
+  fixtures: number;
+  playerGameweekHistoryRows: number | null;
+  playerGameweekHistoryPlayers: number | null;
+  latestPredictionRows: number;
+  predictionRuns: number;
+  evaluationRuns: number;
+};
+
+export type PlayerGameweekHistoryArtifact = {
+  path: string;
+  generatedAt: string | null;
+  sourceName: string | null;
+  playerCount: number | null;
+  rowCount: number | null;
+};
+
+export type EvaluationDataHealth = {
+  generatedAt: string;
+  coverage: EvaluationDataCoverageCounts;
+  latestPredictionRun: EvaluationPredictionRunMetadata | null;
+  playerGameweekHistory: PlayerGameweekHistoryArtifact | null;
+  requiredCommands: string[];
+  warnings: string[];
 };
 
