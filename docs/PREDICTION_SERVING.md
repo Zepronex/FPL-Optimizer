@@ -192,13 +192,10 @@ pnpm.cmd run db:load:predictions
 pnpm.cmd run dev:app
 ```
 
-The ML service is optional for normal frontend/API development. Start it separately with `pnpm.cmd run dev:ml` only when working on ML-backed strategy behavior.
-
 Current limitations:
 
 - no chip strategy
-- no explanation or LLM layer
 - transfer UI does not yet expose free-transfer or hit controls
 - recommendations depend on prediction rows being present for all squad players
 
-The serving layer intentionally persists per-fixture prediction rows. The optimizer consumes those rows but does not call LLM or agent workflows.
+The serving layer intentionally persists per-fixture prediction rows. The optimizer consumes those rows. The explanation agent can explain optimizer output downstream, but it does not make recommendation decisions.

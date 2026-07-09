@@ -68,7 +68,7 @@ This starts only:
 - API: `http://localhost:3001`
 - Web app: `http://localhost:3000`
 
-It does not start the optional ML service. Use `pnpm.cmd run dev:ml` separately only when working on that service.
+Prediction and model data are prepared through the pipeline and database-load commands above; no separate model-serving process is part of the normal demo path.
 
 ## Verify With The Smoke Test
 

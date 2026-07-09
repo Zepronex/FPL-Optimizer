@@ -181,7 +181,7 @@ pnpm.cmd run build:web
 
 ## Continuous Integration
 
-GitHub Actions runs `.github/workflows/ci.yml` on pull requests and pushes to `dev`. The workflow installs Node dependencies with `pnpm`, installs Python dependencies from `apps/ml/requirements.txt`, and runs the API build, web build, API tests, smoke helper tests, pipeline tests, and expected-points model tests.
+GitHub Actions runs `.github/workflows/ci.yml` on pull requests and pushes to `dev`. The workflow installs Node dependencies with `pnpm`, sets up Python for pipeline and model tests, and runs the API build, web build, API tests, smoke helper tests, pipeline tests, and expected-points model tests.
 
 CI does not require `OPENAI_API_KEY`, Azure OpenAI credentials, local `.env` files, Docker, PostgreSQL, or live FPL API calls. Explanation-agent tests use mocked provider responses or deterministic fallback behavior, so provider access is not needed for review validation.
 
