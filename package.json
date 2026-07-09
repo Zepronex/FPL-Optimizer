@@ -1,7 +1,7 @@
 {
   "name": "fpl-optimizer",
   "version": "1.0.0",
-  "description": "Fantasy Premier League team optimization tool",
+  "description": "ScoutIQ local Fantasy Premier League decision-support platform",
   "private": true,
   "workspaces": [
     "apps/*"

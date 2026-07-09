@@ -415,7 +415,7 @@ const RecentRuns = ({ runs }: { runs: EvaluationRunSummary[] }) => (
 const defaultLimitations = [
   'Model quality is evaluated against a recent-points baseline.',
   'The current model should not be treated as clearly better unless it is lower than the baseline on both MAE and RMSE.',
-  'Optimizer recommendations use deterministic constraints and loaded prediction rows.',
+  'Optimizer recommendations use deterministic FPL rule checks and loaded prediction rows.',
   'Predictions are decision support estimates, not certainty.'
 ];
 

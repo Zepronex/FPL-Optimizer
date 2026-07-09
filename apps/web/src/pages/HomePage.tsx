@@ -8,7 +8,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <div className="text-center">
         <h1 className="text-5xl font-bold text-fpl-dark mb-6">
-          Master Your Fantasy Premier League
+          ScoutIQ Fantasy Premier League Review
         </h1>
         <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
           Build a data-backed FPL squad with transparent analysis, deterministic recommendations, and comprehensive player insights.
@@ -83,7 +83,7 @@ const HomePage = () => {
             <h3 className="text-lg font-semibold mb-2">Build or Generate</h3>
             <p className="text-gray-600">
               Create your squad manually by searching and selecting players, or generate an optimized team
-              based on your preferred strategy and budget constraints.
+              based on your preferred strategy and FPL squad rules.
             </p>
           </div>
           <div className="text-center">
@@ -103,7 +103,7 @@ const HomePage = () => {
             <h3 className="text-lg font-semibold mb-2">Get Suggestions</h3>
             <p className="text-gray-600">
               Receive personalized recommendations for transfers, captain choices, and tactical adjustments. 
-              Recommendations summarize the best available moves from the loaded scoring data and optimizer constraints.
+              Recommendations summarize the best available moves from the loaded scoring data and rule checks.
             </p>
           </div>
         </div>
@@ -113,7 +113,7 @@ const HomePage = () => {
       <div className="text-center bg-fpl-dark text-white rounded-lg p-8">
         <h2 className="text-3xl font-bold mb-4">Ready to Review Your Squad?</h2>
         <p className="text-xl mb-6 opacity-90">
-          Use transparent model output, deterministic constraints, and squad analysis before making transfer decisions.
+          Use transparent model output, deterministic rule checks, and squad analysis before making transfer decisions.
         </p>
         <div className="flex justify-center space-x-4">
           <button

@@ -62,7 +62,7 @@ function App() {
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-2">API Connection Failed</h1>
           <p className="text-red-600 mb-4">
-            Unable to connect to the FPL Optimizer API. Please make sure the API server is running on port 3001.
+            Unable to connect to the ScoutIQ API. Please make sure the API server is running on port 3001.
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -83,7 +83,7 @@ function App() {
             <div className="flex items-center h-16">
               <div className="flex items-center">
                 <h1 className="text-2xl font-bold text-fpl-dark">
-                  FPL Optimizer
+                  ScoutIQ
                 </h1>
               </div>
               
@@ -154,7 +154,7 @@ function App() {
         <footer className="bg-white border-t border-gray-200 mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-gray-500 text-sm">
-              <p>FPL Optimizer - Built for Fantasy Premier League managers</p>
+              <p>ScoutIQ - Local Fantasy Premier League decision support</p>
               <p className="mt-1">
                 Data provided by the official Fantasy Premier League API
               </p>

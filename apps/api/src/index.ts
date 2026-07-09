@@ -125,6 +125,6 @@ app.use('*', (req: express.Request, res: express.Response) => {
 });
 
 app.listen(PORT, () => {
-  // FPL Optimizer API started
+  // ScoutIQ API started
 });
 

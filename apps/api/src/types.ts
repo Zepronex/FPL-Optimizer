@@ -1,4 +1,4 @@
-// Shared types for FPL Optimizer
+// Shared types for ScoutIQ
 
 export type Pos = 'GK' | 'DEF' | 'MID' | 'FWD';
 

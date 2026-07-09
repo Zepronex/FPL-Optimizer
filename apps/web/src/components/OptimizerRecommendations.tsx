@@ -160,7 +160,7 @@ const OptimizerRecommendations = ({
         <StatusPanel
           tone="info"
           title="No transfer improvement found"
-          message="The optimizer did not find a valid transfer that improves projected points under the current constraints."
+          message="The optimizer did not find a valid transfer that improves projected points under the current squad rules."
         />
       )}
 
@@ -294,8 +294,8 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
         <ExplanationSection title="Transfer reasoning" items={explanation.transferReasoning} />
         <ExplanationSection title="Risks" items={explanation.risks} />
         <ExplanationSection title="Alternatives" items={explanation.alternatives} />
-        <ExplanationSection title="Data limitations" items={explanation.dataLimitations} />
-        <ExplanationSection title="Constraint summary" items={explanation.constraintSummary} />
+        <ExplanationSection title="Data notes" items={explanation.dataLimitations} />
+        <ExplanationSection title="Rule-check details" items={explanation.constraintSummary} />
       </div>
 
       <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-4">
@@ -406,7 +406,7 @@ const StartingXiSection = ({ recommendation }: StartingXiSectionProps) => {
         />
         <MetricTile
           icon={<ShieldCheck className="h-5 w-5" />}
-          label="Constraints"
+          label="Rule checks"
           value={recommendation.constraintSummary.valid ? 'Valid' : 'Invalid'}
           tone={recommendation.constraintSummary.valid ? 'success' : 'warning'}
         />
@@ -575,12 +575,12 @@ const ConstraintSummary = ({ validation }: ConstraintSummaryProps) => (
       ) : (
         <AlertTriangle className="h-5 w-5 text-yellow-600" />
       )}
-      <h3 className="font-semibold text-gray-900">Constraint validation</h3>
+      <h3 className="font-semibold text-gray-900">Rule validation</h3>
     </div>
     <p className="mt-1 text-sm text-gray-600">
       {validation.valid
         ? `All ${validation.checks.length} optimizer checks passed.`
-        : `${validation.violations.length} constraint issue(s) need attention.`}
+        : `${validation.violations.length} rule issue(s) need attention.`}
     </p>
     {!validation.valid && (
       <ul className="mt-3 space-y-2 text-sm text-gray-700">
