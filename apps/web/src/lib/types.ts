@@ -96,6 +96,7 @@ export type Formation = '3-4-3' | '3-5-2' | '4-4-2' | '4-3-3' | '4-5-1' | '5-3-2
 export type PlayerAvailability = 'available' | 'doubtful' | 'unavailable' | 'unknown';
 
 export type PlayerPrediction = {
+  id?: number;
   playerId: number;
   playerName: string;
   position: Pos;
@@ -104,10 +105,29 @@ export type PlayerPrediction = {
   teamShortName?: string;
   price: number;
   predictedPoints: number;
+  baselinePredictedPoints?: number | null;
+  confidence?: number | null;
   predictionRunId?: number;
   targetGameweekId?: number;
   fixtureId?: number | null;
   availability?: PlayerAvailability;
+};
+
+export type PredictionRun = {
+  id: number;
+  runKey: string;
+  modelName: string;
+  modelVersion: string;
+  targetGameweekId: number;
+  predictionCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PredictionSummary = {
+  run: PredictionRun;
+  predictions: PlayerPrediction[];
+  count: number;
 };
 
 export type OptimizerSquadSlot = PlayerPrediction & {
@@ -386,18 +406,6 @@ export type SquadOptimizationRequest = {
   gameweekId?: number;
   budget?: number;
   reservedBank?: number;
-};
-
-export type GeneratedTeamData = {
-  squad: Squad;
-  strategy: string;
-  weights: AnalysisWeights;
-  budget: number;
-  totalCost?: number;
-  expectedPoints?: number;
-  mlPredictions?: unknown[];
-  fallback?: boolean;
-  error?: string;
 };
 
 export type PlayerSearchResult = {

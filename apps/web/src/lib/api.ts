@@ -2,7 +2,6 @@ import axios from 'axios';
 import {
   ApiResponse,
   EnrichedPlayer,
-  GeneratedTeamData,
   Squad,
   AnalysisWeights,
   SquadAnalysis,
@@ -14,6 +13,7 @@ import {
   EvaluationDataHealth,
   EvaluationLatest,
   EvaluationRuns,
+  PredictionSummary,
   OptimizerResult,
   ExplainRecommendationRequest,
   RecommendationExplanation,
@@ -104,34 +104,6 @@ export const apiClient = {
     return response.data;
   },
 
-  async generateTeam(strategy: string, budget: number = 100): Promise<ApiResponse<GeneratedTeamData>> {
-    const response = await api.post('/generate', { strategy, budget });
-    return response.data;
-  },
-
-  // Suggestions API
-  async getSuggestions(playerId: number, position: string, maxPrice: number, excludeIds: number[] = [], limit: number = 5) {
-    const response = await api.post('/suggestions', {
-      playerId,
-      position,
-      maxPrice,
-      excludeIds,
-      limit
-    });
-    return response.data;
-  },
-
-  // Fixtures API
-  async getFixtures() {
-    const response = await api.get('/fixtures');
-    return response.data;
-  },
-
-  async getCurrentGameweek() {
-    const response = await api.get('/fixtures/current');
-    return response.data;
-  },
-
   // Optimizer API
   async getStartingXIRecommendation(
     request: StartingXIRecommendationRequest
@@ -182,21 +154,21 @@ export const apiClient = {
     return response.data;
   },
 
+  async getTopPredictions(limit: number = 100): Promise<ApiResponse<PredictionSummary>> {
+    try {
+      const response = await api.get(`/predictions/top?limit=${encodeURIComponent(String(limit))}`);
+      return response.data;
+    } catch (error) {
+      return toApiResponse<PredictionSummary>(
+        error,
+        'Could not load top players. Confirm that PostgreSQL is running and prediction data is loaded.'
+      );
+    }
+  },
+
   // Health check
   async healthCheck() {
     const response = await api.get('/health');
-    return response.data;
-  },
-
-  // ML API
-  async getTopPlayers(limit?: number) {
-    const params = limit ? `?limit=${limit}` : '';
-    const response = await api.get(`/ml/top-players${params}`);
-    return response.data;
-  },
-
-  async getMLHealth() {
-    const response = await api.get('/ml/health');
     return response.data;
   }
 };

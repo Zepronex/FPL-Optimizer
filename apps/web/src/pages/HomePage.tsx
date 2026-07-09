@@ -22,10 +22,10 @@ const HomePage = () => {
             Squad Builder
           </button>
           <button
-            onClick={() => navigate('/generate')}
+            onClick={() => navigate('/evaluation')}
             className="bg-white text-fpl-dark border-2 border-fpl-dark px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
           >
-            Generate Team
+            Evaluation
           </button>
         </div>
       </div>
@@ -51,10 +51,10 @@ const HomePage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Smart Team Generation</h3>
+          <h3 className="text-xl font-semibold mb-3 text-fpl-dark">Deterministic Optimizer</h3>
           <p className="text-gray-600">
-            Let the optimizer build a constrained squad for you. Choose from different strategies like balanced,
-            cost-effective, or form-focused approaches to generate optimized squads within your budget.
+            Review starting XI, bench order, captaincy, and transfer options produced from loaded prediction data
+            and FPL rule checks.
           </p>
         </div>
 
@@ -80,10 +80,9 @@ const HomePage = () => {
             <div className="w-12 h-12 bg-fpl-dark text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
               1
             </div>
-            <h3 className="text-lg font-semibold mb-2">Build or Generate</h3>
+            <h3 className="text-lg font-semibold mb-2">Build Your Squad</h3>
             <p className="text-gray-600">
-              Create your squad manually by searching and selecting players, or generate an optimized team
-              based on your preferred strategy and FPL squad rules.
+              Create your squad by searching the prediction-backed player database and selecting starters and bench players.
             </p>
           </div>
           <div className="text-center">
@@ -123,10 +122,10 @@ const HomePage = () => {
             Build Squad
           </button>
           <button
-            onClick={() => navigate('/generate')}
+            onClick={() => navigate('/evaluation')}
             className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-fpl-dark transition-colors"
           >
-            Generate Team
+            View Evaluation
           </button>
         </div>
       </div>

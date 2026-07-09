@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EnrichedPlayer } from '../lib/types';
-import { PlayerSuggestion, SuggestionsResponse } from '../types/playerDetail';
 import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import PlayerStats from '../components/PlayerStats';
-import PlayerSuggestions from '../components/PlayerSuggestions';
 
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [player, setPlayer] = useState<EnrichedPlayer | null>(null);
-  const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,8 +30,6 @@ const PlayerDetailPage = () => {
       const playerResponse = await apiClient.getPlayerById(parseInt(id));
       if (playerResponse.success && playerResponse.data) {
         setPlayer(playerResponse.data);
-        // Load suggestions after player data is loaded
-        loadSuggestions(playerResponse.data);
       } else {
         setError('Player not found');
       }
@@ -43,35 +37,6 @@ const PlayerDetailPage = () => {
       setError('Failed to load player data');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadSuggestions = async (playerData: EnrichedPlayer) => {
-    setIsLoadingSuggestions(true);
-
-    try {
-      const response = await fetch('/api/suggestions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playerId: playerData.id,
-          position: playerData.pos,
-          maxPrice: playerData.price + 2, // Allow some flexibility in price
-          excludeIds: [],
-          limit: 5
-        }),
-      });
-
-      const data: { success: boolean; data?: SuggestionsResponse; error?: string } = await response.json();
-
-      if (data.success && data.data) {
-        setSuggestions(data.data.suggestions);
-      }
-    } catch {
-    } finally {
-      setIsLoadingSuggestions(false);
     }
   };
 
@@ -186,12 +151,6 @@ const PlayerDetailPage = () => {
           <PlayerStats player={player} />
         </div>
 
-        {/* Alternative Players */}
-        <PlayerSuggestions 
-          suggestions={suggestions}
-          isLoading={isLoadingSuggestions}
-          onLoadMore={() => {}} // Not implemented yet
-        />
       </div>
     </div>
   );
