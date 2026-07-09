@@ -1,19 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SquadForm from '../components/SquadForm';
-import WeightsPanel from '../components/WeightsPanel';
 import { apiClient } from '../lib/api';
 import { ApiResponse, SquadAnalysis } from '../lib/types';
 
 interface SquadPageProps {
   squadState: ReturnType<typeof import('../state/useSquad').useSquad>;
-  weightsState: ReturnType<typeof import('../state/useWeights').useWeights>;
 }
 
-const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
+const SquadPage = ({ squadState }: SquadPageProps) => {
   const navigate = useNavigate();
   const { squad, error: squadError, clearError: clearSquadError } = squadState;
-  const { weights, error: weightsError, clearError: clearWeightsError } = weightsState;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisCommands, setAnalysisCommands] = useState<string[]>([]);
@@ -29,7 +26,7 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
     setAnalysisCommands([]);
 
     try {
-      const response = await apiClient.analyzeSquad(squad, weights);
+      const response = await apiClient.analyzeSquad(squad);
 
       if (!response.success || !response.data) {
         setAnalysisError(formatAnalysisError(response));
@@ -107,13 +104,13 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       </div>
 
       {/* Error Display */}
-      {(squadError || weightsError || analysisError) && (
+      {(squadError || analysisError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-red-800 font-medium">Error</h3>
               <p className="text-red-700 mt-1">
-                {squadError || weightsError || analysisError}
+                {squadError || analysisError}
               </p>
               {analysisCommands.length > 0 && analysisError && (
                 <div className="mt-3">
@@ -127,7 +124,6 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
             <button
               onClick={() => {
                 clearSquadError();
-                clearWeightsError();
                 setAnalysisError(null);
                 setAnalysisCommands([]);
               }}
@@ -140,16 +136,8 @@ const SquadPage = ({ squadState, weightsState }: SquadPageProps) => {
       )}
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        {/* Squad Input */}
-        <div className="lg:col-span-2 order-2 lg:order-1">
-          <SquadForm squadState={squadState} />
-        </div>
-
-        {/* Weights Panel */}
-        <div className="lg:col-span-1 order-1 lg:order-2">
-          <WeightsPanel weightsState={weightsState} />
-        </div>
+      <div>
+        <SquadForm squadState={squadState} />
       </div>
     </div>
   );

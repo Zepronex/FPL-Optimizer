@@ -102,7 +102,7 @@ What to look for:
 
 - Home page: the React app loads and connects to the API.
 - Squad Builder: manual analysis uses default scoring weights internally; users do not tune scoring sliders in the demo flow.
-- Top Players: prediction-backed rows are served from PostgreSQL, not the optional legacy ML service.
+- Top Players: prediction-backed rows are served from PostgreSQL, not a legacy side service.
 - Team Analysis: a complete analyzed squad can show deterministic optimizer output for starting XI, bench order, captaincy, transfers, projected points, and constraint status.
 - Recommendation explanation panel: the agent explains an optimizer result that already exists. In the default local demo, deterministic fallback mode is acceptable and expected when provider credentials are not configured.
 - Model Evaluation: the dashboard shows MAE, RMSE, baseline comparison, data coverage, recent runs, setup warnings, and limitation messaging.

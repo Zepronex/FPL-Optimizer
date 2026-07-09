@@ -3,11 +3,9 @@ import {
   ApiResponse,
   EnrichedPlayer,
   Squad,
-  AnalysisWeights,
   SquadAnalysis,
   PlayersResponse,
   PlayerSearchResult,
-  WeightPreset,
   CountedApiResponse,
   AgentPublicStatus,
   EvaluationDataHealth,
@@ -77,9 +75,9 @@ export const apiClient = {
   },
 
   // Analysis API
-  async analyzeSquad(squad: Squad, weights?: Partial<AnalysisWeights>): Promise<ApiResponse<SquadAnalysis>> {
+  async analyzeSquad(squad: Squad): Promise<ApiResponse<SquadAnalysis>> {
     try {
-      const response = await api.post('/analyze', { squad, weights });
+      const response = await api.post('/analyze', { squad });
       return response.data;
     } catch (error) {
       return toApiResponse<SquadAnalysis>(
@@ -91,16 +89,6 @@ export const apiClient = {
 
   async validateSquad(squad: Squad): Promise<ApiResponse<{ valid: boolean; errors: string[] }>> {
     const response = await api.post('/analyze/validate', { squad });
-    return response.data;
-  },
-
-  async getDefaultWeights(): Promise<ApiResponse<AnalysisWeights>> {
-    const response = await api.get('/analyze/weights');
-    return response.data;
-  },
-
-  async getWeightPresets(): Promise<ApiResponse<WeightPreset[]>> {
-    const response = await api.get('/analyze/presets');
     return response.data;
   },
 

@@ -98,7 +98,7 @@ pnpm.cmd run model:predict
 pnpm.cmd run db:load:predictions
 ```
 
-The API and frontend do not need the optional old ML service for the normal app flow. The web app can start without the batch jobs, but prediction-backed optimizer screens and the evaluation dashboard will show missing-data states until prediction and evaluation records have been generated and loaded.
+The API and frontend use PostgreSQL-backed prediction serving for the normal app flow. The web app can start without the batch jobs, but prediction-backed optimizer screens and the evaluation dashboard will show missing-data states until prediction and evaluation records have been generated and loaded.
 
 ## First Production Run
 
@@ -147,9 +147,6 @@ Vercel is already partially represented by `apps/api/vercel.json`, but the API s
 
 ## What Does Not Run In Normal Web Serving
 
-- `pnpm.cmd run dev:ml`
-- `pnpm.cmd run train:ml`
-- `pnpm.cmd run predict:ml`
 - ingestion commands
 - lakehouse pipeline commands
 - expected-points training, backtesting, and prediction commands

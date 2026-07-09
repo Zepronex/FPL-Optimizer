@@ -8,7 +8,7 @@ import { PLAYER_CANDIDATE_REQUIRED_COMMANDS } from '../db/playerQueries';
 import { createPredictionsRouter } from './predictions';
 
 describe('predictions route', () => {
-  it('serves top predictions from PostgreSQL rows without calling the optional ML service', async () => {
+  it('serves top predictions from PostgreSQL rows without calling the legacy ranking service', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();

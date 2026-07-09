@@ -43,6 +43,7 @@ describe('analyze route', () => {
     assert.equal(response.body.data.results[0].player.name, 'Player 1');
     assert.equal(response.body.data.results[0].player.pos, 'GK');
     assert.equal(response.body.data.results[0].player.price, 5);
+    assert.equal(response.body.data.bankLeft, 25);
   });
 
   it('returns setup guidance when prediction-backed player data is missing', async () => {
@@ -197,8 +198,8 @@ function playerRowFixture(
   return {
     id,
     display_name: overrides.displayName ?? `Player ${id}`,
-    team_id: 1,
-    team_short: 'ARS',
+    team_id: Math.floor((id - 1) / 3) + 1,
+    team_short: `T${Math.floor((id - 1) / 3) + 1}`,
     position,
     now_cost: 5,
     form: 5,

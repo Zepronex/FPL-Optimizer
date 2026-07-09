@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  AnalysisWeights,
   OptimizerSquadInput,
   Pos,
   SquadAnalysis,
@@ -11,10 +10,8 @@ import {
   TransferRecommendation
 } from '../lib/types';
 import PlayerRow from '../components/PlayerRow';
-import WeightsPanel from '../components/WeightsPanel';
 import { formatScore, formatPrice, getFormationString } from '../lib/format';
 import { apiClient } from '../lib/api';
-import { useWeights } from '../state/useWeights';
 import OptimizerRecommendations from '../components/OptimizerRecommendations';
 
 type OptimizerRecommendationState = {
@@ -79,9 +76,8 @@ const AnalyzePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isReAnalyzing, setIsReAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const weightsState = useWeights();
 
-  const isAnalysisWeights = (value: unknown): value is AnalysisWeights => {
+  const isAnalysisWeights = (value: unknown): value is SquadAnalysis['weights'] => {
     if (!isRecord(value)) return false;
     return ['form', 'xg90', 'xa90', 'expMin', 'next3Ease', 'avgPoints', 'value', 'ownership']
       .every((key) => typeof value[key] === 'number');
@@ -156,12 +152,6 @@ const AnalyzePage = () => {
           }
           setAnalysis(analysisData);
           setOriginalSquad(squadData);
-          
-          // Set the weights from the analysis
-          if (analysisData.weights) {
-            // Store the weights in localStorage so they persist
-            localStorage.setItem('scoutiq-weights', JSON.stringify(analysisData.weights));
-          }
         } else {
           setError('No analysis results found. Please analyze your squad first.');
         }
@@ -254,7 +244,7 @@ const AnalyzePage = () => {
     setError(null);
 
     try {
-      const response = await apiClient.analyzeSquad(originalSquad, weightsState.weights);
+      const response = await apiClient.analyzeSquad(originalSquad);
       
       // Store results in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
@@ -348,7 +338,7 @@ const AnalyzePage = () => {
                 Re-analyzing...
               </>
             ) : (
-              'Re-analyze with New Weights'
+              'Re-analyze'
             )}
           </button>
           <button 
@@ -378,10 +368,8 @@ const AnalyzePage = () => {
         </div>
       )}
 
-      {/* Main Content with Weights Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Analysis Results */}
-        <div className="lg:col-span-3 space-y-8">
+      {/* Main Content */}
+      <div className="space-y-8">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="card text-center">
@@ -425,29 +413,6 @@ const AnalyzePage = () => {
             emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."
           />
 
-          {/* Weights Display */}
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-4">Analysis Weights</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(analysis.weights).map(([key, value]) => (
-                <div key={key} className="text-center">
-                  <div className="text-lg font-semibold text-fpl-dark">
-                    {(value * 100).toFixed(0)}%
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize">
-                    {key === 'xg90' ? 'xG/90' :
-                     key === 'xa90' ? 'xA/90' :
-                     key === 'expMin' ? 'Minutes' :
-                     key === 'next3Ease' ? 'Fixtures' :
-                     key === 'avgPoints' ? 'Avg Points' :
-                     key === 'ownership' ? 'Ownership' :
-                     key.charAt(0).toUpperCase() + key.slice(1)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Starting XI */}
           <div className="card">
             <h2 className="text-2xl font-semibold mb-6">
@@ -483,15 +448,15 @@ const AnalyzePage = () => {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="flex items-center space-x-2">
                 <span className="badge bg-green-100 text-green-800 border-green-200">Perfect</span>
-                <span className="text-sm text-gray-600">Score ≥ 8.0</span>
+                <span className="text-sm text-gray-600">Score &gt;= 8.0</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="badge bg-blue-100 text-blue-800 border-blue-200">Good</span>
-                <span className="text-sm text-gray-600">Score ≥ 6.0</span>
+                <span className="text-sm text-gray-600">Score &gt;= 6.0</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="badge bg-yellow-100 text-yellow-800 border-yellow-200">Poor</span>
-                <span className="text-sm text-gray-600">Score ≥ 4.0</span>
+                <span className="text-sm text-gray-600">Score &gt;= 4.0</span>
               </div>
               <div className="flex items-center space-x-2">
                 <span className="badge bg-red-100 text-red-800 border-red-200">Urgent</span>
@@ -503,12 +468,6 @@ const AnalyzePage = () => {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Weights Panel */}
-        <div className="lg:col-span-1">
-          <WeightsPanel weightsState={weightsState} />
-        </div>
       </div>
     </div>
   );

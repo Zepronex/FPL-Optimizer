@@ -125,23 +125,6 @@ export type PlayerPrediction = {
   displayScore?: OptimizerDisplayScore;
 };
 
-export type PredictionRun = {
-  id: number;
-  runKey: string;
-  modelName: string;
-  modelVersion: string;
-  targetGameweekId: number;
-  predictionCount: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type PredictionSummary = {
-  run: PredictionRun;
-  predictions: PlayerPrediction[];
-  count: number;
-};
-
 export type OptimizerSquadSlot = PlayerPrediction & {
   slotIndex: number;
 };
