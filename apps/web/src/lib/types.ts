@@ -99,6 +99,13 @@ export type Formation =
 
 export type PlayerAvailability = 'available' | 'doubtful' | 'unavailable' | 'unknown';
 
+export type OptimizerDisplayScore = {
+  rawExpectedPoints: number | null;
+  contextualScoreOutOf10: number | null;
+  positionPercentile: number | null;
+  positionPoolSize: number;
+};
+
 export type PlayerPrediction = {
   playerId: number;
   playerName: string;
@@ -112,6 +119,7 @@ export type PlayerPrediction = {
   targetGameweekId?: number;
   fixtureId?: number | null;
   availability?: PlayerAvailability;
+  displayScore?: OptimizerDisplayScore;
 };
 
 export type OptimizerSquadSlot = PlayerPrediction & {
@@ -180,6 +188,9 @@ export type StartingXIRecommendation = {
   bench: OptimizerSquadSlot[];
   captaincy: CaptaincyRecommendation;
   totalPredictedPoints: number;
+  rawExpectedPoints?: number;
+  averagePlayerScoreOutOf10?: number | null;
+  normalizedTeamScoreOutOf100?: number | null;
   constraintSummary: ConstraintValidationResult;
 };
 
