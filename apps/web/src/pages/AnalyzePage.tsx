@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RefreshCw, UserPlus, X } from 'lucide-react';
 import {
+  AnalysisResult,
   OptimizerSquadInput,
+  OptimizerSquadSlot,
   Pos,
-  SquadAnalysis,
   Squad,
+  SquadAnalysis,
   SquadSlot,
   StartingXIRecommendation,
   TransferRecommendation
 } from '../lib/types';
-import PlayerRow from '../components/PlayerRow';
-import { formatScore, formatPrice, getFormationString } from '../lib/format';
+import { formatPrice, getFormationString } from '../lib/format';
+import { formatScoreOutOf, getScoreSummary } from '../lib/analysisDisplay';
 import { apiClient } from '../lib/api';
 import OptimizerRecommendations from '../components/OptimizerRecommendations';
+import LineupPitch, { LineupPlayer } from '../components/LineupPitch';
 
 type OptimizerRecommendationState = {
   startingXi: StartingXIRecommendation | null;
@@ -54,15 +58,48 @@ const getOptimizerErrorMessage = (value: unknown): string => {
     case 'squad_predictions_missing':
       return 'Some squad players do not have prediction rows. Re-run the prediction pipeline and reload predictions into PostgreSQL.';
     case 'invalid_squad':
-      return 'The squad is invalid for optimizer rules. Check squad size, position counts, budget, duplicates, and max three players per club.';
+      return 'The squad is invalid. Check squad size, position counts, budget, duplicates, and max three players per club.';
     case 'invalid_optimizer_request':
-      return 'The optimizer request is invalid. Check that the stored squad has 15 valid players.';
+      return 'The recommendation request is invalid. Check that the stored squad has 15 valid players.';
     case 'available_players_required':
     case 'prediction_candidates_required':
       return 'Prediction candidates are unavailable. Load prediction-serving data before requesting transfer recommendations.';
     default:
-      return 'Could not load optimizer recommendations. Check that the API is running and the prediction database is reachable.';
+      return 'Could not load recommendations. Check that the API is running and the prediction database is reachable.';
   }
+};
+
+const toOptimizerLineupPlayer = (
+  player: OptimizerSquadSlot,
+  captaincy: StartingXIRecommendation['captaincy']
+): LineupPlayer => ({
+  id: player.playerId,
+  name: player.playerName,
+  position: player.position,
+  teamShort: player.teamShortName || player.teamName,
+  price: player.price,
+  rawExpectedPoints: player.displayScore?.rawExpectedPoints ?? player.predictedPoints,
+  contextualScoreOutOf10: player.displayScore?.contextualScoreOutOf10,
+  captainMarker: player.playerId === captaincy.captain.playerId
+    ? 'C'
+    : player.playerId === captaincy.viceCaptain.playerId
+      ? 'VC'
+      : undefined,
+  availability: player.availability
+});
+
+const toAnalysisLineupPlayer = (result: AnalysisResult): LineupPlayer => ({
+  id: result.player.id,
+  name: result.player.name,
+  position: result.player.pos,
+  teamShort: result.player.teamShort,
+  price: result.player.price,
+  contextualScoreOutOf10: result.score
+});
+
+const getFallbackFormation = (results: readonly AnalysisResult[]): string | undefined => {
+  const formation = getFormationString(results.map(result => ({ pos: result.player.pos })));
+  return formation === 'Invalid' ? undefined : formation;
 };
 
 const AnalyzePage = () => {
@@ -128,28 +165,28 @@ const AnalyzePage = () => {
       try {
         const storedAnalysis = sessionStorage.getItem('fpl-analysis-results');
         const storedSquad = sessionStorage.getItem('fpl-original-squad');
-        
+
         if (storedAnalysis && storedSquad) {
           const parsed: unknown = JSON.parse(storedAnalysis);
           const squadData: unknown = JSON.parse(storedSquad);
-          
-          // Extract the actual analysis data from the API response
           const analysisData = extractSquadAnalysis(parsed);
+
           if (!analysisData) {
             setError('Failed to load analysis results.');
             return;
           }
+
           if (!isSquad(squadData)) {
             setError('Failed to load original squad.');
             return;
           }
+
           setAnalysis(analysisData);
           setOriginalSquad(squadData);
         } else {
           setError('No analysis results found. Please analyze your squad first.');
         }
       } catch {
-        // Error loading analysis
         setError('Failed to load analysis results.');
       } finally {
         setIsLoading(false);
@@ -165,7 +202,7 @@ const AnalyzePage = () => {
     const playerIds = [...originalSquad.startingXI, ...originalSquad.bench].map(player => player.id);
     if (playerIds.length !== 15) {
       setOptimizerState(null);
-      setOptimizerError('Optimizer recommendations require a complete 15-player squad.');
+      setOptimizerError('Recommendations require a complete 15-player squad.');
       return;
     }
 
@@ -232,16 +269,14 @@ const AnalyzePage = () => {
 
   const handleReAnalyze = async () => {
     if (!originalSquad) return;
-    
+
     setIsReAnalyzing(true);
     setError(null);
 
     try {
       const response = await apiClient.analyzeSquad(originalSquad);
-      
-      // Store results in session storage for the analyze page
       sessionStorage.setItem('fpl-analysis-results', JSON.stringify(response));
-      
+
       if (response.success && response.data) {
         setAnalysis(response.data);
       } else {
@@ -258,24 +293,21 @@ const AnalyzePage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fpl-green mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fpl-green mx-auto mb-4" />
           <p className="text-gray-600">Loading analysis results...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !analysis) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
             <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
             <p className="text-red-700 mb-4">{error}</p>
-            <button
-              onClick={handleNewAnalysis}
-              className="btn-primary"
-            >
+            <button onClick={handleNewAnalysis} className="btn-primary">
               Start New Analysis
             </button>
           </div>
@@ -290,10 +322,7 @@ const AnalyzePage = () => {
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">No Analysis Found</h2>
           <p className="text-gray-600 mb-6">Please analyze your squad first.</p>
-          <button
-            onClick={handleNewAnalysis}
-            className="btn-primary"
-          >
+          <button onClick={handleNewAnalysis} className="btn-primary">
             Build Squad
           </button>
         </div>
@@ -303,166 +332,150 @@ const AnalyzePage = () => {
 
   const startingXIResults = analysis.results.filter((_, index) => index < 11);
   const benchResults = analysis.results.filter((_, index) => index >= 11);
+  const recommendation = optimizerState?.startingXi;
+  const scoreSummary = getScoreSummary(analysis, recommendation);
+  const lineupStarters = recommendation
+    ? recommendation.starters.map(player => toOptimizerLineupPlayer(player, recommendation.captaincy))
+    : startingXIResults.map(toAnalysisLineupPlayer);
+  const lineupBench = recommendation
+    ? recommendation.bench.map(player => toOptimizerLineupPlayer(player, recommendation.captaincy))
+    : benchResults.map(toAnalysisLineupPlayer);
+  const formation = recommendation?.formation ?? getFallbackFormation(startingXIResults);
+  const completedAt = new Date(analysis.timestamp).toLocaleString();
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-fpl-dark mb-2">
-            Squad Analysis Results
-          </h1>
-          <p className="text-gray-600">
-            Analysis completed at {new Date(analysis.timestamp).toLocaleString()}
-          </p>
+          <h1 className="text-3xl font-bold text-fpl-dark">Analysis Results</h1>
+          <p className="mt-1 text-sm text-gray-600">Completed {completedAt}</p>
         </div>
-        <div className="flex space-x-3">
-          <button 
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
             onClick={handleReAnalyze}
             disabled={isReAnalyzing}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed text-lg px-8 py-4"
+            className="btn-primary inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isReAnalyzing ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Re-running...
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Re-running
               </>
             ) : (
-              'Re-run Analysis'
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Re-run Analysis
+              </>
             )}
           </button>
-          <button 
+          <button
             onClick={handleNewAnalysis}
-            className="btn-secondary text-lg px-8 py-4"
+            className="btn-secondary inline-flex items-center justify-center gap-2"
           >
+            <UserPlus className="h-4 w-4" />
             New Squad
           </button>
         </div>
       </div>
 
-      {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex justify-between items-start">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex justify-between gap-4">
             <div>
-              <h3 className="text-red-800 font-medium">Error</h3>
-              <p className="text-red-700 mt-1">{error}</p>
+              <h3 className="font-medium text-red-800">Error</h3>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
             </div>
             <button
+              type="button"
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-800"
+              aria-label="Dismiss error"
             >
-              ×
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
 
-      <div className="space-y-8">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="card text-center">
-              <div className="text-3xl font-bold text-fpl-green mb-2">
-                {formatScore(analysis.averageScore)}
-              </div>
-              <div className="text-sm text-gray-600">Average Score</div>
-            </div>
-            
-            <div className="card text-center">
-              <div className="text-3xl font-bold text-fpl-dark mb-2">
-                {formatScore(analysis.totalScore)}
-              </div>
-              <div className="text-sm text-gray-600">Total Score</div>
-            </div>
-            
-            <div className="card text-center">
-              <div className="text-3xl font-bold text-red-500 mb-2">
-                {analysis.flaggedPlayers}
-              </div>
-              <div className="text-sm text-gray-600">Flagged Players</div>
-            </div>
-            
-            <div className="card text-center">
-              <div className="text-3xl font-bold text-blue-500 mb-2">
-                {formatPrice(analysis.bankLeft)}
-              </div>
-              <div className="text-sm text-gray-600">Bank Remaining</div>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryMetric
+          label="Total Score"
+          value={formatScoreOutOf(scoreSummary.totalScore, 100)}
+          helper={scoreSummary.scoreSource === 'optimizer' ? 'Comparison score' : 'Stored squad score'}
+        />
+        <SummaryMetric
+          label="Average Player Score"
+          value={formatScoreOutOf(scoreSummary.averagePlayerScore, 10)}
+          helper={scoreSummary.scoreSource === 'optimizer' ? 'Starter average' : 'Squad average'}
+        />
+        <SummaryMetric label="Bank Remaining" value={formatPrice(analysis.bankLeft)} />
+        <SummaryMetric label="Formation" value={formation ?? 'Pending'} />
+      </div>
 
-          <OptimizerRecommendations
-            startingXi={optimizerState?.startingXi}
-            transferRecommendations={optimizerState?.transfers}
-            isLoading={isOptimizerLoading}
-            error={optimizerError}
-            contextNote="Transfer recommendations assume 1 free transfer and no points hits."
-            onRetry={() => setOptimizerRefreshKey(current => current + 1)}
-            targetGameweekId={optimizerState?.targetGameweekId}
-            predictionRunIds={optimizerState?.predictionRunIds}
-            emptyMessage="Prediction-backed recommendations will appear after optimizer data is available for this squad."
-          />
+      <LineupPitch
+        title="Recommended Starting XI"
+        subtitle={recommendation
+          ? 'Best current XI and bench order.'
+          : 'Stored squad shown while recommendations load.'}
+        starters={lineupStarters}
+        bench={lineupBench}
+        formation={formation}
+      />
 
-          {/* Starting XI */}
-          <div className="card">
-            <h2 className="text-2xl font-semibold mb-6">
-              Starting XI ({getFormationString(startingXIResults.map(r => ({ pos: r.player.pos })))})
-            </h2>
-            <div className="space-y-3">
-              {startingXIResults.map((result) => (
-                <PlayerRow
-                  key={result.player.id}
-                  result={result}
-                />
-              ))}
-            </div>
-          </div>
+      <ScoreLegend scoreSource={scoreSummary.scoreSource} />
 
-          {/* Bench */}
-          <div className="card">
-            <h2 className="text-2xl font-semibold mb-6">Bench</h2>
-            <div className="space-y-3">
-              {benchResults.map((result) => (
-                <PlayerRow
-                  key={result.player.id}
-                  result={result}
-                  isBench={true}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="card">
-            <h3 className="text-lg font-semibold mb-4">Legend</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="flex items-center space-x-2">
-                <span className="badge bg-green-100 text-green-800 border-green-200">Perfect</span>
-                <span className="text-sm text-gray-600">Score ≥ 8.0</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="badge bg-blue-100 text-blue-800 border-blue-200">Good</span>
-                <span className="text-sm text-gray-600">Score ≥ 6.0</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="badge bg-yellow-100 text-yellow-800 border-yellow-200">Poor</span>
-                <span className="text-sm text-gray-600">Score ≥ 4.0</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="badge bg-red-100 text-red-800 border-red-200">Urgent</span>
-                <span className="text-sm text-gray-600">Score &lt; 4.0</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="badge bg-red-900 text-red-100 border-red-800">Not Playing</span>
-                <span className="text-sm text-gray-600">Injured/Suspended</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <OptimizerRecommendations
+        startingXi={optimizerState?.startingXi}
+        transferRecommendations={optimizerState?.transfers}
+        isLoading={isOptimizerLoading}
+        error={optimizerError}
+        contextNote="Assumes 1 free transfer and no hits."
+        onRetry={() => setOptimizerRefreshKey(current => current + 1)}
+        targetGameweekId={optimizerState?.targetGameweekId}
+        predictionRunIds={optimizerState?.predictionRunIds}
+        emptyMessage="Recommendations will appear when prediction data is available for this squad."
+      />
     </div>
   );
 };
+
+type SummaryMetricProps = {
+  label: string;
+  value: string;
+  helper?: string;
+};
+
+const SummaryMetric = ({ label, value, helper }: SummaryMetricProps) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="text-sm font-medium text-gray-600">{label}</div>
+    <div className="mt-2 text-2xl font-bold text-fpl-dark">{value}</div>
+    {helper && <div className="mt-1 text-xs text-gray-500">{helper}</div>}
+  </div>
+);
+
+const ScoreLegend = ({ scoreSource }: { scoreSource: 'optimizer' | 'analysis' }) => (
+  <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <h3 className="text-sm font-semibold text-gray-950">Legend</h3>
+    <div className="mt-3 grid gap-3 text-sm text-gray-700 md:grid-cols-3">
+      <div>
+        <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-gray-800">/10</span>
+        <span className="ml-2">Player comparison score</span>
+      </div>
+      <div>
+        <span className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-gray-800">xPts</span>
+        <span className="ml-2">Raw expected points</span>
+      </div>
+      <div>
+        <span className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs font-semibold text-green-800">C / VC</span>
+        <span className="ml-2">Captain and vice captain</span>
+      </div>
+    </div>
+    <p className="mt-3 text-xs text-gray-500">
+      {scoreSource === 'optimizer'
+        ? 'Scores compare players in the current prediction pool. xPts is the raw model output.'
+        : 'Stored analysis scores are shown until comparison scores are available.'}
+    </p>
+  </div>
+);
 
 export default AnalyzePage;

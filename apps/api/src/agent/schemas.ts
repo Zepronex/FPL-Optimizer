@@ -5,6 +5,12 @@ const AvailabilitySchema = z.enum(['available', 'doubtful', 'unavailable', 'unkn
 const PositiveIdSchema = z.coerce.number().int().positive();
 const MoneySchema = z.coerce.number().nonnegative();
 const ConstraintValueSchema = z.union([z.number(), z.string(), z.record(z.number())]);
+const OptimizerDisplayScoreSchema = z.object({
+  rawExpectedPoints: z.number().nullable(),
+  contextualScoreOutOf10: z.number().nullable(),
+  positionPercentile: z.number().nullable(),
+  positionPoolSize: z.number().int().min(0)
+}).strict();
 
 export const PlayerCandidateSchema = z.object({
   playerId: PositiveIdSchema,
@@ -18,7 +24,8 @@ export const PlayerCandidateSchema = z.object({
   predictionRunId: PositiveIdSchema.optional(),
   targetGameweekId: PositiveIdSchema.optional(),
   fixtureId: PositiveIdSchema.nullable().optional(),
-  availability: AvailabilitySchema.optional()
+  availability: AvailabilitySchema.optional(),
+  displayScore: OptimizerDisplayScoreSchema.optional()
 }).strict();
 
 export const SquadSlotSchema = PlayerCandidateSchema.extend({
@@ -77,6 +84,9 @@ export const StartingXISchema = z.object({
   bench: z.array(SquadSlotSchema).length(4),
   captaincy: CaptaincyRecommendationSchema,
   totalPredictedPoints: z.coerce.number().nonnegative(),
+  rawExpectedPoints: z.coerce.number().nonnegative().optional(),
+  averagePlayerScoreOutOf10: z.coerce.number().nonnegative().nullable().optional(),
+  normalizedTeamScoreOutOf100: z.coerce.number().nonnegative().nullable().optional(),
   constraintSummary: ConstraintValidationResultSchema
 }).strict();
 

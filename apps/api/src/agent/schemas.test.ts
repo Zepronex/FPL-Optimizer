@@ -23,6 +23,33 @@ describe('recommendation explanation schemas', () => {
     assert.equal(parsed.optimizerResult.startingXi.starters.length, 11);
   });
 
+  it('accepts optimizer display score metadata on explanation input', () => {
+    const startingXi = startingXiFixture();
+    const parsed = ExplainRecommendationRequestSchema.parse({
+      optimizerResult: {
+        startingXi: {
+          ...startingXi,
+          starters: startingXi.starters.map(player => ({ ...player, displayScore: displayScoreFixture() })),
+          bench: startingXi.bench.map(player => ({ ...player, displayScore: displayScoreFixture() })),
+          captaincy: {
+            ...startingXi.captaincy,
+            captain: { ...startingXi.captaincy.captain, displayScore: displayScoreFixture() },
+            viceCaptain: { ...startingXi.captaincy.viceCaptain, displayScore: displayScoreFixture() }
+          },
+          rawExpectedPoints: 73,
+          averagePlayerScoreOutOf10: 6.4,
+          normalizedTeamScoreOutOf100: 64
+        },
+        transferRecommendations: [],
+        predictionRunIds: [42],
+        targetGameweekId: 3
+      }
+    });
+
+    assert.equal(parsed.optimizerResult.startingXi.normalizedTeamScoreOutOf100, 64);
+    assert.equal(parsed.optimizerResult.startingXi.starters[0].displayScore?.contextualScoreOutOf10, 6.4);
+  });
+
   it('validates the local demo explanation request fixture', () => {
     const fixture = JSON.parse(readFileSync(resolveFixturePath(), 'utf8')) as unknown;
     const parsed = ExplainRecommendationRequestSchema.parse(fixture);
@@ -138,5 +165,14 @@ function validationFixture() {
       }
     ],
     violations: []
+  };
+}
+
+function displayScoreFixture() {
+  return {
+    rawExpectedPoints: 5,
+    contextualScoreOutOf10: 6.4,
+    positionPercentile: 64,
+    positionPoolSize: 150
   };
 }

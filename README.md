@@ -114,9 +114,17 @@ The evaluation dashboard should be read as a transparency surface. The current e
 
 ## Screenshots
 
-No real portfolio screenshots are committed yet. Screenshot files should only be linked from this README after the image files exist under `docs/assets/screenshots/`.
+These screenshots come from a local ScoutIQ demo run with generated local data and prediction-serving rows loaded into PostgreSQL.
 
-Capture targets and filenames are documented in [Screenshot Capture Guide](docs/SCREENSHOTS.md).
+| Home | Top Players |
+| --- | --- |
+| ![ScoutIQ home screen](docs/assets/screenshots/home.png) | ![ScoutIQ top players page](docs/assets/screenshots/top-players.png) |
+
+| Analysis Results | Model Evaluation |
+| --- | --- |
+| ![ScoutIQ optimizer analysis results](docs/assets/screenshots/optimizer-result.png) | ![ScoutIQ model evaluation dashboard](docs/assets/screenshots/evaluation-dashboard.png) |
+
+Capture guidance and review checks are documented in [Screenshot Capture Guide](docs/SCREENSHOTS.md).
 
 ## Run Locally
 
