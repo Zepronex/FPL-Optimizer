@@ -66,6 +66,8 @@ pnpm.cmd run pipeline:test
 
 ## PySpark and Databricks
 
+The repository contains a PySpark writer implementation, but PySpark is optional and is not included in the project dependency lockfile. This repository does not contain Databricks notebooks, Asset Bundles, job/workflow configuration, or evidence of a Databricks run. Do not describe Databricks as used by ScoutIQ; at most, describe the Spark entry point as Databricks-compatible after it has been run in a Databricks workspace.
+
 If PySpark is installed locally, run the same scripts with the Spark engine:
 
 ```powershell

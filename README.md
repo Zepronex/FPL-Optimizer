@@ -17,7 +17,7 @@ Fantasy sports recommendations are only useful when the data, model quality, con
 - explaining optimizer output without allowing an LLM to make decisions
 - showing local health, pipeline, evaluation, and fallback status for reviewers
 
-The current model is transparent but not clearly better than the historical baseline. The latest backtest snapshot is mixed: `mae=1.0925` versus `baseline_mae=1.0366`, and `rmse=2.0246` versus `baseline_rmse=2.1458` across `28352` rows. ScoutIQ reports that honestly instead of claiming model superiority.
+The current model is transparent but is not claimed to outperform the historical baseline. Generate a local, provenance-bearing report with `python scripts/generate_resume_metrics.py`; its output is the source of truth for snapshot-specific counts and evaluation metrics.
 
 ## Architecture At A Glance
 
@@ -267,6 +267,7 @@ pnpm.cmd run db:load:predictions
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
 - [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
+- [Résumé Evidence](docs/RESUME_EVIDENCE.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## License
