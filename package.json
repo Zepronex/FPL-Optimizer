@@ -32,6 +32,8 @@
     "model:backtest": "python -m pipelines.expected_points.backtest",
     "model:predict": "python -m pipelines.expected_points.predict",
     "model:test": "python -m unittest discover pipelines/expected_points/tests",
+    "resume:metrics": "python scripts/generate_resume_metrics.py",
+    "resume:metrics:test": "python -m unittest scripts/test_generate_resume_metrics.py",
     "smoke:app": "node scripts/smoke-app.mjs",
     "test:smoke": "node --test scripts/smoke-app.test.mjs",
     "test:api": "pnpm --filter @fpl-optimizer/api run test",
@@ -42,4 +44,3 @@
     "concurrently": "^8.2.2"
   }
 }
-
