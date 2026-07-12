@@ -84,7 +84,6 @@ Data flows from the public FPL API into normalized local JSON, then into Postgre
 
 ## Portfolio Walkthrough
 
-For a short recruiter or technical review, start the normal local app:
 
 ```powershell
 pnpm.cmd run dev:app
