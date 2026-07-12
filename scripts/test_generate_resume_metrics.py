@@ -22,9 +22,17 @@ class ResumeMetricsTests(unittest.TestCase):
             snapshot.mkdir(parents=True)
             (snapshot / 'manifest.json').write_text(json.dumps({
                 'season': '2025-26',
-                'snapshotHash': 'snapshot-123',
                 'recordCounts': {'players': 2, 'teams': 2, 'events': 1, 'fixtures': 1}
             }), encoding='utf-8')
+            databricks_snapshot = root / 'data/databricks/public_fpl_snapshot'
+            databricks_snapshot.mkdir(parents=True)
+            (databricks_snapshot / 'snapshot_metadata.json').write_text(json.dumps({
+                'isTestFixture': False,
+                'effectiveSeason': '2025-26',
+                'sourceSnapshotHash': 'snapshot-123',
+                'recordCounts': {'players': 2, 'teams': 2, 'events': 1, 'fixtures': 1, 'historyRows': 2}
+            }), encoding='utf-8')
+            (databricks_snapshot / 'player_gameweek_history.json').write_text('{}', encoding='utf-8')
             training = root / 'data/features'
             training.mkdir(parents=True)
             (training / 'player_gameweek_training_rows.jsonl').write_text('{"player_id": 1}\n{"player_id": 2}\n')
@@ -40,6 +48,8 @@ class ResumeMetricsTests(unittest.TestCase):
 
         self.assertEqual(result['snapshot']['players'], 2)
         self.assertEqual(result['snapshot']['gameweeks'], 1)
+        self.assertEqual(result['snapshot']['snapshot_hash'], 'snapshot-123')
+        self.assertEqual(result['snapshot']['history_rows'], 2)
         self.assertEqual(result['training']['player_gameweek_rows'], 2)
         self.assertEqual(result['backtest']['evaluated_rows'], 2)
         self.assertEqual(result['backtest']['baseline_rmse'], 2.0)

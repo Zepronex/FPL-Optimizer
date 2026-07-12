@@ -42,12 +42,23 @@ def file_provenance(path: Path) -> dict[str, str] | None:
 def generate_metrics(root: Path) -> dict[str, Any]:
     snapshot_dir = root / 'data' / 'fpl' / 'latest'
     manifest_path = snapshot_dir / 'manifest.json'
+    databricks_snapshot_dir = root / 'data' / 'databricks' / 'public_fpl_snapshot'
+    snapshot_metadata_path = databricks_snapshot_dir / 'snapshot_metadata.json'
+    history_path = databricks_snapshot_dir / 'player_gameweek_history.json'
     training_rows_path = root / 'data' / 'features' / 'player_gameweek_training_rows.jsonl'
     backtest_path = root / 'data' / 'evaluation' / 'expected_points_backtest.json'
     manifest = read_json(manifest_path)
+    snapshot_metadata = read_json(snapshot_metadata_path)
     backtest = read_json(backtest_path)
 
-    snapshot_counts = manifest.get('recordCounts') if manifest else None
+    if snapshot_metadata and snapshot_metadata.get('isTestFixture'):
+        snapshot_metadata = None
+
+    snapshot_counts = (
+        snapshot_metadata.get('recordCounts')
+        if snapshot_metadata
+        else manifest.get('recordCounts') if manifest else None
+    )
     if snapshot_counts is not None and not isinstance(snapshot_counts, dict):
         raise ValueError(f'Expected manifest.recordCounts to be an object in {manifest_path}')
 
@@ -55,13 +66,24 @@ def generate_metrics(root: Path) -> dict[str, Any]:
         'generated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         'method': 'local_artifacts_only',
         'snapshot': {
-            'season': manifest.get('season') if manifest else None,
-            'snapshot_hash': manifest.get('snapshotHash') if manifest else None,
+            'season': (
+                snapshot_metadata.get('effectiveSeason')
+                if snapshot_metadata
+                else manifest.get('season') if manifest else None
+            ),
+            'snapshot_hash': (
+                snapshot_metadata.get('sourceSnapshotHash')
+                if snapshot_metadata
+                else manifest.get('snapshotHash') if manifest else None
+            ),
             'players': snapshot_counts.get('players') if snapshot_counts else None,
             'teams': snapshot_counts.get('teams') if snapshot_counts else None,
             'gameweeks': snapshot_counts.get('events') if snapshot_counts else None,
             'fixtures': snapshot_counts.get('fixtures') if snapshot_counts else None,
-            'provenance': file_provenance(manifest_path)
+            'history_rows': snapshot_counts.get('historyRows') if snapshot_counts else None,
+            'provenance': file_provenance(manifest_path),
+            'snapshot_metadata_provenance': file_provenance(snapshot_metadata_path),
+            'history_provenance': file_provenance(history_path)
         },
         'training': {
             'player_gameweek_rows': count_jsonl_rows(training_rows_path),

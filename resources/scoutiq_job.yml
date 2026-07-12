@@ -1,0 +1,89 @@
+resources:
+  schemas:
+    scoutiq:
+      name: ${var.schema}
+      catalog_name: ${var.catalog}
+      comment: ScoutIQ portfolio pipeline Delta tables built only from public FPL data.
+
+  volumes:
+    public_fpl_snapshot:
+      name: ${var.volume_name}
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.scoutiq.name}
+      volume_type: MANAGED
+      comment: Uploaded public FPL snapshots for the ScoutIQ Databricks pipeline.
+
+  jobs:
+    scoutiq_pipeline:
+      name: ScoutIQ public FPL medallion pipeline
+      description: Reproducible PySpark Bronze, Silver, Gold, and expected-points evaluation pipeline.
+      max_concurrent_runs: 1
+      timeout_seconds: 7200
+      performance_target: STANDARD
+      tasks:
+        - task_key: bronze
+          description: Ingest the uploaded public FPL snapshot into source-preserving Bronze Delta tables.
+          spark_python_task:
+            python_file: ../src/scoutiq_databricks/bronze.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --input-path
+              - /Volumes/${var.catalog}/${var.schema}/${var.volume_name}/input
+              - --pipeline-run-id
+              - "{{job.run_id}}"
+          environment_key: serverless
+
+        - task_key: silver
+          description: Parse, validate, and deterministically deduplicate Bronze records.
+          depends_on:
+            - task_key: bronze
+          spark_python_task:
+            python_file: ../src/scoutiq_databricks/silver.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --pipeline-run-id
+              - "{{job.run_id}}"
+          environment_key: serverless
+
+        - task_key: gold
+          description: Build current and historical leakage-aware player-gameweek feature tables.
+          depends_on:
+            - task_key: silver
+          spark_python_task:
+            python_file: ../src/scoutiq_databricks/gold.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --pipeline-run-id
+              - "{{job.run_id}}"
+          environment_key: serverless
+
+        - task_key: evaluation
+          description: Run walk-forward expected-points evaluation and persist metrics and run evidence.
+          depends_on:
+            - task_key: gold
+          spark_python_task:
+            python_file: ../src/scoutiq_databricks/evaluation.py
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --pipeline-run-id
+              - "{{job.run_id}}"
+              - --min-training-gameweeks
+              - "2"
+          environment_key: serverless
+
+      environments:
+        - environment_key: serverless
+          spec:
+            environment_version: "4"

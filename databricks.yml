@@ -1,0 +1,27 @@
+bundle:
+  name: scoutiq_databricks
+  databricks_cli_version: ">= 1.0.0"
+
+include:
+  - resources/*.yml
+
+experimental:
+  skip_name_prefix_for_schema: true
+
+variables:
+  catalog:
+    description: Existing Unity Catalog catalog used for ScoutIQ analytics assets.
+    default: workspace
+  schema:
+    description: Bundle-managed schema containing ScoutIQ Delta tables.
+    default: scoutiq_databricks
+  volume_name:
+    description: Bundle-managed volume used for the locally captured public FPL snapshot.
+    default: scoutiq_public_fpl
+
+targets:
+  dev:
+    default: true
+    mode: development
+    presets:
+      name_prefix: dev_${workspace.current_user.short_name}_

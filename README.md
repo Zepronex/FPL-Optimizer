@@ -26,7 +26,9 @@ ScoutIQ is split into separate layers:
 - `apps/web`: React and Vite frontend for squad workflows, top-player projections, optimizer recommendations, agent transparency, and the evaluation dashboard
 - `apps/api`: Express and TypeScript API for ingestion, database loading, prediction serving, optimizer endpoints, agent explanations, health checks, and evaluation routes
 - `db/migrations`: PostgreSQL schema for normalized FPL records, prediction runs, player predictions, and model evaluations
-- `pipelines/databricks`: local JSONL and Databricks-compatible Bronze/Silver/Gold transformations
+- `pipelines/databricks`: legacy local JSONL Bronze/Silver/Gold transformations retained for local compatibility
+- `src/scoutiq_databricks`: genuine PySpark Bronze/Silver/Gold/evaluation transformations that write managed Delta tables
+- `databricks.yml` and `resources/`: Declarative Automation Bundle resources for a four-task serverless Databricks Job
 - `pipelines/expected_points`: feature generation, baseline training, walk-forward backtesting, prediction output, and model tests
 - `scripts`: Windows-friendly local demo, smoke-test, ingestion, migration, and database load helpers
 
@@ -41,12 +43,14 @@ Data flows from the public FPL API into normalized local JSON, then into Postgre
 - Preserves source URLs, fetch timestamps, snapshot hashes, record counts, and reproducibility metadata.
 - Loads normalized records into PostgreSQL through migration-backed tables.
 
-### Lakehouse-Style Feature Pipeline
+### Local And Databricks Lakehouse Pipelines
 
-- Provides Bronze, Silver, and Gold pipeline layers under `pipelines/databricks`.
-- Keeps Bronze close to source data, Silver normalized, and Gold feature-oriented.
-- Supports local JSONL execution and a Databricks/Spark-compatible path.
-- Keeps leakage-sensitive result fields out of current prediction features.
+- Retains the original local JSONL path under `pipelines/databricks` for ordinary development.
+- Adds real PySpark DataFrame transformations under `src/scoutiq_databricks`.
+- Deploys an explicit `bronze -> silver -> gold -> evaluation` serverless Job through a Declarative Automation Bundle.
+- Writes managed Unity Catalog Delta tables and uses keyed Delta `MERGE` on repeat runs.
+- Builds historical model features only from prior player-gameweeks, aggregates double gameweeks before windows, and keeps target-gameweek context and outcomes in a separate table.
+- Keeps Databricks as the transformation/evaluation layer while PostgreSQL remains the serving store.
 
 ### Prediction And Backtesting
 
@@ -133,6 +137,7 @@ Prerequisites:
 - Node.js with `pnpm.cmd` available on Windows
 - Docker Desktop or another Docker Compose-compatible engine
 - Python available as `python` for pipeline and model commands
+- Java 17 and the pinned `requirements-dev.txt` dependencies for local PySpark tests
 
 Start from a clean checkout:
 
@@ -187,10 +192,41 @@ pnpm.cmd run build:api
 pnpm.cmd run test:api
 pnpm.cmd run test:smoke
 pnpm.cmd run pipeline:test
+pnpm.cmd run databricks:snapshot:test
+pnpm.cmd run databricks:test
 pnpm.cmd run model:test
+pnpm.cmd run resume:metrics:test
 pnpm.cmd run build
 pnpm.cmd run build:web
 ```
+
+## Databricks Free Edition
+
+ScoutIQ's Databricks path captures public FPL data locally, uploads the ignored package to a bundle-managed Unity Catalog Volume, and runs four dependent serverless tasks. No database credentials or private data are sent to Databricks.
+
+Prepare the public snapshot:
+
+```sh
+pnpm run ingest:fpl
+pnpm run ingest:fpl:history
+python scripts/prepare_databricks_snapshot.py
+```
+
+Validate and deploy with the local `scoutiq` CLI profile:
+
+```sh
+databricks current-user me --profile scoutiq
+databricks bundle validate --strict --profile scoutiq
+databricks bundle deploy --auto-approve --profile scoutiq
+databricks fs cp data/databricks/public_fpl_snapshot \
+  dbfs:/Volumes/workspace/scoutiq_databricks/scoutiq_public_fpl/input \
+  --recursive --overwrite --profile scoutiq
+databricks bundle run scoutiq_pipeline --profile scoutiq
+```
+
+See [Databricks Free Edition Pipeline](docs/DATABRICKS.md) for architecture, table contracts, leakage controls, inspection SQL, Free Edition limitations, and cleanup commands. Deployment or upload alone is not verification; cloud technologies are claimed only after the full job and Delta tables have been inspected.
+
+The portfolio pipeline was verified end to end on 2026-07-11 using a full public-FPL snapshot: all four serverless tasks succeeded, 19 managed Unity Catalog Delta tables were inspected, and walk-forward evaluation persisted 26,262 predictions plus 10 metric rows. The expected-points variant recorded MAE 1.0570 and RMSE 2.0508 versus baseline MAE 1.0473 and RMSE 2.1120; it improved RMSE, not MAE. See the evidence document for the complete qualification.
 
 ## Continuous Integration
 
@@ -246,6 +282,8 @@ pnpm.cmd run db:load:predictions
 - Automated generated-team review is unavailable in the current web demo path.
 - The LLM explanation agent explains existing optimizer output; it does not choose players, transfers, captaincy, bench order, or chips.
 - Local model and prediction artifacts are generated under gitignored `data/` paths and are not committed.
+- Full public Databricks input packages are generated under gitignored `data/` paths; only a small labeled public-data fixture is committed for tests.
+- Databricks Free Edition is serverless-only, capacity-limited, and not suitable for a production-deployed claim.
 - Production deployment, scheduled ingestion, and production monitoring are not yet documented as complete.
 - No secrets, API keys, service account files, local `.env` files, or database dumps should be committed.
 

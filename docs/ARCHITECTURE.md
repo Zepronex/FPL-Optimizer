@@ -14,8 +14,12 @@ docs/                  Architecture, setup, pipeline, and demo docs
 fixtures/
   agent/               Local explanation-agent request fixtures
 pipelines/
-  databricks/          Bronze, Silver, Gold pipeline scripts
+  databricks/          Legacy local JSONL Bronze, Silver, Gold pipeline scripts
   expected_points/     Feature, train, backtest, predict, and test scripts
+src/
+  scoutiq_databricks/  PySpark and Delta Bronze, Silver, Gold, evaluation tasks
+resources/             Databricks Job, schema, and Volume bundle resources
+databricks.yml         Declarative Automation Bundle entry point
 scripts/               Windows-friendly local workflow helpers
 data/                  Gitignored local ingestion, feature, model, and prediction outputs
 ```
@@ -28,6 +32,12 @@ The normal local application path is `apps/api` plus `apps/web`. Expected-points
 flowchart LR
   A["Public FPL API"] --> B["TypeScript ingestion"]
   B --> C["data/fpl/latest JSON"]
+  B --> D0["Ignored public Databricks snapshot"]
+  D0 --> D1["Unity Catalog managed Volume"]
+  D1 --> D2["Bronze Delta"]
+  D2 --> D3["Silver Delta"]
+  D3 --> D4["Gold features and outcomes"]
+  D4 --> D5["Walk-forward Delta evaluation"]
   C --> D["PostgreSQL normalized tables"]
   C --> E["Bronze layer"]
   E --> F["Silver layer"]
@@ -58,15 +68,18 @@ PostgreSQL loading is handled by `apps/api/src/db`.
 
 The database gives the API a stable serving layer while local pipeline artifacts remain gitignored.
 
-## Bronze, Silver, And Gold Pipeline
+## Bronze, Silver, And Gold Pipelines
 
-The lakehouse-style pipeline lives in `pipelines/databricks`.
+The legacy local JSONL pipeline lives in `pipelines/databricks`. It remains useful for fast local development and compatibility with the existing expected-points pipeline.
 
-- Bronze keeps source-preserving records and ingestion metadata.
-- Silver normalizes player, team, fixture, and gameweek tables into typed records.
-- Gold builds feature-oriented rows for model and evaluation work.
+The genuine Databricks implementation lives in `src/scoutiq_databricks` and is deployed through `databricks.yml` plus `resources/scoutiq_job.yml`.
 
-The scripts run locally with JSONL output and can also be mapped to Spark or Databricks execution. Current prediction features intentionally exclude fixture results and target outcomes.
+- Bronze reads an uploaded public package from a managed Unity Catalog Volume and writes source-preserving managed Delta tables.
+- Silver reads Bronze, parses explicit schemas, validates references, and deduplicates deterministically.
+- Gold reads Silver, aggregates double gameweeks before prior-only windows, and keeps model features separate from target-gameweek outcomes.
+- Evaluation reads Gold, applies a strict earlier-gameweek walk-forward split, compares the model with a recent-points baseline, and writes Delta predictions, metrics, and run evidence.
+
+Databricks remains an offline transformation and analytics layer. PostgreSQL remains the serving database used by the API and optimizer.
 
 ## Model Training, Backtesting, And Prediction
 
