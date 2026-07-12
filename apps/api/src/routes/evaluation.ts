@@ -14,6 +14,7 @@ import {
   buildEvaluationRuns,
   readPlayerGameweekHistoryArtifact
 } from '../evaluation/dashboard';
+import { EmptyQuerySchema, queryIntegerSchema } from './validation';
 
 type EvaluationRouterOptions = {
   playerGameweekHistoryPath?: string;
@@ -21,18 +22,18 @@ type EvaluationRouterOptions = {
 };
 
 const runsQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).optional().default(25)
-});
+  limit: queryIntegerSchema(1, 100).optional().default('25')
+}).strict();
 
 export function createEvaluationRouter(
   client: Queryable = createDbPool(),
   options: EvaluationRouterOptions = {}
 ): ExpressRouter {
   const router: ExpressRouter = Router();
-  const historyPath = options.playerGameweekHistoryPath ?? readDatabaseConfig().defaultFplHistoryPath;
 
-  router.get('/latest', async (_req, res) => {
+  router.get('/latest', async (req, res) => {
     try {
+      EmptyQuerySchema.parse(req.query);
       const [evaluation, latestPredictionRun] = await Promise.all([
         readLatestModelEvaluation(client),
         readLatestPredictionRun(client)
@@ -66,8 +67,10 @@ export function createEvaluationRouter(
     }
   });
 
-  router.get('/data-health', async (_req, res) => {
+  router.get('/data-health', async (req, res) => {
     try {
+      EmptyQuerySchema.parse(req.query);
+      const historyPath = options.playerGameweekHistoryPath ?? readDatabaseConfig().defaultFplHistoryPath;
       const [coverage, latestPredictionRun, historyArtifact] = await Promise.all([
         readEvaluationDataCoverage(client),
         readLatestPredictionRun(client),
@@ -106,5 +109,3 @@ function handleRouteError(res: Response, error: unknown): void {
     error: 'Failed to fetch evaluation data'
   });
 }
-
-export const evaluationRouter = createEvaluationRouter();

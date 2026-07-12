@@ -6,21 +6,30 @@ import {
   readSquadBuilderPlayers,
   searchEnrichedPlayers
 } from '../db/playerQueries';
+import { EmptyQuerySchema, PositiveIdParamSchema } from './validation';
 
 // Validation schemas
 const searchSchema = z.object({
-  name: z.string().min(1).max(100)
-});
+  name: z.string().trim().min(1).max(100)
+}).strict();
 
 const positionSchema = z.enum(['GK', 'DEF', 'MID', 'FWD']);
-const playerIdSchema = z.coerce.number().int().positive();
+const positionParamsSchema = z.object({
+  pos: z.string()
+    .min(2)
+    .max(3)
+    .transform(value => value.toUpperCase())
+    .pipe(positionSchema)
+}).strict();
+const playerParamsSchema = z.object({ id: PositiveIdParamSchema }).strict();
 
 export function createPlayersRouter(client: Queryable = createDbPool()): ExpressRouter {
   const router: ExpressRouter = Router();
 
   // GET /api/players - Get prediction-backed local players
-  router.get('/', async (_req, res) => {
+  router.get('/', async (req, res) => {
     try {
+      EmptyQuerySchema.parse(req.query);
       const players = await readSquadBuilderPlayers(client);
       if (players.length === 0) return sendMissingPlayerData(res);
 
@@ -30,6 +39,14 @@ export function createPlayersRouter(client: Queryable = createDbPool()): Express
         count: players.length
       });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid player request',
+          details: error.errors
+        });
+      }
+
       sendPlayerDataError(res);
     }
   });
@@ -64,7 +81,8 @@ export function createPlayersRouter(client: Queryable = createDbPool()): Express
   // GET /api/players/position/:pos - Get prediction-backed local players by position
   router.get('/position/:pos', async (req, res) => {
     try {
-      const position = positionSchema.parse(req.params.pos.toUpperCase());
+      EmptyQuerySchema.parse(req.query);
+      const { pos: position } = positionParamsSchema.parse(req.params);
       const players = await readSquadBuilderPlayers(client);
       if (players.length === 0) return sendMissingPlayerData(res);
 
@@ -91,7 +109,8 @@ export function createPlayersRouter(client: Queryable = createDbPool()): Express
   // GET /api/players/:id - Get specific prediction-backed local player by ID
   router.get('/:id', async (req, res) => {
     try {
-      const playerId = playerIdSchema.parse(req.params.id);
+      EmptyQuerySchema.parse(req.query);
+      const { id: playerId } = playerParamsSchema.parse(req.params);
       const players = await readSquadBuilderPlayers(client);
       if (players.length === 0) return sendMissingPlayerData(res);
 
@@ -143,5 +162,3 @@ function sendPlayerDataError(res: Response): void {
     requiredCommands: PLAYER_CANDIDATE_REQUIRED_COMMANDS
   });
 }
-
-export const playersRouter = createPlayersRouter();

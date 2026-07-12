@@ -1,121 +1,32 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import slowDown from 'express-slow-down';
-import dotenv from 'dotenv';
-import { playersRouter } from './routes/players';
-import { analyzeRouter } from './routes/analyze';
-import { predictionsRouter } from './routes/predictions';
-import { modelRouter } from './routes/model';
-import { evaluationRouter } from './routes/evaluation';
-import { optimizerRouter } from './routes/optimizer';
-import { agentRouter } from './routes/agent';
-import { healthRouter } from './routes/health';
+import { createApp } from './app';
+import { ConfigurationError, loadServerConfig } from './config';
+import { createDbPool } from './db/client';
 
-dotenv.config();
+function start(): void {
+  try {
+    const config = loadServerConfig();
+    const pool = createDbPool(config.database);
+    const app = createApp(config, { client: pool });
+    const server = app.listen(config.port, config.bindAddress);
+    server.requestTimeout = 30_000;
+    server.headersTimeout = 15_000;
+    server.keepAliveTimeout = 5_000;
+    server.maxRequestsPerSocket = 100;
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+    const shutDown = (): void => {
+      server.close(() => {
+        void pool.end().finally(() => process.exit(0));
+      });
+    };
+    process.once('SIGINT', shutDown);
+    process.once('SIGTERM', shutDown);
+  } catch (error) {
+    const message = error instanceof ConfigurationError
+      ? error.message
+      : 'ScoutIQ API failed to start because server configuration is invalid.';
+    console.error(message);
+    process.exitCode = 1;
+  }
+}
 
-// Rate limiting configuration
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
-
-// Slow down configuration for repeated requests
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 50, // Allow 50 requests per 15 minutes, then...
-  delayMs: () => 500, // Add 500ms delay per request above 50
-  maxDelayMs: 20000, // Maximum delay of 20 seconds
-});
-
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
-
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(express.json({ limit: '10mb' })); // Limit request body size
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Apply rate limiting
-app.use(limiter);
-app.use(speedLimiter);
-
-// Stricter rate limiting for expensive operations
-const strictLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Only 10 team generations per 15 minutes per IP
-  message: {
-    error: 'Too many team generations. Please wait before generating another team.',
-    retryAfter: '15 minutes'
-  },
-  skipSuccessfulRequests: true, // Don't count successful requests
-});
-
-// Apply strict rate limiting to expensive endpoints
-app.use('/api/analyze', strictLimiter);
-app.use('/api/optimizer', strictLimiter);
-app.use('/api/agent', strictLimiter);
-
-// Routes
-app.use('/api/players', playersRouter);
-app.use('/api/analyze', analyzeRouter);
-app.use('/api/predictions', predictionsRouter);
-app.use('/api/model', modelRouter);
-app.use('/api/evaluation', evaluationRouter);
-app.use('/api/optimizer', optimizerRouter);
-app.use('/api/agent', agentRouter);
-app.use('/api/health', healthRouter);
-
-// Request logging middleware
-app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const timestamp = new Date().toISOString();
-  next();
-});
-
-// Error handling
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  res.status(500).json({
-    error: 'Internal server error',
-    ...(isDevelopment && { details: err.message })
-  });
-});
-
-// 404 handler
-app.use('*', (req: express.Request, res: express.Response) => {
-  res.status(404).json({
-    error: 'Endpoint not found',
-    path: req.originalUrl
-  });
-});
-
-app.listen(PORT, () => {
-  // ScoutIQ API started
-});
-
+start();

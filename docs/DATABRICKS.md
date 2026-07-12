@@ -67,7 +67,7 @@ Run the existing ingestion and history paths, then package their outputs:
 ```sh
 pnpm run ingest:fpl
 pnpm run ingest:fpl:history
-python scripts/prepare_databricks_snapshot.py
+pnpm run databricks:snapshot
 ```
 
 The generated package is written to:
@@ -222,6 +222,7 @@ Do not run cleanup when retaining the deployed portfolio pipeline as résumé ev
 
 ## Databricks Free Edition Limitations
 
+- Free Edition is restricted to non-commercial use; this repository uses it only as portfolio evidence.
 - Serverless compute only; no classic or user-managed job clusters.
 - Restricted outbound internet, so public data is captured locally and uploaded to a managed Volume.
 - Spark Connect/DataFrame APIs only; RDD APIs and many low-level Spark settings are unavailable.
@@ -242,17 +243,8 @@ Official references:
 
 Bundle deployment or source upload alone is not end-to-end evidence. Mark Databricks, PySpark, Delta Lake, Unity Catalog, Databricks Jobs, and Declarative Automation Bundles as verified only after a complete four-task run succeeds and the managed Delta outputs are inspected.
 
-## Verified Portfolio Run
+## Verified Portfolio Evidence
 
-On 2026-07-11, the development bundle passed normal and strict validation, deployed through profile `scoutiq`, and completed all four serverless tasks successfully. The run lasted from 11:21:35 UTC through 11:32:53 UTC, including 265 seconds waiting for Free Edition serverless capacity. The input was a full public-FPL snapshot, not the committed test fixture:
+A full public-snapshot run completed all four tasks on 2026-07-11, and the managed Delta outputs were inspected independently. Exact row counts, evaluation metrics, snapshot provenance, and claim qualifications are preserved in [Résumé Evidence](RESUME_EVIDENCE.md) so this operational guide does not mix dated evidence with current setup instructions.
 
-- snapshot hash: `b4cf811ba886c26c65de2d17c6b071776dee018c1e39b08aa2e853f1f34671e7`;
-- input entities: 841 players, 20 teams, 38 gameweeks, 380 fixtures, and 29,747 player-gameweek-fixture history rows;
-- Silver outputs: 841 players, 20 teams, 38 gameweeks, 380 fixtures, and 29,747 history rows;
-- Gold outputs: 29,338 historical feature rows and 29,338 separate outcome rows;
-- evaluation outputs: 26,262 predictions, 10 metric rows, and one successful run-summary row;
-- walk-forward range: gameweeks 5–38;
-- expected-points metrics: MAE 1.0570 and RMSE 2.0508;
-- recent-points baseline: MAE 1.0473 and RMSE 2.1120.
-
-The expected-points variant improved RMSE but not MAE. Because the snapshot was captured after gameweek 38, there were no unplayed fixtures and the two current/upcoming Gold tables correctly contained zero rows. Unity Catalog inspection reported all 19 outputs as managed Delta tables, and SQL queries independently reproduced the table counts and persisted metrics. Workspace URLs, identities, warehouse identifiers, and run identifiers are omitted intentionally.
+Workspace URLs, identities, warehouse identifiers, and run identifiers are intentionally excluded from the repository.

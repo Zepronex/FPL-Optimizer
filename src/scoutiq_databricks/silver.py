@@ -19,6 +19,7 @@ try:
         add_common_task_arguments,
         deterministic_deduplicate,
         fail_on_invalid_ids,
+        fail_on_invalid_numeric_bounds,
         fail_on_rows,
         get_spark,
         load_tables,
@@ -46,6 +47,7 @@ except ModuleNotFoundError:  # Python-file tasks execute this file outside packa
         add_common_task_arguments,
         deterministic_deduplicate,
         fail_on_invalid_ids,
+        fail_on_invalid_numeric_bounds,
         fail_on_rows,
         get_spark,
         load_tables,
@@ -78,6 +80,16 @@ def build_silver_tables(bronze: dict[str, DataFrame]) -> dict[str, DataFrame]:
     )
     fail_on_invalid_ids(teams, ("team_id",), "silver teams")
     fail_on_rows(teams, F.col("team_name").isNull() | (F.trim("team_name") == ""), "Silver teams contain missing names")
+    fail_on_invalid_numeric_bounds(
+        teams,
+        {
+            "code": (1, 2_147_483_647, True),
+            "strength": (0, 10_000, True),
+            "strength_overall_home": (0, 10_000, True),
+            "strength_overall_away": (0, 10_000, True),
+        },
+        "Silver teams",
+    )
 
     players_parsed = _parse_entity(
         bronze["bronze_players_raw"], PLAYER_SCHEMA, ("source_snapshot_hash", "record_id")
@@ -126,6 +138,27 @@ def build_silver_tables(bronze: dict[str, DataFrame]) -> dict[str, DataFrame]:
         players_base,
         F.col("player_name").isNull() | (F.trim("player_name") == ""),
         "Silver players contain missing names",
+    )
+    fail_on_invalid_numeric_bounds(
+        players_base,
+        {
+            "code": (1, 2_147_483_647, True),
+            "price": (0, 100, False),
+            "chance_of_playing_next_round": (0, 100, True),
+            "chance_of_playing_this_round": (0, 100, True),
+            "form": (-100, 100, False),
+            "selected_by_percent": (0, 100, False),
+            "points_per_game": (0, 100, False),
+            "value_season": (0, 1_000, False),
+            "total_points": (-1_000, 10_000, False),
+            "minutes": (0, 10_000, False),
+            "starts": (0, 100, False),
+            "expected_goals": (0, 1_000, False),
+            "expected_assists": (0, 1_000, False),
+            "expected_goal_involvements": (0, 1_000, False),
+            "expected_goals_conceded": (0, 1_000, False),
+        },
+        "Silver players",
     )
     missing_player_teams = players_base.alias("player").join(
         teams.alias("team"),
@@ -178,6 +211,23 @@ def build_silver_tables(bronze: dict[str, DataFrame]) -> dict[str, DataFrame]:
     )
     fail_on_invalid_ids(gameweeks, ("gameweek_id",), "silver gameweeks")
     fail_on_rows(gameweeks, F.col("deadline_time").isNull(), "Silver gameweeks contain invalid deadlines")
+    fail_on_invalid_numeric_bounds(
+        gameweeks,
+        {
+            "gameweek_id": (1, 38, False),
+            "average_entry_score": (0, 1_000, True),
+            "highest_score": (0, 1_000, True),
+        },
+        "Silver gameweeks",
+    )
+    fail_on_rows(
+        gameweeks,
+        F.col("finished").isNull()
+        | F.col("data_checked").isNull()
+        | F.col("is_current").isNull()
+        | F.col("is_next").isNull(),
+        "Silver gameweeks contain malformed required boolean flags",
+    )
 
     fixtures_parsed = _parse_entity(
         bronze["bronze_fixtures_raw"], FIXTURE_SCHEMA, ("source_snapshot_hash", "record_id")
@@ -215,6 +265,23 @@ def build_silver_tables(bronze: dict[str, DataFrame]) -> dict[str, DataFrame]:
         | ~F.col("team_h_difficulty").between(1, 5)
         | ~F.col("team_a_difficulty").between(1, 5),
         "Silver fixtures contain invalid difficulty values",
+    )
+    fail_on_invalid_numeric_bounds(
+        fixtures,
+        {
+            "code": (1, 2_147_483_647, True),
+            "gameweek_id": (1, 38, True),
+            "team_h_score": (0, 100, True),
+            "team_a_score": (0, 100, True),
+            "team_h_difficulty": (1, 5, False),
+            "team_a_difficulty": (1, 5, False),
+        },
+        "Silver fixtures",
+    )
+    fail_on_rows(
+        fixtures,
+        F.col("started").isNull() | F.col("finished").isNull(),
+        "Silver fixtures contain malformed required boolean flags",
     )
     _validate_fixture_references(fixtures, teams, gameweeks)
 
@@ -254,6 +321,18 @@ def build_silver_tables(bronze: dict[str, DataFrame]) -> dict[str, DataFrame]:
         | F.col("total_points").isNull()
         | F.col("was_home").isNull(),
         "Silver player history contains malformed values",
+    )
+    fail_on_invalid_numeric_bounds(
+        history,
+        {
+            "gameweek_id": (1, 38, False),
+            "opponent_team_id": (1, 100, False),
+            "total_points": (-20, 100, False),
+            "minutes": (0, 180, False),
+            "price": (0, 100, False),
+            "selected": (0, 100_000_000, False),
+        },
+        "Silver player history",
     )
     _validate_history_references(history, players, fixtures, gameweeks, teams)
 

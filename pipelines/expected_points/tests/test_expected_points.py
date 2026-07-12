@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,10 +13,23 @@ from pipelines.expected_points.features import (
     build_expected_points_feature_files,
     build_historical_training_rows,
     build_prediction_feature_rows,
+    build_training_rows_from_player_history,
     discover_snapshot_dirs,
+    MAX_HISTORY_JSON_BYTES,
+    normalize_history_rows_by_player,
+    normalize_prediction_feature_row,
+    read_player_history_payload,
     validate_prediction_feature_row
 )
 from pipelines.expected_points.backtest import main as backtest_main
+from pipelines.expected_points.io import (
+    MAX_JSONL_BYTES,
+    MAX_JSONL_LINE_BYTES,
+    MAX_JSONL_ROWS,
+    MAX_MODEL_JSON_BYTES,
+    read_json,
+    read_jsonl
+)
 from pipelines.expected_points.train import main as train_main
 
 
@@ -28,6 +42,150 @@ class ExpectedPointsFoundationTests(unittest.TestCase):
         self.assertEqual(rows[0]['season_points_average'], 5.0)
         self.assertNotIn('target_points', rows[0])
         validate_prediction_feature_row(rows[0])
+
+    def test_history_boolean_rejects_truthy_string_coercion(self) -> None:
+        history = history_payload()
+        history['rows'][0]['wasHome'] = 'false'
+
+        with self.assertRaisesRegex(ValueError, 'must be a boolean'):
+            normalize_history_rows_by_player(history)
+
+    def test_history_integer_fields_reject_boolean_coercion(self) -> None:
+        integer_fields = (
+            'playerId',
+            'fixtureId',
+            'gameweekId',
+            'opponentTeamId',
+            'totalPoints',
+            'minutes',
+        )
+
+        for field in integer_fields:
+            with self.subTest(field=field):
+                history = history_payload()
+                history['rows'][0][field] = True
+
+                with self.assertRaisesRegex(ValueError, 'must be an integer'):
+                    normalize_history_rows_by_player(history)
+
+    def test_history_payload_rejects_unknown_fields_duplicate_rows_and_domain_errors(self) -> None:
+        history = history_payload()
+        history['rows'][0]['unexpected'] = 'unsafe'
+        with self.assertRaisesRegex(ValueError, 'exactly the supported fields'):
+            normalize_history_rows_by_player(history)
+
+        history = history_payload()
+        history['rows'][1]['fixtureId'] = history['rows'][0]['fixtureId']
+        with self.assertRaisesRegex(ValueError, 'duplicates a player and fixture pair'):
+            normalize_history_rows_by_player(history)
+
+        bounded_fields = (
+            ('playerId', 2_147_483_648),
+            ('fixtureId', 0),
+            ('gameweekId', 39),
+            ('opponentTeamId', 101),
+            ('totalPoints', 101),
+            ('minutes', 181),
+            ('price', float('inf')),
+        )
+        for field, value in bounded_fields:
+            with self.subTest(field=field):
+                history = history_payload()
+                history['rows'][0][field] = value
+                with self.assertRaises(ValueError):
+                    normalize_history_rows_by_player(history)
+
+    def test_history_reader_enforces_regular_bounded_strict_json_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            history_path = root / 'private-history.json'
+            with history_path.open('wb') as output:
+                output.truncate(MAX_HISTORY_JSON_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, 'exceeds its byte limit: private-history.json'):
+                read_player_history_payload(history_path)
+
+            history_path.write_bytes(b'{"schemaVersion": NaN}')
+            with self.assertRaisesRegex(ValueError, 'Invalid strict JSON input: private-history.json') as error:
+                read_player_history_payload(history_path)
+            self.assertNotIn(str(root), str(error.exception))
+
+            target = root / 'target.json'
+            target.write_text(json.dumps(history_payload()), encoding='utf-8')
+            history_path.unlink()
+            os.symlink(target, history_path)
+            with self.assertRaisesRegex(ValueError, 'regular non-symlink file: private-history.json'):
+                read_player_history_payload(history_path)
+
+    def test_generic_model_artifact_readers_enforce_size_line_row_and_json_limits(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            jsonl_path = root / 'training.jsonl'
+            jsonl_path.write_text('{"player_id": 1}\n', encoding='utf-8')
+            self.assertEqual(read_jsonl(jsonl_path), [{'player_id': 1}])
+
+            jsonl_path.write_bytes(b'{"value":"' + b'a' * MAX_JSONL_LINE_BYTES + b'"}\n')
+            with self.assertRaisesRegex(ValueError, 'line exceeds its byte limit'):
+                read_jsonl(jsonl_path)
+
+            jsonl_path.write_text('{}\n' * (MAX_JSONL_ROWS + 1), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'exceeds its row limit'):
+                read_jsonl(jsonl_path)
+
+            with jsonl_path.open('wb') as output:
+                output.truncate(MAX_JSONL_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, 'exceeds its byte limit'):
+                read_jsonl(jsonl_path)
+
+            model_path = root / 'model.json'
+            model_path.write_text('{"correction": 1e999}', encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'Invalid strict JSON input'):
+                read_json(model_path)
+            with model_path.open('wb') as output:
+                output.truncate(MAX_MODEL_JSON_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, 'exceeds its byte limit'):
+                read_json(model_path)
+
+    def test_prediction_feature_integer_fields_reject_boolean_coercion(self) -> None:
+        row = build_prediction_feature_rows(
+            snapshot_dataset(checked_gameweek=1, target_gameweek=2, total_points=5, minutes=90)
+        )[0]
+        integer_fields = (
+            'player_id',
+            'team_id',
+            'chance_of_playing_next_round',
+            'chance_of_playing_this_round',
+            'total_points',
+            'minutes',
+            'completed_gameweeks',
+            'fixture_id',
+            'opponent_team_id',
+            'fixture_difficulty',
+            'upcoming_gameweek_id',
+        )
+
+        for field in integer_fields:
+            with self.subTest(field=field):
+                raw_row = {**row, field: True}
+
+                with self.assertRaisesRegex(ValueError, 'must be an integer'):
+                    normalize_prediction_feature_row(raw_row)
+
+    def test_prediction_features_reject_non_finite_numbers(self) -> None:
+        row = build_prediction_feature_rows(
+            snapshot_dataset(checked_gameweek=1, target_gameweek=2, total_points=5, minutes=90)
+        )[0]
+        row['form'] = float('inf')
+
+        with self.assertRaisesRegex(ValueError, 'finite number'):
+            validate_prediction_feature_row(row)
+
+        raw_row = {**row, 'form': 'Infinity'}
+        with self.assertRaisesRegex(ValueError, 'must be finite'):
+            normalize_prediction_feature_row(raw_row)
+
+    def test_model_artifact_rejects_non_finite_corrections(self) -> None:
+        with self.assertRaisesRegex(ValueError, 'must be finite'):
+            RuleBasedExpectedPointsModel.from_dict({'global_correction': float('nan')})
 
     def test_historical_feature_rows_pair_exact_checked_snapshot_and_use_prior_rolling_values(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -62,6 +220,28 @@ class ExpectedPointsFoundationTests(unittest.TestCase):
         self.assertEqual(result.prediction_source, 'latest-historical-gameweek')
         self.assertEqual(len(result.prediction_rows), 1)
         self.assertNotIn('target_points', result.prediction_rows[0])
+
+    def test_history_lineage_and_dataset_references_must_match_before_feature_construction(self) -> None:
+        dataset = history_feature_dataset()
+        mutations = (
+            ('snapshot', lambda value: value.__setitem__('inputSnapshotGeneratedAt', 'different-snapshot')),
+            ('season', lambda value: value.__setitem__('inputSeason', 'different-season')),
+            ('player count', lambda value: value.__setitem__('playerCount', 2)),
+            ('player reference', lambda value: [row.__setitem__('playerId', 2) for row in value['rows']]),
+            ('fixture reference', lambda value: value['rows'][0].__setitem__('fixtureId', 999)),
+            ('gameweek reference', lambda value: value['rows'][0].__setitem__('gameweekId', 2)),
+            ('team reference', lambda value: value['rows'][0].__setitem__('opponentTeamId', 99)),
+            ('opponent relationship', lambda value: value['rows'][0].__setitem__('opponentTeamId', 1)),
+        )
+
+        for label, mutate in mutations:
+            with self.subTest(label=label):
+                history = history_payload()
+                mutate(history)
+                with self.assertRaises(ValueError) as error:
+                    build_training_rows_from_player_history(dataset, history)
+                self.assertNotIn('different-', str(error.exception))
+                self.assertNotIn('999', str(error.exception))
 
     def test_train_test_split_excludes_target_and_future_gameweeks(self) -> None:
         rows = [
@@ -149,6 +329,8 @@ def history_payload() -> dict[str, object]:
             'urlTemplate': 'https://fantasy.premierleague.com/api/element-summary/{player_id}/',
             'fetchedAt': '2026-08-14T17:55:00.000Z'
         },
+        'inputSnapshotGeneratedAt': '2026-08-13T18:00:00.000Z',
+        'inputSeason': '2026-27',
         'playerCount': 1,
         'rowCount': 3,
         'rows': [

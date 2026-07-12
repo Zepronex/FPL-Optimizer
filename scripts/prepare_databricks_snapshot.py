@@ -12,7 +12,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
+import stat
 import sys
 import tempfile
 from datetime import datetime
@@ -26,7 +28,9 @@ if str(REPO_ROOT) not in sys.path:
 
 from pipelines.databricks.transforms import (  # noqa: E402
     Dataset,
+    MAX_INGESTION_FILE_BYTES,
     dataset_snapshot_hash,
+    read_bounded_json_file,
     read_ingestion_dataset,
     validate_ingestion_dataset,
 )
@@ -44,6 +48,15 @@ METADATA_FILENAME = "snapshot_metadata.json"
 PACKAGED_FILENAMES = NORMALIZED_FILENAMES + (HISTORY_FILENAME,)
 OUTPUT_FILENAMES = frozenset(PACKAGED_FILENAMES + (METADATA_FILENAME,))
 POSITION_ORDER = ("GK", "DEF", "MID", "FWD")
+MAX_HISTORY_FILE_BYTES = 32 * 1024 * 1024
+PACKAGED_FILE_BYTE_LIMITS = {
+    "manifest.json": MAX_INGESTION_FILE_BYTES["manifest"],
+    "players.json": MAX_INGESTION_FILE_BYTES["players"],
+    "teams.json": MAX_INGESTION_FILE_BYTES["teams"],
+    "events.json": MAX_INGESTION_FILE_BYTES["events"],
+    "fixtures.json": MAX_INGESTION_FILE_BYTES["fixtures"],
+    HISTORY_FILENAME: MAX_HISTORY_FILE_BYTES,
+}
 
 OFFICIAL_SOURCE_URLS = {
     "bootstrap-static": "https://fantasy.premierleague.com/api/bootstrap-static/",
@@ -77,42 +90,52 @@ def package_public_fpl_snapshot(
     destination = Path(output_dir)
     _protect_source_paths(source_dir, source_history_file, destination)
 
-    dataset = read_ingestion_dataset(source_dir)
-    history = _read_json_object(source_history_file, HISTORY_FILENAME)
-    _validate_official_public_sources(dataset, history)
-    _validate_history(dataset, history)
-
-    parent_canonical_hash = dataset_snapshot_hash(dataset)
     parent_files = {
         filename: source_dir / filename
         for filename in NORMALIZED_FILENAMES
     }
     parent_files[HISTORY_FILENAME] = source_history_file
-    parent_file_hashes = {
-        filename: _sha256_file(file_path)
-        for filename, file_path in parent_files.items()
-    }
-
-    fixture_details: JsonObject | None = None
-    packaged_dataset = dataset
-    packaged_history = history
-    if test_fixture:
-        packaged_dataset, packaged_history, fixture_details = _derive_test_fixture(
-            dataset,
-            history,
-            player_limit=fixture_player_limit,
-            gameweek_limit=fixture_gameweek_limit,
-        )
-        _validate_history(packaged_dataset, packaged_history)
 
     staging_dir = _create_staging_dir(destination)
     try:
+        # Capture each source file exactly once, then bind validation, canonical
+        # hashing, packaging, and per-file hashing to those staged bytes. A
+        # concurrently replaced source cannot be attributed to different bytes.
+        for filename, source_file in parent_files.items():
+            _copy_bounded_regular_file(
+                source_file,
+                staging_dir / filename,
+                filename,
+                PACKAGED_FILE_BYTE_LIMITS[filename],
+            )
+
+        dataset = read_ingestion_dataset(staging_dir)
+        history = _read_json_object(
+            staging_dir / HISTORY_FILENAME,
+            HISTORY_FILENAME,
+            MAX_HISTORY_FILE_BYTES,
+        )
+        _validate_official_public_sources(dataset, history)
+        _validate_history(dataset, history)
+        parent_canonical_hash = dataset_snapshot_hash(dataset)
+        parent_file_hashes = {
+            filename: _sha256_file(staging_dir / filename)
+            for filename in PACKAGED_FILENAMES
+        }
+
+        fixture_details: JsonObject | None = None
+        packaged_dataset = dataset
+        packaged_history = history
         if test_fixture:
+            packaged_dataset, packaged_history, fixture_details = _derive_test_fixture(
+                dataset,
+                history,
+                player_limit=fixture_player_limit,
+                gameweek_limit=fixture_gameweek_limit,
+            )
+            _validate_history(packaged_dataset, packaged_history)
             _write_dataset(staging_dir, packaged_dataset)
             _write_json(staging_dir / HISTORY_FILENAME, packaged_history)
-        else:
-            for filename, source_file in parent_files.items():
-                shutil.copyfile(source_file, staging_dir / filename)
 
         metadata = _build_metadata(
             staging_dir,
@@ -599,14 +622,71 @@ def _write_json(file_path: Path, value: Any) -> None:
     )
 
 
-def _read_json_object(file_path: Path, label: str) -> JsonObject:
-    if not file_path.is_file():
-        raise FileNotFoundError(f"Missing required public FPL file: {file_path}")
-    try:
-        value = json.loads(file_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        raise ValueError(f"{label} is not valid JSON") from error
+def _read_json_object(file_path: Path, label: str, max_bytes: int) -> JsonObject:
+    value = read_bounded_json_file(file_path, label, max_bytes)
     return _require_object(value, label)
+
+
+def _copy_bounded_regular_file(
+    source_file: Path,
+    destination_file: Path,
+    filename: str,
+    max_bytes: int,
+) -> None:
+    try:
+        initial_stats = source_file.lstat()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Missing ingestion file: {filename}") from None
+    except OSError:
+        raise ValueError(f"Unable to inspect ingestion file: {filename}") from None
+
+    if not stat.S_ISREG(initial_stats.st_mode):
+        raise ValueError(f"Ingestion input must be a regular non-symlink file: {filename}")
+    if initial_stats.st_size > max_bytes:
+        raise ValueError(f"Ingestion input exceeds its byte limit: {filename}")
+
+    open_flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(source_file, open_flags)
+    except OSError:
+        raise ValueError(f"Unable to open ingestion input safely: {filename}") from None
+
+    copied_bytes = 0
+    opened_stats = None
+    final_stats = None
+    try:
+        with os.fdopen(descriptor, "rb") as source, destination_file.open("xb") as destination:
+            opened_stats = os.fstat(source.fileno())
+            if (
+                not stat.S_ISREG(opened_stats.st_mode)
+                or (initial_stats.st_dev, initial_stats.st_ino) != (opened_stats.st_dev, opened_stats.st_ino)
+                or opened_stats.st_size > max_bytes
+            ):
+                raise ValueError(f"Ingestion input changed or exceeded its byte limit: {filename}")
+
+            while chunk := source.read(min(1024 * 1024, max_bytes - copied_bytes + 1)):
+                copied_bytes += len(chunk)
+                if copied_bytes > max_bytes:
+                    raise ValueError(f"Ingestion input exceeds its byte limit: {filename}")
+                destination.write(chunk)
+            final_stats = os.fstat(source.fileno())
+    except ValueError:
+        destination_file.unlink(missing_ok=True)
+        raise
+    except OSError:
+        destination_file.unlink(missing_ok=True)
+        raise ValueError(f"Unable to capture ingestion input safely: {filename}") from None
+
+    if opened_stats is None or final_stats is None:  # pragma: no cover - defensive invariant.
+        destination_file.unlink(missing_ok=True)
+        raise RuntimeError("Bounded file capture did not record source metadata")
+    if (
+        final_stats.st_size > max_bytes
+        or copied_bytes != final_stats.st_size
+        or (opened_stats.st_size, opened_stats.st_mtime_ns) != (final_stats.st_size, final_stats.st_mtime_ns)
+    ):
+        destination_file.unlink(missing_ok=True)
+        raise ValueError(f"Ingestion input changed or exceeded its byte limit: {filename}")
 
 
 def _sha256_file(file_path: Path) -> str:

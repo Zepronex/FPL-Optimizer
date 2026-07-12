@@ -5,6 +5,7 @@ import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import SearchResults from './SearchResults';
 import { useDebounce } from '../hooks/useDebounce';
+import { PLAYER_SEARCH_MAX_LENGTH } from '../lib/inputLimits';
 
 interface GlobalPlayerSearchProps {
   onPlayerSelect?: (player: EnrichedPlayer) => void;
@@ -40,8 +41,14 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
 
   // search when debounced query changes
   useEffect(() => {
-    if (debouncedQuery.length >= 2) {
-      searchPlayers();
+    const normalizedQuery = debouncedQuery.trim();
+
+    if (normalizedQuery.length >= 2 && normalizedQuery.length <= PLAYER_SEARCH_MAX_LENGTH) {
+      searchPlayers(normalizedQuery);
+    } else if (normalizedQuery.length > PLAYER_SEARCH_MAX_LENGTH) {
+      setResults([]);
+      setStatusMessage(`Search terms must be ${PLAYER_SEARCH_MAX_LENGTH} characters or fewer.`);
+      setStatusTone('error');
     } else {
       setResults([]);
       setStatusMessage('No players found');
@@ -49,13 +56,13 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
     }
   }, [debouncedQuery]);
 
-  const searchPlayers = async () => {
+  const searchPlayers = async (normalizedQuery: string) => {
     setIsLoading(true);
     setStatusMessage('No players found');
     setStatusTone('info');
 
     try {
-      const response = await apiClient.searchPlayer(debouncedQuery);
+      const response = await apiClient.searchPlayer(normalizedQuery);
       if (response.success && response.data) {
         setResults(response.data.slice(0, 8)); // Limit to 8 results
       } else {
@@ -98,6 +105,7 @@ const GlobalPlayerSearch = ({ placeholder = "Search for any player...", classNam
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
+          maxLength={PLAYER_SEARCH_MAX_LENGTH}
           className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         {query && (

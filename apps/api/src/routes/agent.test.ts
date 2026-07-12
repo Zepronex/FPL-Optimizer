@@ -21,7 +21,6 @@ describe('agent explanation route', () => {
     delete process.env.AZURE_OPENAI_API_KEY;
     delete process.env.AZURE_OPENAI_ENDPOINT;
     delete process.env.AZURE_OPENAI_DEPLOYMENT;
-    delete process.env.AZURE_OPENAI_MODEL;
 
     const response = await getJson(createAgentRouter(), '/api/agent/status');
 
@@ -37,7 +36,7 @@ describe('agent explanation route', () => {
   it('returns safe provider-ready status when OpenAI config is present', async () => {
     process.env.SCOUTIQ_AGENT_ENABLED = 'true';
     process.env.SCOUTIQ_AGENT_PROVIDER = 'openai';
-    process.env.OPENAI_API_KEY = 'secret-openai-key';
+    process.env.OPENAI_API_KEY = 'unit-test-openai-placeholder';
     process.env.OPENAI_MODEL = 'gpt-test-model';
 
     const response = await getJson(createAgentRouter(), '/api/agent/status');
@@ -51,7 +50,7 @@ describe('agent explanation route', () => {
     assert.equal(response.body.data.requiredConfigPresent, true);
     assert.equal(response.body.data.activeMode, 'provider_ready');
     assert.equal(response.body.data.model, 'gpt-test-model');
-    assert.doesNotMatch(responseText, /secret-openai-key/);
+    assert.doesNotMatch(responseText, /unit-test-openai-placeholder/);
   });
 
   it('returns deterministic fallback when no provider is configured', async () => {
@@ -94,6 +93,47 @@ describe('agent explanation route', () => {
     assert.equal(response.body.success, false);
     assert.equal(response.body.error, 'invalid_agent_request');
     assert.equal(typeof response.body.details[0].message, 'string');
+  });
+
+  it('rejects unknown query and body fields', async () => {
+    const queryResponse = await getJson(createAgentRouter({
+      readAgentStatus: () => ({
+        enabled: false,
+        providerPreference: 'auto',
+        provider: null,
+        requiredConfigPresent: false,
+        activeMode: 'deterministic_fallback',
+        fallbackReasonCode: 'agent_disabled',
+        model: null
+      })
+    }), '/api/agent/status?extra=1');
+    assert.equal(queryResponse.status, 400);
+
+    const bodyResponse = await postJson(createAgentRouter(), {
+      optimizerResult: explanationInputFixture(),
+      unexpected: true
+    });
+    assert.equal(bodyResponse.status, 400);
+  });
+
+  it('rejects duplicate metadata, oversized names, and numeric strings', async () => {
+    const duplicateRunIds = explanationInputFixture();
+    duplicateRunIds.predictionRunIds = [42, 42];
+    assert.equal((await postJson(createAgentRouter(), {
+      optimizerResult: duplicateRunIds
+    })).status, 400);
+
+    const oversizedName = explanationInputFixture();
+    oversizedName.startingXi.starters[0].playerName = 'x'.repeat(101);
+    assert.equal((await postJson(createAgentRouter(), {
+      optimizerResult: oversizedName
+    })).status, 400);
+
+    const numericString = explanationInputFixture() as any;
+    numericString.startingXi.starters[0].playerId = '1';
+    assert.equal((await postJson(createAgentRouter(), {
+      optimizerResult: numericString
+    })).status, 400);
   });
 });
 

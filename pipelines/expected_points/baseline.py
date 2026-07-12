@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from pipelines.expected_points import MODEL_VERSION
-from pipelines.expected_points.features import PREDICTION_FEATURE_COLUMNS, validate_prediction_feature_row, validate_training_feature_row
+from pipelines.expected_points.features import (
+    PREDICTION_FEATURE_COLUMNS,
+    to_float,
+    validate_prediction_feature_row,
+    validate_training_feature_row,
+)
 
 JsonObject = dict[str, Any]
 
@@ -70,9 +75,9 @@ class RuleBasedExpectedPointsModel:
     def from_dict(cls, value: JsonObject) -> 'RuleBasedExpectedPointsModel':
         return cls(
             model_version=str(value.get('model_version', MODEL_VERSION)),
-            global_correction=float(value.get('global_correction', 0.0)),
+            global_correction=to_float(value.get('global_correction', 0.0)),
             position_corrections={
-                str(key): float(correction)
+                str(key): to_float(correction)
                 for key, correction in dict(value.get('position_corrections') or {}).items()
             },
             training_row_count=int(value.get('training_row_count', 0)),

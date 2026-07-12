@@ -23,6 +23,18 @@ describe('smoke app helpers', () => {
     });
   });
 
+  it('rejects credential-bearing URLs and malformed timeouts without echoing values', () => {
+    const marker = ['should', 'not', 'leak'].join('-');
+    assert.throws(
+      () => readSmokeConfig({ SCOUTIQ_API_URL: `https://user:${marker}@example.test` }),
+      error => error instanceof Error && !error.message.includes(marker)
+    );
+    assert.throws(
+      () => readSmokeConfig({ SCOUTIQ_SMOKE_TIMEOUT_MS: 'unbounded' }),
+      /SCOUTIQ_SMOKE_TIMEOUT_MS/
+    );
+  });
+
   it('validates the health response shape', () => {
     assert.equal(validateHealthResponse({
       status: 'ok',
@@ -72,5 +84,21 @@ describe('smoke app helpers', () => {
     assert.equal(result.ok, false);
     assert.equal(result.status, 404);
     assert.equal(result.error, 'HTTP 404');
+  });
+
+  it('does not return raw network errors that may contain sensitive URLs', async () => {
+    const result = await runSmokeCheck({
+      name: 'Example',
+      url: 'http://localhost/example',
+      validate: validateHealthResponse
+    }, {
+      timeoutMs: 100,
+      fetchImpl: async () => {
+        throw new Error('network failure with sensitive request detail');
+      }
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.error, 'Request failed');
   });
 });

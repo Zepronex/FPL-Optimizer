@@ -1,4 +1,7 @@
 import { pathToFileURL } from 'node:url';
+import { loadRootEnvironment } from './load-root-env.mjs';
+
+loadRootEnvironment(['SCOUTIQ_API_URL', 'SCOUTIQ_WEB_URL', 'SCOUTIQ_SMOKE_TIMEOUT_MS']);
 
 const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 const DEFAULT_WEB_BASE_URL = 'http://localhost:3000';
@@ -6,9 +9,9 @@ const DEFAULT_TIMEOUT_MS = 5000;
 
 export function readSmokeConfig(env = process.env) {
   return {
-    apiBaseUrl: stripTrailingSlash(env.SCOUTIQ_API_URL ?? DEFAULT_API_BASE_URL),
-    webBaseUrl: stripTrailingSlash(env.SCOUTIQ_WEB_URL ?? DEFAULT_WEB_BASE_URL),
-    timeoutMs: readPositiveInteger(env.SCOUTIQ_SMOKE_TIMEOUT_MS) ?? DEFAULT_TIMEOUT_MS
+    apiBaseUrl: readHttpBaseUrl(env.SCOUTIQ_API_URL ?? DEFAULT_API_BASE_URL, 'SCOUTIQ_API_URL'),
+    webBaseUrl: readHttpBaseUrl(env.SCOUTIQ_WEB_URL ?? DEFAULT_WEB_BASE_URL, 'SCOUTIQ_WEB_URL'),
+    timeoutMs: readTimeout(env.SCOUTIQ_SMOKE_TIMEOUT_MS)
   };
 }
 
@@ -58,7 +61,7 @@ export async function runSmokeChecks({
   for (const check of checks) {
     const result = await runSmokeCheck(check, { fetchImpl, timeoutMs: config.timeoutMs });
     results.push(result);
-    writer.write(`${result.ok ? 'PASS' : 'FAIL'} ${check.name} ${check.url}${result.ok ? '' : ` - ${result.error}`}\n`);
+    writer.write(`${result.ok ? 'PASS' : 'FAIL'} ${check.name} ${safeDisplayUrl(check.url)}${result.ok ? '' : ` - ${result.error}`}\n`);
   }
 
   return results;
@@ -95,7 +98,9 @@ export async function runSmokeCheck(check, { fetchImpl = fetch, timeoutMs = DEFA
       name: check.name,
       url: check.url,
       status: null,
-      error: error instanceof Error ? error.message : 'Unknown smoke-test error'
+      error: error instanceof Error && error.name === 'AbortError'
+        ? 'Request timed out'
+        : 'Request failed'
     };
   }
 }
@@ -200,17 +205,41 @@ function failed(error) {
   return { ok: false, error };
 }
 
-function readPositiveInteger(value) {
-  if (!value) {
-    return null;
-  }
-
+function readTimeout(value) {
+  if (!value) return DEFAULT_TIMEOUT_MS;
   const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  if (!Number.isInteger(parsed) || parsed < 100 || parsed > 60_000) {
+    throw new Error('Invalid SCOUTIQ_SMOKE_TIMEOUT_MS');
+  }
+  return parsed;
 }
 
-function stripTrailingSlash(value) {
-  return value.replace(/\/+$/, '');
+function readHttpBaseUrl(value, name) {
+  try {
+    const url = new URL(value);
+    if (
+      !['http:', 'https:'].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      value.length > 2_048
+    ) {
+      throw new Error('invalid');
+    }
+    return value.replace(/\/+$/, '');
+  } catch {
+    throw new Error(`Invalid ${name}`);
+  }
+}
+
+function safeDisplayUrl(value) {
+  try {
+    const url = new URL(value);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return '[invalid URL]';
+  }
 }
 
 async function main() {

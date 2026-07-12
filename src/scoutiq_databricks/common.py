@@ -21,6 +21,7 @@ from pyspark.sql.types import (
 )
 
 IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+MAX_DATABASE_ID = 2_147_483_647
 
 BRONZE_TABLE_KEYS: dict[str, tuple[str, ...]] = {
     "bronze_ingestion_manifest": ("source_snapshot_hash",),
@@ -242,7 +243,9 @@ SNAPSHOT_METADATA_SCHEMA = StructType(
         StructField("datasetType", StringType(), False),
         StructField("preparedAt", StringType(), False),
         StructField("sourceSnapshotHash", StringType(), False),
+        StructField("canonicalSnapshotHash", StringType(), False),
         StructField("historyCaptureHash", StringType(), False),
+        StructField("hashAlgorithm", StringType(), False),
         StructField("effectiveSeason", StringType(), False),
         StructField("sourceGeneratedAt", StringType(), False),
         StructField("historyGeneratedAt", StringType(), False),
@@ -290,10 +293,35 @@ def require_columns(dataframe: DataFrame, required: Iterable[str], label: str) -
 def fail_on_invalid_ids(dataframe: DataFrame, columns: Sequence[str], label: str) -> None:
     invalid = None
     for column in columns:
-        condition = F.col(column).isNull() | (F.col(column) <= F.lit(0))
+        condition = (
+            F.col(column).isNull()
+            | (F.col(column) <= F.lit(0))
+            | (F.col(column) > F.lit(MAX_DATABASE_ID))
+        )
         invalid = condition if invalid is None else invalid | condition
     if invalid is not None and dataframe.filter(invalid).limit(1).count():
-        raise ValueError(f"{label} contains null or non-positive required identifiers: {list(columns)}")
+        raise ValueError(f"{label} contains invalid required identifiers: {list(columns)}")
+
+
+def fail_on_invalid_numeric_bounds(
+    dataframe: DataFrame,
+    bounds: dict[str, tuple[float, float, bool]],
+    label: str,
+) -> None:
+    """Reject null, non-finite, or out-of-range numbers in one Spark action.
+
+    The final tuple item indicates whether null is allowed. Explicit schemas can
+    turn a malformed JSON value into null, so required fields must check nulls
+    here rather than relying on StructField(nullable=False).
+    """
+    invalid = None
+    for column, (minimum, maximum, nullable) in bounds.items():
+        value = F.col(column)
+        numeric_invalid = F.isnan(value.cast("double")) | ~value.between(minimum, maximum)
+        condition = numeric_invalid if nullable else value.isNull() | numeric_invalid
+        invalid = condition if invalid is None else invalid | condition
+    if invalid is not None and dataframe.filter(invalid).limit(1).count():
+        raise ValueError(f"{label} contains null, non-finite, or out-of-range numeric values")
 
 
 def fail_on_rows(dataframe: DataFrame, condition: Column, message: str) -> None:

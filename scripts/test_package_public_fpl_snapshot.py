@@ -6,13 +6,16 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from pipelines.databricks.transforms import dataset_snapshot_hash, read_ingestion_dataset
 from scripts.prepare_databricks_snapshot import (
     HISTORY_FILENAME,
+    MAX_HISTORY_FILE_BYTES,
     METADATA_FILENAME,
     OUTPUT_FILENAMES,
     PACKAGED_FILENAMES,
+    _copy_bounded_regular_file,
     package_public_fpl_snapshot,
 )
 
@@ -110,6 +113,43 @@ class PackagePublicFplSnapshotTests(unittest.TestCase):
                     filename,
                 )
 
+    def test_metadata_and_canonical_hash_are_bound_to_the_captured_package_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            source = root / "source"
+            output = root / "output"
+            shutil.copytree(PUBLIC_FIXTURE, source)
+            original_capture = _copy_bounded_regular_file
+            mutated = False
+
+            def replace_source_before_capture(source_file, destination_file, filename, max_bytes):
+                nonlocal mutated
+                source_path = Path(source_file)
+                if source_path.name == "players.json" and not mutated:
+                    players = read_json(source_path)
+                    players[0]["displayName"] = "Captured during packaging"
+                    write_json(source_path, players)
+                    mutated = True
+                return original_capture(source_path, Path(destination_file), filename, max_bytes)
+
+            with patch(
+                "scripts.prepare_databricks_snapshot._copy_bounded_regular_file",
+                side_effect=replace_source_before_capture,
+            ):
+                metadata = package_public_fpl_snapshot(
+                    source,
+                    source / HISTORY_FILENAME,
+                    output,
+                )
+
+            packaged_dataset = read_ingestion_dataset(output)
+            self.assertTrue(mutated)
+            self.assertEqual(packaged_dataset["players"][0]["displayName"], "Captured during packaging")
+            self.assertEqual(metadata["canonicalSnapshotHash"], dataset_snapshot_hash(packaged_dataset))
+            self.assertEqual(metadata["sourceSnapshotHash"], metadata["canonicalSnapshotHash"])
+            for filename in PACKAGED_FILENAMES:
+                self.assertEqual(metadata["fileSha256"][filename], sha256_file(output / filename))
+
     def test_test_fixture_derivation_is_balanced_referentially_valid_and_deterministic(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
@@ -176,6 +216,42 @@ class PackagePublicFplSnapshotTests(unittest.TestCase):
                     source / HISTORY_FILENAME,
                     root / "output",
                 )
+
+    def test_rejects_oversized_history_before_staging_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            source = root / "source"
+            output = root / "output"
+            shutil.copytree(PUBLIC_FIXTURE, source)
+            (source / HISTORY_FILENAME).write_bytes(b" " * (MAX_HISTORY_FILE_BYTES + 1))
+
+            with self.assertRaisesRegex(ValueError, f"byte limit: {HISTORY_FILENAME}") as error:
+                package_public_fpl_snapshot(
+                    source,
+                    source / HISTORY_FILENAME,
+                    output,
+                )
+
+            self.assertFalse(output.exists())
+            self.assertNotIn(str(root), str(error.exception))
+
+    def test_rejects_non_standard_history_json_without_echoing_input(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            source = root / "source"
+            shutil.copytree(PUBLIC_FIXTURE, source)
+            invalid_payload = '{"privateValue": NaN}'
+            (source / HISTORY_FILENAME).write_text(invalid_payload, encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, f"not valid strict JSON: {HISTORY_FILENAME}") as error:
+                package_public_fpl_snapshot(
+                    source,
+                    source / HISTORY_FILENAME,
+                    root / "output",
+                )
+
+            self.assertNotIn(invalid_payload, str(error.exception))
+            self.assertNotIn(str(root), str(error.exception))
 
 
 def read_json(file_path: Path):

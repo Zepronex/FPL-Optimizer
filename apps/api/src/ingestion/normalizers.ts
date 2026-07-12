@@ -99,7 +99,7 @@ export function normalizeBootstrapStatic(rawBootstrap: RawBootstrapStatic): Norm
 }
 
 export function normalizeFixtures(rawFixtures: RawFixtures): NormalizedFixture[] {
-  const fixtures = RawFplFixtureSchema.array().parse(rawFixtures);
+  const fixtures = RawFplFixtureSchema.array().max(5_000).parse(rawFixtures);
 
   return fixtures
     .map(fixture => NormalizedFixtureSchema.parse({
@@ -184,9 +184,13 @@ export function validateNormalizedFplDataset(dataset: NormalizedFplDataset): Nor
 
 function toNumber(value: string | undefined): number {
   if (value === undefined || value.trim() === '') return 0;
-  const parsed = Number(value);
+  const trimmed = value.trim();
+  if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(trimmed)) {
+    throw new Error('Expected a finite decimal numeric string');
+  }
+  const parsed = Number(trimmed);
   if (!Number.isFinite(parsed)) {
-    throw new Error(`Expected numeric string, received "${value}"`);
+    throw new Error('Expected a finite decimal numeric string');
   }
   return parsed;
 }
@@ -194,7 +198,7 @@ function toNumber(value: string | undefined): number {
 function normalizeDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    throw new Error(`Invalid date-time value "${value}"`);
+    throw new Error('Invalid date-time value');
   }
   return date.toISOString();
 }

@@ -10,6 +10,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*.log
 package-lock.json
 yarn.lock
 *.tgz
@@ -20,6 +21,24 @@ yarn.lock
 .env.*
 !.env.example
 !.env.*.example
+.envrc
+.envrc.*
+
+# Credentials and local provider configuration
+credentials.json
+service-account*.json
+*.credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+databricks.cfg
+.databrickscfg
+**/.databrickscfg
+.aws/
+.azure/
+.config/databricks/
 
 # Node and frontend build outputs
 dist/
