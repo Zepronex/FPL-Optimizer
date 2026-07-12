@@ -255,18 +255,10 @@ pnpm.cmd run db:load:predictions
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [Environment Reference](docs/ENVIRONMENT.md)
 - [Production Readiness](docs/PRODUCTION_READINESS.md)
-- [Local Demo Walkthrough](docs/LOCAL_DEMO.md)
-- [Reviewer Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
-- [Demo Script](docs/DEMO_SCRIPT.md)
-- [Screenshot Capture Guide](docs/SCREENSHOTS.md)
-- [Release Notes](docs/RELEASE_NOTES.md)
-- [Release Checklist](docs/RELEASE_CHECKLIST.md)
-- [Final Audit](docs/FINAL_AUDIT.md)
 - [Prediction Serving](docs/PREDICTION_SERVING.md)
 - [Expected-Points Baseline](docs/EXPECTED_POINTS_BASELINE.md)
 - [PostgreSQL Foundation](docs/DATABASE.md)
 - [Databricks Lakehouse Pipeline](docs/DATABRICKS.md)
-- [Roadmap](docs/ROADMAP.md)
 
 ## License
 
