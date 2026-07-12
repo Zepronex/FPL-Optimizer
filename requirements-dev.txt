@@ -1,0 +1,2 @@
+# Keep local Spark tests reproducible across development and CI environments.
+pyspark==3.5.7

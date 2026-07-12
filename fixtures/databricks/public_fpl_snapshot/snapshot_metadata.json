@@ -1,0 +1,154 @@
+{
+  "canonicalSnapshotHash": "036ac832f904eb557c0657f31b074d28415c4a21596c828e55525f5e7d035194",
+  "captureTimestamps": {
+    "normalizedSnapshotGeneratedAt": "2026-07-10T20:07:01.340Z",
+    "playerHistoryGeneratedAt": "2026-07-10T20:07:16.191Z"
+  },
+  "capturedAt": "2026-07-10T20:07:16.191Z",
+  "dataClassification": "public",
+  "datasetType": "public-fpl",
+  "effectiveSeason": "2025-26",
+  "fileSha256": {
+    "events.json": "647b1290ddf1b9d855c8d5214a9c813a297e67015b78c6c085a006da8840997e",
+    "fixtures.json": "799d66e8b96932e0705d25bbe283d333fca94757eb3dfae442c951768faa3903",
+    "manifest.json": "9735fcbb2737cb75bc524e4c6e725dc4e564b889ee11078d21be8061dc07b8ca",
+    "player_gameweek_history.json": "18f45bc5663743b47e954d09eadcce4e35d189c046deab73ebb22c750f75af57",
+    "players.json": "c45050aff11deb441621c742bc05b54a2aefe6c02001ba395eea3ea47622cffa",
+    "teams.json": "4c765583b0dd73bc04feb8a4e8a028e4f9b570fb98d875f8cc1fc79f213c4b22"
+  },
+  "files": [
+    {
+      "bytes": 741,
+      "contentRole": "normalized-ingestion-manifest",
+      "filename": "manifest.json",
+      "recordCount": 1,
+      "sha256": "9735fcbb2737cb75bc524e4c6e725dc4e564b889ee11078d21be8061dc07b8ca"
+    },
+    {
+      "bytes": 4799,
+      "contentRole": "normalized-players",
+      "filename": "players.json",
+      "recordCount": 8,
+      "sha256": "c45050aff11deb441621c742bc05b54a2aefe6c02001ba395eea3ea47622cffa"
+    },
+    {
+      "bytes": 3412,
+      "contentRole": "normalized-teams",
+      "filename": "teams.json",
+      "recordCount": 20,
+      "sha256": "4c765583b0dd73bc04feb8a4e8a028e4f9b570fb98d875f8cc1fc79f213c4b22"
+    },
+    {
+      "bytes": 1931,
+      "contentRole": "normalized-gameweeks",
+      "filename": "events.json",
+      "recordCount": 8,
+      "sha256": "647b1290ddf1b9d855c8d5214a9c813a297e67015b78c6c085a006da8840997e"
+    },
+    {
+      "bytes": 13812,
+      "contentRole": "normalized-fixtures",
+      "filename": "fixtures.json",
+      "recordCount": 49,
+      "sha256": "799d66e8b96932e0705d25bbe283d333fca94757eb3dfae442c951768faa3903"
+    },
+    {
+      "bytes": 17404,
+      "contentRole": "official-player-gameweek-history",
+      "filename": "player_gameweek_history.json",
+      "recordCount": 64,
+      "sha256": "18f45bc5663743b47e954d09eadcce4e35d189c046deab73ebb22c750f75af57"
+    }
+  ],
+  "fixture": {
+    "intendedUse": "Automated tests and Databricks demonstrations only",
+    "label": "Deterministic subset of a real public FPL snapshot",
+    "metricsQualification": "Fixture counts and metrics are not full historical-dataset evidence",
+    "parent": {
+      "canonicalSnapshotHash": "b4cf811ba886c26c65de2d17c6b071776dee018c1e39b08aa2e853f1f34671e7",
+      "fileSha256": {
+        "events.json": "7aac79f9d924ac7f11f6b78cabc182d8594ef8e96b4fcf1975a80fc41f0a1446",
+        "fixtures.json": "8868fc9acde0a803dc91ac91535a839839143609dd130ed2d86af940971f0c13",
+        "manifest.json": "c22abb53ff70dbda5c81c27befbc4ddb0cf44e0f3ae62ac9a26ce275d88d2f03",
+        "player_gameweek_history.json": "d7908bf0d4e6d778f5be15eb88673049f59547fc8def1dc68fbee90f712d4c6b",
+        "players.json": "b40a05576f159385569ed3a550233645d41750eeb75d7250815cae2924a97f0c",
+        "teams.json": "5ae6b8f80537581c30024305ee58b7caae6fbbb474382b108e5e2ce543a0a9b2"
+      },
+      "recordCounts": {
+        "events": 38,
+        "fixtures": 380,
+        "historyRows": 29747,
+        "players": 841,
+        "teams": 20
+      }
+    },
+    "selection": {
+      "maximumGameweekId": 8,
+      "requestedPlayerCount": 8,
+      "selectedGameweekIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selectedPlayerIds": [
+        1,
+        12,
+        27,
+        52,
+        64,
+        66,
+        143,
+        215
+      ],
+      "strategy": "position-balanced, team-diverse players ordered by public source id"
+    }
+  },
+  "fixtureDescription": "Deterministic subset of real public FPL data; fixture counts and metrics are not full-dataset evidence",
+  "hashAlgorithm": "SHA-256",
+  "historyCaptureHash": "18f45bc5663743b47e954d09eadcce4e35d189c046deab73ebb22c750f75af57",
+  "historyGeneratedAt": "2026-07-10T20:07:16.191Z",
+  "isSubset": true,
+  "isTestFixture": true,
+  "preparedAt": "2026-07-10T20:07:16.191Z",
+  "provenance": {
+    "derivedOnlyFromOfficialPublicFplData": true,
+    "historyInputSnapshotGeneratedAt": "2026-07-10T20:07:01.340Z",
+    "localPathsIncluded": false,
+    "normalizedSnapshotSchemaVersion": 1,
+    "playerHistorySchemaVersion": 1
+  },
+  "recordCounts": {
+    "events": 8,
+    "fixtures": 49,
+    "historyRows": 64,
+    "players": 8,
+    "teams": 20
+  },
+  "schemaVersion": 1,
+  "seasonSource": "derived-from-event-deadlines",
+  "snapshotType": "deterministic-public-fpl-test-fixture",
+  "sourceGeneratedAt": "2026-07-10T20:07:01.340Z",
+  "sourceSnapshotHash": "036ac832f904eb557c0657f31b074d28415c4a21596c828e55525f5e7d035194",
+  "sources": [
+    {
+      "fetchedAt": "2026-07-10T20:07:01.122Z",
+      "name": "bootstrap-static",
+      "url": "https://fantasy.premierleague.com/api/bootstrap-static/"
+    },
+    {
+      "fetchedAt": "2026-07-10T20:07:01.153Z",
+      "name": "fixtures",
+      "url": "https://fantasy.premierleague.com/api/fixtures/"
+    },
+    {
+      "fetchedAt": "2026-07-10T20:07:10.812Z",
+      "name": "element-summary",
+      "url": "https://fantasy.premierleague.com/api/element-summary/{player_id}/"
+    }
+  ]
+}
