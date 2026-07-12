@@ -1,0 +1,30 @@
+{
+  "currentEventId": null,
+  "generatedAt": "2026-07-10T20:07:01.340Z",
+  "recordCounts": {
+    "events": 8,
+    "fixtures": 49,
+    "players": 8,
+    "teams": 20
+  },
+  "schemaVersion": 1,
+  "season": null,
+  "sources": [
+    {
+      "etag": null,
+      "fetchedAt": "2026-07-10T20:07:01.122Z",
+      "httpDate": "Fri, 10 Jul 2026 20:07:01 GMT",
+      "lastModified": null,
+      "name": "bootstrap-static",
+      "url": "https://fantasy.premierleague.com/api/bootstrap-static/"
+    },
+    {
+      "etag": null,
+      "fetchedAt": "2026-07-10T20:07:01.153Z",
+      "httpDate": "Fri, 10 Jul 2026 20:07:01 GMT",
+      "lastModified": null,
+      "name": "fixtures",
+      "url": "https://fantasy.premierleague.com/api/fixtures/"
+    }
+  ]
+}

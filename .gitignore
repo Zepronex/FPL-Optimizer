@@ -33,6 +33,7 @@ storybook-static/
 # Tool caches
 .cache/
 **/.cache/
+.databricks/
 .vite/
 **/.vite/
 .parcel-cache/
@@ -69,11 +70,15 @@ data/models/
 data/predictions/
 data/tmp/
 data/lakehouse/
+artifacts/resume_metrics.json
 **/_spark_metadata/
 **/_delta_log/
 **/checkpoint/
 **/checkpoints/
 **/.spark-staging/
+spark-warehouse/
+metastore_db/
+derby.log
 models/
 **/models/
 *.pkl

@@ -39,6 +39,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements-dev.txt
 
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
@@ -63,3 +74,12 @@ jobs:
 
       - name: Run model tests
         run: pnpm run model:test
+
+      - name: Run PySpark transformation tests
+        run: pnpm run databricks:test
+
+      - name: Run public snapshot packaging tests
+        run: pnpm run databricks:snapshot:test
+
+      - name: Run resume metrics tests
+        run: pnpm run resume:metrics:test

@@ -1,0 +1,90 @@
+[
+  {
+    "averageEntryScore": 54,
+    "dataChecked": true,
+    "deadlineTime": "2025-08-15T17:30:00.000Z",
+    "finished": true,
+    "highestScore": 127,
+    "id": 1,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 1"
+  },
+  {
+    "averageEntryScore": 51,
+    "dataChecked": true,
+    "deadlineTime": "2025-08-22T17:30:00.000Z",
+    "finished": true,
+    "highestScore": 140,
+    "id": 2,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 2"
+  },
+  {
+    "averageEntryScore": 48,
+    "dataChecked": true,
+    "deadlineTime": "2025-08-30T10:00:00.000Z",
+    "finished": true,
+    "highestScore": 118,
+    "id": 3,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 3"
+  },
+  {
+    "averageEntryScore": 63,
+    "dataChecked": true,
+    "deadlineTime": "2025-09-13T10:00:00.000Z",
+    "finished": true,
+    "highestScore": 139,
+    "id": 4,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 4"
+  },
+  {
+    "averageEntryScore": 42,
+    "dataChecked": true,
+    "deadlineTime": "2025-09-20T10:00:00.000Z",
+    "finished": true,
+    "highestScore": 112,
+    "id": 5,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 5"
+  },
+  {
+    "averageEntryScore": 46,
+    "dataChecked": true,
+    "deadlineTime": "2025-09-27T10:00:00.000Z",
+    "finished": true,
+    "highestScore": 124,
+    "id": 6,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 6"
+  },
+  {
+    "averageEntryScore": 60,
+    "dataChecked": true,
+    "deadlineTime": "2025-10-03T17:30:00.000Z",
+    "finished": true,
+    "highestScore": 135,
+    "id": 7,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 7"
+  },
+  {
+    "averageEntryScore": 56,
+    "dataChecked": true,
+    "deadlineTime": "2025-10-18T10:00:00.000Z",
+    "finished": true,
+    "highestScore": 138,
+    "id": 8,
+    "isCurrent": false,
+    "isNext": false,
+    "name": "Gameweek 8"
+  }
+]
