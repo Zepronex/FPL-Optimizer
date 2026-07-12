@@ -5,6 +5,7 @@ import { apiClient } from '../lib/api';
 import { formatPrice, formatForm } from '../lib/format';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import PlayerStats from '../components/PlayerStats';
+import { parsePlayerId } from '../lib/inputLimits';
 
 const PlayerDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,14 +21,20 @@ const PlayerDetailPage = () => {
   }, [id]);
 
   const loadPlayerData = async () => {
-    if (!id) return;
+    const playerId = parsePlayerId(id);
+    if (playerId === null) {
+      setPlayer(null);
+      setError('Invalid player identifier.');
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
       // Load player data
-      const playerResponse = await apiClient.getPlayerById(parseInt(id));
+      const playerResponse = await apiClient.getPlayerById(playerId);
       if (playerResponse.success && playerResponse.data) {
         setPlayer(playerResponse.data);
       } else {

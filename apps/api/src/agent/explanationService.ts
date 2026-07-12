@@ -23,6 +23,14 @@ type FetchResponseLike = {
   status: number;
   json: () => Promise<unknown>;
   text: () => Promise<string>;
+  headers?: { get: (name: string) => string | null };
+  body?: {
+    getReader?: () => {
+      read: () => Promise<{ done: boolean; value?: Uint8Array }>;
+      cancel: () => Promise<unknown>;
+    };
+    cancel?: () => Promise<unknown>;
+  } | null;
 };
 
 export type FetchLike = (
@@ -41,6 +49,8 @@ type ExplanationServiceOptions = {
 };
 
 const RESPONSE_FORMAT_NAME = 'scoutiq_recommendation_explanation';
+const MAX_PROVIDER_RESPONSE_BYTES = 131_072;
+const MAX_PROVIDER_OUTPUT_TOKENS = 800;
 
 class AgentExplanationFailure extends Error {
   constructor(readonly reasonCode: AgentFallbackReasonCode) {
@@ -96,6 +106,7 @@ async function requestOpenAIExplanation(
 ): Promise<RecommendationExplanationCore> {
   const payload = {
     model: config.model,
+    max_output_tokens: MAX_PROVIDER_OUTPUT_TOKENS,
     instructions: RECOMMENDATION_EXPLANATION_SYSTEM_PROMPT,
     input: buildUserPrompt(input),
     text: {
@@ -128,6 +139,7 @@ async function requestAzureOpenAIExplanation(
 ): Promise<RecommendationExplanationCore> {
   const payload = {
     model: config.deployment,
+    max_completion_tokens: MAX_PROVIDER_OUTPUT_TOKENS,
     messages: [
       {
         role: 'system',
@@ -182,13 +194,51 @@ async function fetchWithTimeout(
     });
 
     if (!response.ok) {
-      await response.text().catch(() => '');
+      await response.body?.cancel?.().catch(() => undefined);
       throw new Error(`provider_http_${response.status}`);
     }
 
-    return response.json();
+    return await readBoundedProviderJson(response);
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+async function readBoundedProviderJson(response: FetchResponseLike): Promise<unknown> {
+  const contentLength = response.headers?.get('content-length');
+  if (contentLength && /^\d+$/.test(contentLength) && Number(contentLength) > MAX_PROVIDER_RESPONSE_BYTES) {
+    await response.body?.cancel?.().catch(() => undefined);
+    throw new Error('provider_response_too_large');
+  }
+
+  const reader = response.body?.getReader?.();
+  let text: string;
+  if (reader) {
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_PROVIDER_RESPONSE_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new Error('provider_response_too_large');
+      }
+      chunks.push(Buffer.from(value));
+    }
+    text = Buffer.concat(chunks, totalBytes).toString('utf8');
+  } else {
+    text = await response.text();
+    if (Buffer.byteLength(text, 'utf8') > MAX_PROVIDER_RESPONSE_BYTES) {
+      throw new Error('provider_response_too_large');
+    }
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new AgentExplanationFailure('schema_validation_failed');
   }
 }
 

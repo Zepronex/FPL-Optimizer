@@ -147,7 +147,7 @@ function readSafeModelName(config: OpenAIAgentConfig | AzureOpenAIAgentConfig): 
 function readAzureConfig(env: NodeJS.ProcessEnv, timeoutMs: number): AzureOpenAIAgentConfig | null {
   const apiKey = readNonEmptyString(env.AZURE_OPENAI_API_KEY);
   const endpoint = readNonEmptyString(env.AZURE_OPENAI_ENDPOINT);
-  const deployment = readNonEmptyString(env.AZURE_OPENAI_DEPLOYMENT) ?? readNonEmptyString(env.AZURE_OPENAI_MODEL);
+  const deployment = readNonEmptyString(env.AZURE_OPENAI_DEPLOYMENT);
   if (!apiKey || !endpoint || !deployment) return null;
 
   return {

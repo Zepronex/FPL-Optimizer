@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { config as loadDotenv } from 'dotenv';
 import { ingestOfficialFplData } from './ingest';
 
 type CliOptions = {
@@ -17,8 +18,14 @@ async function main(): Promise<void> {
 
 function parseArgs(args: string[]): CliOptions {
   const workspaceRoot = findWorkspaceRoot(process.cwd());
+  const localEnvironment: Record<string, string> = {};
+  loadDotenv({ path: path.join(workspaceRoot, '.env'), processEnv: localEnvironment });
   const outputFlag = readFlag(args, '--out') ?? readFlag(args, '--output');
-  const season = readFlag(args, '--season') ?? process.env.FPL_SEASON ?? null;
+  const rawSeason = readFlag(args, '--season') ?? process.env.FPL_SEASON ?? localEnvironment.FPL_SEASON;
+  const season = rawSeason?.trim() || null;
+  if (season && (season.length > 32 || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(season))) {
+    throw new Error('FPL season must be 1-32 letters, numbers, dots, underscores, or hyphens');
+  }
   const outputDir = outputFlag
     ? path.resolve(workspaceRoot, outputFlag)
     : path.join(workspaceRoot, 'data', 'fpl', 'latest');

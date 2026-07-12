@@ -1,4 +1,4 @@
-import { Router, type Router as ExpressRouter } from 'express';
+import { Router, Response, type Router as ExpressRouter } from 'express';
 import { z } from 'zod';
 import { SquadAnalyzer } from '../lib/squad';
 import { ScoringService } from '../lib/scoring';
@@ -8,36 +8,56 @@ import {
   PLAYER_CANDIDATE_REQUIRED_COMMANDS,
   readSquadBuilderPlayers
 } from '../db/playerQueries';
+import {
+  BodyPositiveIdSchema,
+  EmptyQuerySchema,
+  hasDuplicateNumbers
+} from './validation';
 
 // Validation schemas
 const squadSlotSchema = z.object({
-  id: z.number().int().positive(),
+  id: BodyPositiveIdSchema,
   pos: z.enum(['GK', 'DEF', 'MID', 'FWD']),
-  price: z.number().positive().max(15),
-  teamId: z.number().int().positive().optional()
-});
+  price: z.number().finite().positive().max(15),
+  name: z.string().trim().min(1).max(100).optional(),
+  teamShort: z.string().trim().min(1).max(10).optional(),
+  teamId: BodyPositiveIdSchema.optional()
+}).strict();
 
 const squadSchema = z.object({
   startingXI: z.array(squadSlotSchema).length(11),
   bench: z.array(squadSlotSchema).length(4),
-  bank: z.number().min(0).max(100)
+  bank: z.number().finite().min(0).max(100)
+}).strict().superRefine((squad, context) => {
+  const playerIds = [...squad.startingXI, ...squad.bench].map(player => player.id);
+  if (hasDuplicateNumbers(playerIds)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['startingXI'],
+      message: 'Squad player IDs must be unique'
+    });
+  }
 });
 
 const weightsSchema = z.object({
-  form: z.number().min(0).max(1).optional(),
-  xg90: z.number().min(0).max(1).optional(),
-  xa90: z.number().min(0).max(1).optional(),
-  expMin: z.number().min(0).max(1).optional(),
-  next3Ease: z.number().min(0).max(1).optional(),
-  avgPoints: z.number().min(0).max(1).optional(),
-  value: z.number().min(0).max(1).optional(),
-  ownership: z.number().min(0).max(1).optional()
-});
+  form: z.number().finite().min(0).max(1).optional(),
+  xg90: z.number().finite().min(0).max(1).optional(),
+  xa90: z.number().finite().min(0).max(1).optional(),
+  expMin: z.number().finite().min(0).max(1).optional(),
+  next3Ease: z.number().finite().min(0).max(1).optional(),
+  avgPoints: z.number().finite().min(0).max(1).optional(),
+  value: z.number().finite().min(0).max(1).optional(),
+  ownership: z.number().finite().min(0).max(1).optional()
+}).strict();
 
 const analyzeRequestSchema = z.object({
   squad: squadSchema,
   weights: weightsSchema.optional()
-});
+}).strict();
+
+const validateRequestSchema = z.object({
+  squad: squadSchema
+}).strict();
 
 export function createAnalyzeRouter(client: Queryable = createDbPool()): ExpressRouter {
   const router: ExpressRouter = Router();
@@ -45,6 +65,7 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
   // POST /api/analyze - Analyze squad and get suggestions
   router.post('/', async (req, res) => {
     try {
+      EmptyQuerySchema.parse(req.query);
       const { squad, weights } = analyzeRequestSchema.parse(req.body);
       const playerPool = await readSquadBuilderPlayers(client);
 
@@ -123,7 +144,8 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
   // POST /api/analyze/validate - Validate squad without analysis
   router.post('/validate', async (req, res) => {
     try {
-      const { squad } = z.object({ squad: squadSchema }).parse(req.body);
+      EmptyQuerySchema.parse(req.query);
+      const { squad } = validateRequestSchema.parse(req.body);
       const playerPool = await readSquadBuilderPlayers(client);
 
       if (playerPool.length === 0) {
@@ -172,31 +194,57 @@ export function createAnalyzeRouter(client: Queryable = createDbPool()): Express
   });
 
   // GET /api/analyze/weights - Get default weights
-  router.get('/weights', (_req, res) => {
-    res.json({
-      success: true,
-      data: {
-        form: 0.2,
-        xg90: 0.15,
-        xa90: 0.15,
-        expMin: 0.15,
-        next3Ease: 0.1,
-        avgPoints: 0.15,
-        value: 0.05,
-        ownership: 0.05
-      }
-    });
+  router.get('/weights', (req, res) => {
+    try {
+      EmptyQuerySchema.parse(req.query);
+      res.json({
+        success: true,
+        data: {
+          form: 0.2,
+          xg90: 0.15,
+          xa90: 0.15,
+          expMin: 0.15,
+          next3Ease: 0.1,
+          avgPoints: 0.15,
+          value: 0.05,
+          ownership: 0.05
+        }
+      });
+    } catch (error) {
+      handleAnalyzeValidationError(res, error);
+    }
   });
 
   // GET /api/analyze/presets - Get weight presets
-  router.get('/presets', (_req, res) => {
-    res.json({
-      success: true,
-      data: ScoringService.getWeightPresets()
-    });
+  router.get('/presets', (req, res) => {
+    try {
+      EmptyQuerySchema.parse(req.query);
+      res.json({
+        success: true,
+        data: ScoringService.getWeightPresets()
+      });
+    } catch (error) {
+      handleAnalyzeValidationError(res, error);
+    }
   });
 
   return router;
+}
+
+function handleAnalyzeValidationError(res: Response, error: unknown): void {
+  if (error instanceof z.ZodError) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid request data',
+      details: error.errors
+    });
+    return;
+  }
+
+  res.status(500).json({
+    success: false,
+    error: 'analyze_request_failed'
+  });
 }
 
 function enrichSquadFromPlayerPool(squad: Squad, playerPool: EnrichedPlayer[]): Squad {
@@ -250,6 +298,3 @@ function calculateSquadCost(slots: readonly SquadSlot[]): number {
 function roundMoney(value: number): number {
   return Math.round(value * 10) / 10;
 }
-
-export const analyzeRouter = createAnalyzeRouter();
-

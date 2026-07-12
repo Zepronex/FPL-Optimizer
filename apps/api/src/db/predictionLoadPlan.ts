@@ -69,49 +69,89 @@ export type PredictionArtifactInput = {
 };
 
 const PositionSchema = z.enum(['GK', 'DEF', 'MID', 'FWD']);
+const MAX_POSTGRES_INTEGER = 2_147_483_647;
+const MAX_GAMEWEEK = 38;
+export const MAX_PREDICTION_ROWS = 5_000;
+const MAX_PREDICTION_FIELDS = 100;
+const DatabaseIdSchema = z.number().finite().int().min(1).max(MAX_POSTGRES_INTEGER);
+const GameweekSchema = z.number().finite().int().min(1).max(MAX_GAMEWEEK);
+const HashSchema = z.string().regex(/^[a-f0-9]{64}$/i);
+const FeatureColumnSchema = boundedString(100);
+const FeatureColumnsSchema = z.array(FeatureColumnSchema).max(64).refine(
+  values => new Set(values).size === values.length,
+  'Feature columns must be unique'
+);
+const MetricNumberSchema = z.number().finite().min(-1_000_000).max(1_000_000);
+const MetricSummarySchema = z.object({
+  count: z.number().finite().int().min(0).max(1_000_000),
+  mae: z.number().finite().min(0).max(100).optional(),
+  rmse: z.number().finite().min(0).max(100).optional(),
+  mean_error: z.number().finite().min(-100).max(100).optional()
+}).catchall(MetricNumberSchema);
+const MetricsByPositionSchema = z.record(PositionSchema, MetricSummarySchema);
+const FeatureValueSchema = z.union([
+  z.number().finite().min(-1_000_000).max(1_000_000),
+  z.string().max(1_000).refine(value => !/[\r\n\0]/.test(value), 'Unsafe feature string'),
+  z.boolean(),
+  z.null()
+]);
 
 const PredictionArtifactRowSchema = z.object({
-  player_id: z.coerce.number().int().positive(),
-  player_name: z.string().min(1),
+  player_id: DatabaseIdSchema,
+  player_name: boundedString(100),
   position: PositionSchema,
-  team_id: z.coerce.number().int().positive(),
-  team_name: z.string().min(1),
-  price: z.coerce.number().nonnegative(),
-  fixture_id: z.coerce.number().int().positive(),
-  opponent_team_id: z.coerce.number().int().positive(),
-  opponent_team: z.string().min(1),
-  fixture_difficulty: z.coerce.number().int().min(1).max(5),
+  team_id: DatabaseIdSchema,
+  team_name: boundedString(100),
+  price: z.number().finite().min(0).max(100),
+  fixture_id: DatabaseIdSchema,
+  opponent_team_id: DatabaseIdSchema,
+  opponent_team: boundedString(100),
+  fixture_difficulty: z.number().finite().int().min(1).max(5),
   home_away: z.enum(['H', 'A']),
-  upcoming_gameweek_id: z.coerce.number().int().positive(),
-  expected_points: z.coerce.number().nonnegative(),
-  baseline_expected_points: z.coerce.number().nonnegative().optional().nullable(),
-  confidence: z.coerce.number().min(0).max(1).optional().nullable(),
-  uncertainty: z.coerce.number().nonnegative().optional().nullable(),
-  model_version: z.string().min(1),
-  source_snapshot_hash: z.string().min(1).optional().nullable(),
-  source_generated_at: z.string().min(1).optional().nullable(),
-  feature_snapshot_hash: z.string().min(1).optional().nullable(),
-  feature_columns: z.array(z.string()).optional()
-}).passthrough();
+  upcoming_gameweek_id: GameweekSchema,
+  expected_points: z.number().finite().min(0).max(100),
+  baseline_expected_points: z.number().finite().min(0).max(100).optional().nullable(),
+  confidence: z.number().finite().min(0).max(1).optional().nullable(),
+  uncertainty: z.number().finite().min(0).max(100).optional().nullable(),
+  model_version: boundedString(200),
+  source_snapshot_hash: HashSchema.optional().nullable(),
+  source_generated_at: z.string().datetime({ offset: true }).optional().nullable(),
+  feature_snapshot_hash: HashSchema.optional().nullable(),
+  feature_columns: FeatureColumnsSchema.optional()
+}).catchall(FeatureValueSchema).superRefine((value, context) => {
+  const keys = Object.keys(value);
+  if (keys.length > MAX_PREDICTION_FIELDS) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Prediction rows may contain at most ${MAX_PREDICTION_FIELDS} fields`
+    });
+  }
+  if (keys.some(key => key.length > 100 || ['__proto__', 'prototype', 'constructor'].includes(key))) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Prediction row contains an unsafe field name'
+    });
+  }
+});
 
 type PredictionArtifactRow = z.infer<typeof PredictionArtifactRowSchema>;
 
 const ModelArtifactSchema = z.object({
-  model_version: z.string().min(1).optional(),
-  training_row_count: z.coerce.number().int().nonnegative().optional(),
-  trained_from_gameweek: z.coerce.number().int().positive().optional().nullable(),
-  trained_through_gameweek: z.coerce.number().int().positive().optional().nullable(),
-  feature_columns: z.array(z.string()).optional()
+  model_version: boundedString(200).optional(),
+  training_row_count: z.number().finite().int().min(0).max(1_000_000).optional(),
+  trained_from_gameweek: GameweekSchema.optional().nullable(),
+  trained_through_gameweek: GameweekSchema.optional().nullable(),
+  feature_columns: FeatureColumnsSchema.optional()
 }).passthrough();
 
 const EvaluationReportSchema = z.object({
-  metrics: z.record(z.unknown()),
-  baseline_metrics: z.record(z.unknown()).optional().nullable(),
-  metrics_by_position: z.record(z.unknown()).optional().nullable(),
-  baseline_metrics_by_position: z.record(z.unknown()).optional().nullable(),
-  evaluated_gameweeks: z.array(z.coerce.number().int().positive()).optional(),
-  skipped_gameweeks: z.array(z.coerce.number().int().positive()).optional(),
-  prediction_count: z.coerce.number().int().nonnegative()
+  metrics: MetricSummarySchema,
+  baseline_metrics: MetricSummarySchema.optional().nullable(),
+  metrics_by_position: MetricsByPositionSchema.optional().nullable(),
+  baseline_metrics_by_position: MetricsByPositionSchema.optional().nullable(),
+  evaluated_gameweeks: uniqueGameweeksSchema(),
+  skipped_gameweeks: uniqueGameweeksSchema(),
+  prediction_count: z.number().finite().int().min(0).max(1_000_000)
 }).passthrough();
 
 export const PREDICTION_ARTIFACT_COMMANDS = [
@@ -134,6 +174,10 @@ export function buildPredictionLoadPlan(input: PredictionArtifactInput): Predict
   if (input.predictionRows.length === 0) {
     throw new Error(`Prediction output file is empty: ${input.predictionFilePath}`);
   }
+  if (input.predictionRows.length > MAX_PREDICTION_ROWS) {
+    throw new Error(`Prediction output exceeds the ${MAX_PREDICTION_ROWS}-row limit`);
+  }
+  validateArtifactInput(input);
 
   const predictionRows = parsePredictionRows(input.predictionRows);
   const modelArtifact = parseModelArtifact(input.modelArtifact, input.modelArtifactPath);
@@ -196,13 +240,18 @@ export function buildPredictionLoadPlan(input: PredictionArtifactInput): Predict
 }
 
 function parsePredictionRows(rows: JsonObject[]): PredictionArtifactRow[] {
-  return rows.map((row, index) => {
+  const parsed = rows.map((row, index) => {
     const result = PredictionArtifactRowSchema.safeParse(row);
     if (!result.success) {
       throw new Error(`Prediction row ${index + 1} is invalid: ${result.error.message}`);
     }
     return result.data;
   });
+  const keys = parsed.map(row => `${row.player_id}:${row.upcoming_gameweek_id}:${row.fixture_id}`);
+  if (new Set(keys).size !== keys.length) {
+    throw new Error('Prediction output contains duplicate player/gameweek/fixture rows');
+  }
+  return parsed;
 }
 
 function parseModelArtifact(
@@ -240,12 +289,15 @@ function resolveFeatureColumns(
   predictionRows: PredictionArtifactRow[],
   modelArtifact: z.infer<typeof ModelArtifactSchema> | null
 ): string[] {
-  if (modelArtifact?.feature_columns) {
-    return modelArtifact.feature_columns;
+  const rowColumns = requireSingleOptionalStringArray(
+    predictionRows.map(row => row.feature_columns),
+    'feature_columns'
+  );
+  const modelColumns = modelArtifact?.feature_columns;
+  if (modelColumns && rowColumns && !arraysEqual(modelColumns, rowColumns)) {
+    throw new Error('Model artifact feature columns do not match prediction rows');
   }
-
-  const firstRowColumns = predictionRows[0].feature_columns;
-  return firstRowColumns ? [...firstRowColumns] : [];
+  return [...(modelColumns ?? rowColumns ?? [])];
 }
 
 function toPlayerPredictionRow(row: PredictionArtifactRow): PlayerPredictionRow {
@@ -357,11 +409,77 @@ function requireSingleOptionalString(
   values: Array<string | null>,
   fieldName: string
 ): string | null {
-  const uniqueValues = [...new Set(values.filter((value): value is string => Boolean(value)))];
-  if (uniqueValues.length > 1) {
-    throw new Error(`Prediction output must contain at most one ${fieldName}; received ${uniqueValues.join(', ')}`);
+  const uniqueValues = [...new Set(values)];
+  if (uniqueValues.length !== 1) {
+    throw new Error(`Prediction output rows must contain the same ${fieldName}, including null`);
   }
-  return uniqueValues[0] ?? null;
+  return uniqueValues[0];
+}
+
+function requireSingleOptionalStringArray(
+  values: Array<string[] | undefined>,
+  fieldName: string
+): string[] | undefined {
+  const serialized = values.map(value => value === undefined ? null : JSON.stringify(value));
+  if (new Set(serialized).size !== 1) {
+    throw new Error(`Prediction output rows must contain the same ${fieldName}`);
+  }
+  return values[0];
+}
+
+function arraysEqual(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function validateArtifactInput(input: PredictionArtifactInput): void {
+  const metadataResult = z.object({
+    modelName: boundedString(100),
+    predictionFilePath: boundedString(4_096),
+    predictionFileHash: HashSchema,
+    modelArtifactPath: boundedString(4_096).nullable(),
+    modelArtifactHash: HashSchema.nullable(),
+    evaluationFilePath: boundedString(4_096).nullable(),
+    evaluationFileHash: HashSchema.nullable()
+  }).strict().safeParse({
+    modelName: input.modelName,
+    predictionFilePath: input.predictionFilePath,
+    predictionFileHash: input.predictionFileHash,
+    modelArtifactPath: input.modelArtifactPath,
+    modelArtifactHash: input.modelArtifactHash,
+    evaluationFilePath: input.evaluationFilePath,
+    evaluationFileHash: input.evaluationFileHash
+  });
+  if (!metadataResult.success) throw new Error('Prediction artifact metadata is invalid');
+
+  const hasModelArtifact = input.modelArtifact !== null;
+  if (
+    hasModelArtifact !== (input.modelArtifactPath !== null) ||
+    hasModelArtifact !== (input.modelArtifactHash !== null)
+  ) {
+    throw new Error('Model artifact content, path, and hash must be supplied together');
+  }
+
+  const hasEvaluation = input.evaluationReport !== null;
+  if (
+    hasEvaluation !== (input.evaluationFilePath !== null) ||
+    hasEvaluation !== (input.evaluationFileHash !== null)
+  ) {
+    throw new Error('Evaluation content, path, and hash must be supplied together');
+  }
+}
+
+function boundedString(maximumLength: number): z.ZodEffects<z.ZodString, string, string> {
+  return z.string().min(1).max(maximumLength).refine(
+    value => value === value.trim() && !/[\r\n\0]/.test(value),
+    'String contains surrounding whitespace or control characters'
+  );
+}
+
+function uniqueGameweeksSchema() {
+  return z.array(GameweekSchema).max(MAX_GAMEWEEK).refine(
+    values => new Set(values).size === values.length,
+    'Gameweeks must be unique'
+  ).optional();
 }
 
 function sha256(value: string): string {

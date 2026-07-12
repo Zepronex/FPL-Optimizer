@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { TextDecoder } from 'node:util';
 import { Pool } from 'pg';
 import { Queryable, withTransaction } from './client';
 import {
@@ -9,9 +10,15 @@ import {
   PlayerPredictionRow,
   PredictionLoadPlan,
   PredictionRunRow,
+  MAX_PREDICTION_ROWS,
   buildMissingPredictionArtifactsMessage,
   buildPredictionLoadPlan
 } from './predictionLoadPlan';
+
+export const MAX_PREDICTION_FILE_BYTES = 16 * 1024 * 1024;
+export const MAX_ARTIFACT_JSON_BYTES = 4 * 1024 * 1024;
+export const MAX_PREDICTION_LINE_BYTES = 64 * 1024;
+const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
 
 export type PredictionArtifactPaths = {
   modelName: string;
@@ -43,28 +50,21 @@ export async function buildPredictionLoadPlanFromFiles(
     throw new Error(buildMissingPredictionArtifactsMessage(paths.predictionFilePath));
   }
 
-  const predictionRows = await readJsonl(paths.predictionFilePath);
-  const predictionFileHash = await hashFile(paths.predictionFilePath);
-  const modelArtifact = await readOptionalJson(paths.modelArtifactPath);
-  const modelArtifactHash = paths.modelArtifactPath && existsSync(paths.modelArtifactPath)
-    ? await hashFile(paths.modelArtifactPath)
-    : null;
-  const evaluationReport = await readOptionalJson(paths.evaluationFilePath);
-  const evaluationFileHash = paths.evaluationFilePath && existsSync(paths.evaluationFilePath)
-    ? await hashFile(paths.evaluationFilePath)
-    : null;
+  const predictionArtifact = await readJsonlArtifact(paths.predictionFilePath);
+  const modelArtifact = await readOptionalJsonArtifact(paths.modelArtifactPath);
+  const evaluationArtifact = await readOptionalJsonArtifact(paths.evaluationFilePath);
 
   return buildPredictionLoadPlan({
     modelName: paths.modelName,
     predictionFilePath: paths.predictionFilePath,
-    predictionFileHash,
-    predictionRows,
+    predictionFileHash: predictionArtifact.hash,
+    predictionRows: predictionArtifact.rows,
     modelArtifactPath: modelArtifact ? paths.modelArtifactPath : null,
-    modelArtifactHash,
-    modelArtifact,
-    evaluationFilePath: evaluationReport ? paths.evaluationFilePath : null,
-    evaluationFileHash,
-    evaluationReport
+    modelArtifactHash: modelArtifact?.hash ?? null,
+    modelArtifact: modelArtifact?.value ?? null,
+    evaluationFilePath: evaluationArtifact ? paths.evaluationFilePath : null,
+    evaluationFileHash: evaluationArtifact?.hash ?? null,
+    evaluationReport: evaluationArtifact?.value ?? null
   });
 }
 
@@ -298,34 +298,73 @@ async function readLoadedPredictionCount(
   return Number(result.rows[0].count);
 }
 
-async function readJsonl(filePath: string): Promise<JsonObject[]> {
-  const text = await readFile(filePath, 'utf8');
+async function readJsonlArtifact(filePath: string): Promise<{ rows: JsonObject[]; hash: string }> {
+  const buffer = await readBoundedFile(filePath, MAX_PREDICTION_FILE_BYTES);
+  const text = decodeUtf8(buffer);
   const rows: JsonObject[] = [];
 
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     if (!line.trim()) continue;
-    const value = JSON.parse(line) as unknown;
+    if (Buffer.byteLength(line, 'utf8') > MAX_PREDICTION_LINE_BYTES) {
+      throw new Error(`Prediction artifact line ${index + 1} exceeds the byte limit`);
+    }
+    if (rows.length >= MAX_PREDICTION_ROWS) {
+      throw new Error(`Prediction artifact exceeds the ${MAX_PREDICTION_ROWS}-row limit`);
+    }
+    let value: unknown;
+    try {
+      value = JSON.parse(line) as unknown;
+    } catch {
+      throw new Error(`Prediction artifact line ${index + 1} contains malformed JSON`);
+    }
     if (!isJsonObject(value)) {
-      throw new Error(`${filePath}:${index + 1} must contain a JSON object`);
+      throw new Error(`Prediction artifact line ${index + 1} must contain a JSON object`);
     }
     rows.push(value);
   }
 
-  return rows;
+  return { rows, hash: hashBuffer(buffer) };
 }
 
-async function readOptionalJson(filePath: string | null): Promise<JsonObject | null> {
+async function readOptionalJsonArtifact(
+  filePath: string | null
+): Promise<{ value: JsonObject; hash: string } | null> {
   if (!filePath || !existsSync(filePath)) return null;
 
-  const value = JSON.parse(await readFile(filePath, 'utf8')) as unknown;
-  if (!isJsonObject(value)) {
-    throw new Error(`${filePath} must contain a JSON object`);
+  const buffer = await readBoundedFile(filePath, MAX_ARTIFACT_JSON_BYTES);
+  let value: unknown;
+  try {
+    value = JSON.parse(decodeUtf8(buffer)) as unknown;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('byte limit')) throw error;
+    throw new Error('Artifact JSON is malformed');
   }
-  return value;
+  if (!isJsonObject(value)) {
+    throw new Error('Artifact JSON must contain an object');
+  }
+  return { value, hash: hashBuffer(buffer) };
 }
 
-async function hashFile(filePath: string): Promise<string> {
-  return createHash('sha256').update(await readFile(filePath)).digest('hex');
+function hashBuffer(value: Buffer): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function decodeUtf8(value: Buffer): string {
+  try {
+    return UTF8_DECODER.decode(value);
+  } catch {
+    throw new Error('Artifact contains malformed UTF-8');
+  }
+}
+
+async function readBoundedFile(filePath: string, maximumBytes: number): Promise<Buffer> {
+  const metadata = await stat(filePath);
+  if (!metadata.isFile() || metadata.size > maximumBytes) {
+    throw new Error('Artifact file exceeds the byte limit or is not a regular file');
+  }
+  const value = await readFile(filePath);
+  if (value.byteLength > maximumBytes) throw new Error('Artifact file exceeds the byte limit');
+  return value;
 }
 
 function optionalJson(value: JsonObject | null): string | null {

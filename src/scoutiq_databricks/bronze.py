@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from collections.abc import Sequence
 
 from pyspark.sql import DataFrame, SparkSession
@@ -20,6 +21,8 @@ try:
         TEAM_SCHEMA,
         add_common_task_arguments,
         fail_on_invalid_ids,
+        fail_on_invalid_numeric_bounds,
+        fail_on_rows,
         get_spark,
         merge_delta_table,
         print_task_summary,
@@ -46,6 +49,8 @@ except ModuleNotFoundError:  # Python-file tasks execute this file outside packa
         TEAM_SCHEMA,
         add_common_task_arguments,
         fail_on_invalid_ids,
+        fail_on_invalid_numeric_bounds,
+        fail_on_rows,
         get_spark,
         merge_delta_table,
         print_task_summary,
@@ -53,10 +58,45 @@ except ModuleNotFoundError:  # Python-file tasks execute this file outside packa
     )
 
 
+SNAPSHOT_FILENAMES = (
+    "manifest.json",
+    "players.json",
+    "teams.json",
+    "events.json",
+    "fixtures.json",
+    "player_gameweek_history.json",
+)
+SNAPSHOT_METADATA_FILENAME = "snapshot_metadata.json"
+PACKAGE_FILE_BYTE_LIMITS = {
+    SNAPSHOT_METADATA_FILENAME: 256 * 1024,
+    "manifest.json": 256 * 1024,
+    "players.json": 8 * 1024 * 1024,
+    "teams.json": 512 * 1024,
+    "events.json": 512 * 1024,
+    "fixtures.json": 8 * 1024 * 1024,
+    "player_gameweek_history.json": 32 * 1024 * 1024,
+}
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+MAX_DATABASE_ID = 2_147_483_647
+MAX_GAMEWEEK_ID = 38
+MAX_RECORD_COUNTS = {
+    "players": 2_000,
+    "teams": 100,
+    "events": 100,
+    "fixtures": 5_000,
+}
+MAX_HISTORY_ROWS = 400_000
+
+
 def read_public_snapshot(spark: SparkSession, input_path: str) -> dict[str, DataFrame]:
     base = input_path.rstrip("/")
+    file_integrity = _read_file_integrity(spark, base)
     return {
-        "snapshot_metadata": _read_single_object(spark, f"{base}/snapshot_metadata.json", SNAPSHOT_METADATA_SCHEMA),
+        "snapshot_metadata": _read_single_object(
+            spark,
+            f"{base}/{SNAPSHOT_METADATA_FILENAME}",
+            SNAPSHOT_METADATA_SCHEMA,
+        ),
         "manifest": _read_single_object(spark, f"{base}/manifest.json", MANIFEST_SCHEMA),
         "players": _read_array(spark, f"{base}/players.json", PLAYER_SCHEMA),
         "teams": _read_array(spark, f"{base}/teams.json", TEAM_SCHEMA),
@@ -67,6 +107,7 @@ def read_public_snapshot(spark: SparkSession, input_path: str) -> dict[str, Data
             f"{base}/player_gameweek_history.json",
             HISTORY_FILE_SCHEMA,
         ),
+        "_file_integrity": file_integrity,
     }
 
 
@@ -80,33 +121,58 @@ def validate_public_snapshot(snapshot: dict[str, DataFrame]) -> None:
         if count != 1:
             raise ValueError(f"{name} must contain exactly one object, received {count}")
 
+    _validate_file_integrity(metadata, snapshot["_file_integrity"])
+
     actual_counts = {
         "players": snapshot["players"].count(),
         "teams": snapshot["teams"].count(),
         "events": snapshot["gameweeks"].count(),
         "fixtures": snapshot["fixtures"].count(),
     }
+    if any(actual_counts[name] > maximum for name, maximum in MAX_RECORD_COUNTS.items()):
+        raise ValueError("Snapshot contains an oversized normalized collection")
     expected = manifest.select("recordCounts.*").first().asDict()
     if actual_counts != expected:
         raise ValueError(f"Manifest record counts do not match uploaded files: {expected} != {actual_counts}")
 
     metadata_row = metadata.select(
+        "schemaVersion",
         "datasetType",
         "sourceSnapshotHash",
+        "canonicalSnapshotHash",
         "historyCaptureHash",
+        "hashAlgorithm",
         "sourceGeneratedAt",
         "historyGeneratedAt",
         "recordCounts",
     ).first()
+    if metadata_row.schemaVersion != 1:
+        raise ValueError("Unsupported snapshot metadata schemaVersion")
     if metadata_row.datasetType != "public-fpl":
         raise ValueError(f"Unsupported snapshot datasetType: {metadata_row.datasetType!r}")
-    if not metadata_row.sourceSnapshotHash or not metadata_row.historyCaptureHash:
-        raise ValueError("Snapshot hashes must be present")
+    if metadata_row.hashAlgorithm != "SHA-256":
+        raise ValueError("Unsupported snapshot hash algorithm")
+    if not _is_sha256(metadata_row.sourceSnapshotHash) or not _is_sha256(metadata_row.historyCaptureHash):
+        raise ValueError("Snapshot hashes must be valid SHA-256 digests")
+    if metadata_row.canonicalSnapshotHash != metadata_row.sourceSnapshotHash:
+        raise ValueError("Snapshot canonical hash does not match sourceSnapshotHash")
 
     source_generated_at = manifest.select("generatedAt").first()[0]
     history = history_file.select(
         "generatedAt", "inputSnapshotGeneratedAt", "playerCount", "rowCount", F.size("rows").alias("actualRowCount")
     ).first()
+    if (
+        history.generatedAt is None
+        or history.inputSnapshotGeneratedAt is None
+        or history.playerCount is None
+        or history.rowCount is None
+        or history.actualRowCount is None
+        or history.playerCount < 0
+        or history.playerCount > MAX_RECORD_COUNTS["players"]
+        or history.rowCount < 0
+        or history.rowCount > MAX_HISTORY_ROWS
+    ):
+        raise ValueError("History file contains invalid required metadata or collection sizes")
     if source_generated_at != metadata_row.sourceGeneratedAt:
         raise ValueError("Snapshot metadata sourceGeneratedAt does not match manifest")
     if history.inputSnapshotGeneratedAt != source_generated_at:
@@ -124,10 +190,139 @@ def validate_public_snapshot(snapshot: dict[str, DataFrame]) -> None:
             f"Snapshot metadata counts do not match uploaded files: {packaged_counts} != {expected_packaged_counts}"
         )
 
+    _validate_snapshot_semantics(snapshot)
+
     fail_on_invalid_ids(snapshot["players"], ("id", "teamId"), "players input")
     fail_on_invalid_ids(snapshot["teams"], ("id",), "teams input")
     fail_on_invalid_ids(snapshot["gameweeks"], ("id",), "gameweeks input")
     fail_on_invalid_ids(snapshot["fixtures"], ("id", "teamHId", "teamAId"), "fixtures input")
+
+
+def _validate_snapshot_semantics(snapshot: dict[str, DataFrame]) -> None:
+    metadata = snapshot["snapshot_metadata"]
+    fail_on_rows(
+        metadata,
+        F.col("isTestFixture").isNull(),
+        "Snapshot metadata contains a malformed isTestFixture flag",
+    )
+
+    manifest = snapshot["manifest"]
+    fail_on_rows(
+        manifest,
+        F.col("sources").isNull()
+        | (F.size("sources") < 1)
+        | (F.size("sources") > 10),
+        "Manifest contains an invalid sources collection",
+    )
+
+    players = snapshot["players"]
+    fail_on_invalid_numeric_bounds(
+        players,
+        {
+            "code": (1, MAX_DATABASE_ID, True),
+            "nowCost": (0, 100, False),
+            "chanceOfPlayingNextRound": (0, 100, True),
+            "chanceOfPlayingThisRound": (0, 100, True),
+            "form": (-100, 100, False),
+            "selectedByPercent": (0, 100, False),
+            "pointsPerGame": (0, 100, False),
+            "valueSeason": (0, 1_000, False),
+            "totalPoints": (-1_000, 10_000, False),
+            "minutes": (0, 10_000, False),
+            "starts": (0, 100, False),
+            "expectedGoals": (0, 1_000, False),
+            "expectedAssists": (0, 1_000, False),
+            "expectedGoalInvolvements": (0, 1_000, False),
+            "expectedGoalsConceded": (0, 1_000, False),
+        },
+        "Players input",
+    )
+    fail_on_rows(
+        players,
+        F.col("position").isNull()
+        | ~F.col("position").isin("GK", "DEF", "MID", "FWD")
+        | F.col("displayName").isNull()
+        | (F.length("displayName") < 1)
+        | (F.length("displayName") > 200)
+        | F.col("status").isNull()
+        | (F.length("status") < 1)
+        | (F.length("status") > 32),
+        "Players input contains malformed required text values",
+    )
+
+    teams = snapshot["teams"]
+    fail_on_invalid_numeric_bounds(
+        teams,
+        {
+            "code": (1, MAX_DATABASE_ID, True),
+            "strength": (0, 10_000, True),
+            "strengthOverallHome": (0, 10_000, True),
+            "strengthOverallAway": (0, 10_000, True),
+        },
+        "Teams input",
+    )
+
+    gameweeks = snapshot["gameweeks"]
+    fail_on_invalid_numeric_bounds(
+        gameweeks,
+        {
+            "id": (1, MAX_GAMEWEEK_ID, False),
+            "averageEntryScore": (0, 1_000, True),
+            "highestScore": (0, 1_000, True),
+        },
+        "Gameweeks input",
+    )
+    fail_on_rows(
+        gameweeks,
+        F.col("finished").isNull()
+        | F.col("dataChecked").isNull()
+        | F.col("isCurrent").isNull()
+        | F.col("isNext").isNull(),
+        "Gameweeks input contains malformed required boolean flags",
+    )
+
+    fixtures = snapshot["fixtures"]
+    fail_on_invalid_numeric_bounds(
+        fixtures,
+        {
+            "code": (1, MAX_DATABASE_ID, True),
+            "eventId": (1, MAX_GAMEWEEK_ID, True),
+            "teamHScore": (0, 100, True),
+            "teamAScore": (0, 100, True),
+            "teamHDifficulty": (1, 5, False),
+            "teamADifficulty": (1, 5, False),
+        },
+        "Fixtures input",
+    )
+    fail_on_rows(
+        fixtures,
+        F.col("started").isNull() | F.col("finished").isNull(),
+        "Fixtures input contains malformed required boolean flags",
+    )
+
+    history = snapshot["history_file"].select(F.explode("rows").alias("record")).select("record.*")
+    fail_on_invalid_ids(
+        history,
+        ("playerId", "fixtureId", "gameweekId", "opponentTeamId"),
+        "history input",
+    )
+    fail_on_invalid_numeric_bounds(
+        history,
+        {
+            "gameweekId": (1, MAX_GAMEWEEK_ID, False),
+            "opponentTeamId": (1, 100, False),
+            "totalPoints": (-20, 100, False),
+            "minutes": (0, 180, False),
+            "price": (0, 100, False),
+            "selected": (0, 100_000_000, False),
+        },
+        "History input",
+    )
+    fail_on_rows(
+        history,
+        F.col("wasHome").isNull(),
+        "History input contains a malformed required wasHome flag",
+    )
 
 
 def build_bronze_tables(
@@ -310,6 +505,56 @@ def _read_single_object(spark: SparkSession, path: str, schema) -> DataFrame:
 
 def _read_array(spark: SparkSession, path: str, schema) -> DataFrame:
     return spark.read.option("multiLine", "true").schema(schema).json(path)
+
+
+def _read_file_integrity(spark: SparkSession, base: str) -> DataFrame:
+    integrity = None
+    for filename, max_bytes in PACKAGE_FILE_BYTE_LIMITS.items():
+        binary_file = spark.read.format("binaryFile").load(f"{base}/{filename}")
+        length_rows = binary_file.select("length").collect()
+        if (
+            len(length_rows) != 1
+            or length_rows[0].length is None
+            or length_rows[0].length < 0
+            or length_rows[0].length > max_bytes
+        ):
+            raise ValueError(f"Snapshot package file exceeds its byte limit: {filename}")
+        if filename not in SNAPSHOT_FILENAMES:
+            continue
+        file_integrity = (
+            binary_file
+            .select(
+                F.lit(filename).alias("filename"),
+                F.sha2("content", 256).alias("sha256"),
+            )
+        )
+        integrity = file_integrity if integrity is None else integrity.unionByName(file_integrity)
+    if integrity is None:  # pragma: no cover - SNAPSHOT_FILENAMES is a non-empty constant.
+        raise RuntimeError("Snapshot integrity file list is empty")
+    return integrity
+
+
+def _validate_file_integrity(metadata: DataFrame, actual_integrity: DataFrame) -> None:
+    metadata_row = metadata.select("fileSha256", "historyCaptureHash").first()
+    expected_hashes = dict(metadata_row.fileSha256 or {})
+    expected_filenames = set(SNAPSHOT_FILENAMES)
+    if set(expected_hashes) != expected_filenames:
+        raise ValueError("Snapshot integrity metadata must cover exactly the packaged files")
+    if any(not _is_sha256(file_hash) for file_hash in expected_hashes.values()):
+        raise ValueError("Snapshot integrity metadata contains an invalid SHA-256 digest")
+    if metadata_row.historyCaptureHash != expected_hashes["player_gameweek_history.json"]:
+        raise ValueError("Snapshot history hash does not match file integrity metadata")
+
+    integrity_rows = actual_integrity.collect()
+    actual_hashes = {row.filename: row.sha256 for row in integrity_rows}
+    if len(integrity_rows) != len(actual_hashes) or set(actual_hashes) != expected_filenames:
+        raise ValueError("Snapshot integrity check did not read exactly the packaged files")
+    if actual_hashes != expected_hashes:
+        raise ValueError("Snapshot file integrity check failed")
+
+
+def _is_sha256(value: object) -> bool:
+    return isinstance(value, str) and SHA256_PATTERN.fullmatch(value) is not None
 
 
 def _raw_entity_rows(

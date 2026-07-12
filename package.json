@@ -6,6 +6,9 @@
   "workspaces": [
     "apps/*"
   ],
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
   "scripts": {
     "dev": "node scripts/dev-app.mjs",
     "dev:app": "node scripts/dev-app.mjs",
@@ -21,29 +24,38 @@
     "ingest:fpl:history": "pnpm --filter @fpl-optimizer/api run ingest:fpl:history",
     "ingest:fpl:windows": "powershell -ExecutionPolicy Bypass -File ./scripts/ingest-fpl.ps1",
     "ingest:fpl:history:windows": "powershell -ExecutionPolicy Bypass -File ./scripts/ingest-fpl-history.ps1",
-    "pipeline:bronze": "python -m pipelines.databricks.bronze",
-    "pipeline:silver": "python -m pipelines.databricks.silver",
-    "pipeline:gold": "python -m pipelines.databricks.gold",
-    "pipeline:features": "python -m pipelines.expected_points.features",
-    "pipeline:all": "python -m pipelines.databricks.run_all",
-    "pipeline:test": "python -m unittest discover pipelines",
-    "pipeline:test:databricks": "python -m unittest discover pipelines/databricks/tests",
-    "databricks:snapshot": "python scripts/prepare_databricks_snapshot.py",
-    "databricks:snapshot:test": "python -m unittest scripts/test_package_public_fpl_snapshot.py",
-    "databricks:test": "python -m unittest discover -s src -p \"test_*.py\"",
-    "model:train": "python -m pipelines.expected_points.train",
-    "model:backtest": "python -m pipelines.expected_points.backtest",
-    "model:predict": "python -m pipelines.expected_points.predict",
-    "model:test": "python -m unittest discover pipelines/expected_points/tests",
-    "resume:metrics": "python scripts/generate_resume_metrics.py",
-    "resume:metrics:test": "python -m unittest scripts/test_generate_resume_metrics.py",
+    "pipeline:bronze": "node scripts/run-python.mjs -m pipelines.databricks.bronze",
+    "pipeline:silver": "node scripts/run-python.mjs -m pipelines.databricks.silver",
+    "pipeline:gold": "node scripts/run-python.mjs -m pipelines.databricks.gold",
+    "pipeline:features": "node scripts/run-python.mjs -m pipelines.expected_points.features",
+    "pipeline:all": "node scripts/run-python.mjs -m pipelines.databricks.run_all",
+    "pipeline:test": "node scripts/run-python.mjs -m unittest discover pipelines",
+    "pipeline:test:databricks": "node scripts/run-python.mjs -m unittest discover pipelines/databricks/tests",
+    "databricks:snapshot": "node scripts/run-python.mjs scripts/prepare_databricks_snapshot.py",
+    "databricks:snapshot:test": "node scripts/run-python.mjs -m unittest scripts/test_package_public_fpl_snapshot.py",
+    "databricks:test": "node scripts/run-python.mjs -m unittest discover -s src -p \"test_*.py\"",
+    "model:train": "node scripts/run-python.mjs -m pipelines.expected_points.train",
+    "model:backtest": "node scripts/run-python.mjs -m pipelines.expected_points.backtest",
+    "model:predict": "node scripts/run-python.mjs -m pipelines.expected_points.predict",
+    "model:test": "node scripts/run-python.mjs -m unittest discover pipelines/expected_points/tests",
+    "resume:metrics": "node scripts/run-python.mjs scripts/generate_resume_metrics.py",
+    "resume:metrics:test": "node scripts/run-python.mjs -m unittest scripts/test_generate_resume_metrics.py",
     "smoke:app": "node scripts/smoke-app.mjs",
-    "test:smoke": "node --test scripts/smoke-app.test.mjs",
+    "test:smoke": "node --test scripts/smoke-app.test.mjs scripts/load-root-env.test.mjs",
     "test:api": "pnpm --filter @fpl-optimizer/api run test",
+    "security:scanner-tests": "node --test scripts/security/scanners.test.mjs",
+    "security:secrets": "pnpm run security:scanner-tests && node scripts/security/scan-secrets.mjs",
+    "security:gitleaks": "gitleaks git --config .gitleaks.toml --redact --no-banner --log-opts=--all . && gitleaks dir --config .gitleaks.toml --redact --no-banner --max-target-megabytes=50 .",
+    "security:frontend": "node scripts/security/check-frontend-env.mjs",
+    "security:dependencies": "pnpm audit --audit-level=moderate && node scripts/run-python.mjs -m pip_audit --strict -r requirements-dev.txt",
+    "security:test": "pnpm run test:api && pnpm run test:smoke && pnpm run pipeline:test && pnpm run databricks:snapshot:test && pnpm run model:test && pnpm run databricks:test && pnpm run resume:metrics:test",
+    "security:check": "pnpm run security:secrets && pnpm run build && pnpm run security:frontend && pnpm run security:dependencies && pnpm run security:test",
     "install:all": "pnpm install",
     "clean": "node -e \"const fs=require('fs'); for (const p of ['node_modules','apps/api/node_modules','apps/web/node_modules','apps/api/dist','apps/web/dist','apps/web/.vite']) fs.rmSync(p,{recursive:true,force:true});\""
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+  "pnpm": {
+    "overrides": {
+      "yaml": ">=2.8.3 <3"
+    }
   }
 }

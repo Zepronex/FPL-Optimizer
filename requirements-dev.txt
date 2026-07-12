@@ -1,2 +1,4 @@
 # Keep local Spark tests reproducible across development and CI environments.
 pyspark==3.5.7
+# Security audit tooling used by `pnpm run security:dependencies`.
+pip-audit==2.10.1

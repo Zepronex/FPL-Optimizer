@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Pool } from 'pg';
+import { readNormalizedFplJson } from '../ingestion/localJson';
 import { NormalizedFplDataset, NormalizedFplDatasetSchema } from '../ingestion/schemas';
 import { Queryable, withTransaction } from './client';
 import {
@@ -21,11 +21,11 @@ export type FplLoadResult = {
 
 export async function readNormalizedFplDataset(inputDir: string): Promise<NormalizedFplDataset> {
   const [manifest, players, teams, events, fixtures] = await Promise.all([
-    readJson(path.join(inputDir, 'manifest.json')),
-    readJson(path.join(inputDir, 'players.json')),
-    readJson(path.join(inputDir, 'teams.json')),
-    readJson(path.join(inputDir, 'events.json')),
-    readJson(path.join(inputDir, 'fixtures.json'))
+    readNormalizedFplJson(path.join(inputDir, 'manifest.json')),
+    readNormalizedFplJson(path.join(inputDir, 'players.json')),
+    readNormalizedFplJson(path.join(inputDir, 'teams.json')),
+    readNormalizedFplJson(path.join(inputDir, 'events.json')),
+    readNormalizedFplJson(path.join(inputDir, 'fixtures.json'))
   ]);
 
   return NormalizedFplDatasetSchema.parse({
@@ -384,8 +384,4 @@ function assertLoadedCounts(expected: LoadedRecordCounts, actual: LoadedRecordCo
       `Loaded database counts do not match input: expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`
     );
   }
-}
-
-async function readJson(filePath: string): Promise<unknown> {
-  return JSON.parse(await readFile(filePath, 'utf8'));
 }

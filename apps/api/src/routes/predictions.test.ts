@@ -57,6 +57,15 @@ describe('predictions route', () => {
     assert.match(response.body.error, /No prediction runs loaded/);
     assert.deepEqual(response.body.requiredCommands, PLAYER_CANDIDATE_REQUIRED_COMMANDS);
   });
+
+  it('rejects unknown filters, unsafe numeric formats, and unrealistic gameweeks', async () => {
+    const client = fakeClient({ runRows: [], predictionRows: [] });
+
+    assert.equal((await getJson(client, '/api/predictions/top?limit=2&extra=1')).status, 400);
+    assert.equal((await getJson(client, '/api/predictions/top?limit=1e2')).status, 400);
+    assert.equal((await getJson(client, '/api/predictions/player/01')).status, 400);
+    assert.equal((await getJson(client, '/api/predictions/gameweek/39')).status, 400);
+  });
 });
 
 async function getJson(client: Queryable, routePath: string) {

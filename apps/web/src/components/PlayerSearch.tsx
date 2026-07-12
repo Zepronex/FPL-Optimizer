@@ -5,6 +5,7 @@ import { apiClient } from '../lib/api';
 import { EnrichedPlayer } from '../lib/types';
 import { useDebounce } from '../hooks/useDebounce';
 import { formatPrice, getPositionColor } from '../lib/format';
+import { PLAYER_SEARCH_MAX_LENGTH } from '../lib/inputLimits';
 
 interface PlayerSearchProps {
   onAddPlayer: (player: EnrichedPlayer, isStarting: boolean) => void;
@@ -31,6 +32,14 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
       setSearchResults([]);
       setSearchStatus('idle');
       setSearchError(null);
+      setRequiredCommands([]);
+      return;
+    }
+
+    if (trimmedQuery.length > PLAYER_SEARCH_MAX_LENGTH) {
+      setSearchResults([]);
+      setSearchStatus('error');
+      setSearchError(`Search terms must be ${PLAYER_SEARCH_MAX_LENGTH} characters or fewer.`);
       setRequiredCommands([]);
       return;
     }
@@ -91,6 +100,7 @@ const PlayerSearch = ({ onAddPlayer }: PlayerSearchProps) => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search for players..."
+          maxLength={PLAYER_SEARCH_MAX_LENGTH}
           className="input-field pl-10"
         />
       </div>

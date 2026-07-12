@@ -63,6 +63,41 @@ describe('analyze route', () => {
     assert.match(response.body.error, /do not have prediction rows/);
     assert.deepEqual(response.body.details.playerIds, [15]);
   });
+
+  it('rejects unknown fields instead of silently discarding them', async () => {
+    const response = await postAnalyze(candidateRowsFixture(), {
+      ...squadPayload(),
+      unexpected: true
+    });
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.success, false);
+    assert.equal(response.body.error, 'Invalid request data');
+  });
+
+  it('rejects duplicate player IDs before querying for analysis data', async () => {
+    const payload = squadPayload();
+    payload.squad.bench[0].id = payload.squad.startingXI[0].id;
+
+    const response = await postAnalyze(candidateRowsFixture(), payload);
+
+    assert.equal(response.status, 400);
+    assert.match(JSON.stringify(response.body.details), /unique/i);
+  });
+
+  it('rejects unsafe numeric coercion, oversized strings, and out-of-range weights', async () => {
+    const stringIdPayload = squadPayload() as any;
+    stringIdPayload.squad.startingXI[0].id = '1';
+    assert.equal((await postAnalyze(candidateRowsFixture(), stringIdPayload)).status, 400);
+
+    const oversizedNamePayload = squadPayload();
+    oversizedNamePayload.squad.startingXI[0].name = 'x'.repeat(101);
+    assert.equal((await postAnalyze(candidateRowsFixture(), oversizedNamePayload)).status, 400);
+
+    const invalidWeightPayload = squadPayload();
+    invalidWeightPayload.weights.form = 1.01;
+    assert.equal((await postAnalyze(candidateRowsFixture(), invalidWeightPayload)).status, 400);
+  });
 });
 
 async function postAnalyze(rows: PlayerCandidateTestRow[], payload: unknown) {

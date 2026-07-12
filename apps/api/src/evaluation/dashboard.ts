@@ -1,5 +1,5 @@
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import path from 'node:path';
 import {
   EvaluationDataCoverageCounts,
   EvaluationDataHealth,
@@ -25,6 +25,8 @@ export const EVALUATION_SETUP_COMMANDS = [
   'pnpm.cmd run model:predict',
   'pnpm.cmd run db:load:predictions'
 ] as const;
+
+export const MAX_PLAYER_HISTORY_ARTIFACT_BYTES = 32 * 1024 * 1024;
 
 const LIMITATIONS = [
   'Model quality is evaluated against a recent-points baseline.',
@@ -125,26 +127,35 @@ export function buildEvaluationDataHealth(input: {
 export async function readPlayerGameweekHistoryArtifact(
   filePath: string
 ): Promise<HistoryArtifactReadResult> {
-  if (!existsSync(filePath)) {
-    return {
-      artifact: null,
-      warnings: [`Player-gameweek history artifact is missing at ${filePath}.`]
-    };
-  }
-
   try {
-    const value = JSON.parse(await readFile(filePath, 'utf8')) as unknown;
+    const fileStats = await stat(filePath);
+    if (!fileStats.isFile() || fileStats.size > MAX_PLAYER_HISTORY_ARTIFACT_BYTES) {
+      return {
+        artifact: null,
+        warnings: ['Player-gameweek history artifact is invalid or exceeds the supported size.']
+      };
+    }
+
+    const contents = await readFile(filePath);
+    if (contents.byteLength > MAX_PLAYER_HISTORY_ARTIFACT_BYTES) {
+      return {
+        artifact: null,
+        warnings: ['Player-gameweek history artifact is invalid or exceeds the supported size.']
+      };
+    }
+
+    const value = JSON.parse(contents.toString('utf8')) as unknown;
     if (!isRecord(value)) {
       return {
         artifact: null,
-        warnings: [`Player-gameweek history artifact is not a JSON object at ${filePath}.`]
+        warnings: ['Player-gameweek history artifact is not a JSON object.']
       };
     }
 
     const source = isRecord(value.source) ? value.source : {};
     return {
       artifact: {
-        path: filePath,
+        path: path.basename(filePath),
         generatedAt: readOptionalString(value.generatedAt),
         sourceName: readOptionalString(source.name),
         playerCount: readOptionalNumber(value.playerCount),
@@ -152,12 +163,23 @@ export async function readPlayerGameweekHistoryArtifact(
       },
       warnings: []
     };
-  } catch {
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return {
+        artifact: null,
+        warnings: ['Player-gameweek history artifact is missing.']
+      };
+    }
+
     return {
       artifact: null,
-      warnings: [`Player-gameweek history artifact could not be read at ${filePath}.`]
+      warnings: ['Player-gameweek history artifact could not be read.']
     };
   }
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
 }
 
 export function toEvaluationRunSummary(evaluation: ModelEvaluation): EvaluationRunSummary {

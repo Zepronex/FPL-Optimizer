@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -11,11 +13,17 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
 from scoutiq_databricks.bronze import (
+    PACKAGE_FILE_BYTE_LIMITS,
     build_bronze_tables,
     read_public_snapshot,
     validate_public_snapshot,
 )
-from scoutiq_databricks.common import assert_unique_non_null_keys, deterministic_deduplicate
+from scoutiq_databricks.common import (
+    GAMEWEEK_SCHEMA,
+    PLAYER_SCHEMA,
+    assert_unique_non_null_keys,
+    deterministic_deduplicate,
+)
 from scoutiq_databricks.evaluation import (
     BASELINE_VARIANT,
     MODEL_VARIANT,
@@ -250,6 +258,99 @@ class SparkTransformTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "identifiers"):
             validate_public_snapshot(snapshot)
+
+    def test_bronze_rejects_string_boolean_parsed_as_null(self) -> None:
+        snapshot = read_public_snapshot(self.spark, str(PUBLIC_FIXTURE))
+        events = json.loads((PUBLIC_FIXTURE / "events.json").read_text(encoding="utf-8"))
+        events[0]["finished"] = "true"
+        snapshot["gameweeks"] = self.spark.read.schema(GAMEWEEK_SCHEMA).json(
+            self.spark.sparkContext.parallelize(json.dumps(event) for event in events)
+        )
+
+        parsed_flag = snapshot["gameweeks"].filter(F.col("id") == 1).select("finished").first()[0]
+        self.assertIsNone(parsed_flag)
+        with self.assertRaisesRegex(ValueError, "boolean flags"):
+            validate_public_snapshot(snapshot)
+
+    def test_bronze_rejects_invalid_player_numeric_values(self) -> None:
+        cases = (
+            ("nowCost", -1.0),
+            ("form", float("nan")),
+            ("expectedGoals", float("inf")),
+        )
+        for field_name, invalid_value in cases:
+            with self.subTest(field=field_name, value=invalid_value):
+                snapshot = read_public_snapshot(self.spark, str(PUBLIC_FIXTURE))
+                snapshot["players"] = snapshot["players"].withColumn(
+                    field_name,
+                    F.when(F.col("id") == 1, F.lit(invalid_value)).otherwise(F.col(field_name)),
+                )
+                with self.assertRaisesRegex(ValueError, "numeric values"):
+                    validate_public_snapshot(snapshot)
+
+    def test_silver_rejects_invalid_player_numeric_values_from_raw_bronze(self) -> None:
+        cases = (
+            ("nowCost", -1.0),
+            ("form", float("nan")),
+        )
+        for field_name, invalid_value in cases:
+            with self.subTest(field=field_name, value=invalid_value):
+                bronze = dict(self.bronze)
+                raw_players = bronze["bronze_players_raw"]
+                parsed = F.from_json("raw_record_json", PLAYER_SCHEMA)
+                invalid_record = F.to_json(
+                    parsed.withField(field_name, F.lit(invalid_value)),
+                    options={"ignoreNullFields": "false"},
+                )
+                bronze["bronze_players_raw"] = raw_players.withColumn(
+                    "raw_record_json",
+                    F.when(F.col("record_id") == 1, invalid_record).otherwise(F.col("raw_record_json")),
+                )
+
+                with self.assertRaisesRegex(ValueError, "Silver players.*numeric values"):
+                    build_silver_tables(bronze)
+
+    def test_silver_rejects_null_required_boolean_from_raw_bronze(self) -> None:
+        bronze = dict(self.bronze)
+        raw_gameweeks = bronze["bronze_gameweeks_raw"]
+        parsed = F.from_json("raw_record_json", GAMEWEEK_SCHEMA)
+        invalid_record = F.to_json(
+            parsed.withField("finished", F.lit(None).cast("boolean")),
+            options={"ignoreNullFields": "false"},
+        )
+        bronze["bronze_gameweeks_raw"] = raw_gameweeks.withColumn(
+            "raw_record_json",
+            F.when(F.col("record_id") == 1, invalid_record).otherwise(F.col("raw_record_json")),
+        )
+
+        with self.assertRaisesRegex(ValueError, "boolean flags"):
+            build_silver_tables(bronze)
+
+    def test_bronze_rejects_snapshot_file_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tampered_snapshot = Path(temp_dir) / "snapshot"
+            shutil.copytree(PUBLIC_FIXTURE, tampered_snapshot)
+            players_path = tampered_snapshot / "players.json"
+            players = json.loads(players_path.read_text(encoding="utf-8"))
+            players[0]["displayName"] = "Tampered player name"
+            players_path.write_text(json.dumps(players), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "integrity"):
+                build_bronze_tables(self.spark, str(tampered_snapshot), "fixture-run")
+
+    def test_snapshot_reader_rejects_oversized_package_files_before_parsing(self) -> None:
+        for filename in ("snapshot_metadata.json", "player_gameweek_history.json"):
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as temp_dir:
+                oversized_snapshot = Path(temp_dir) / "snapshot"
+                shutil.copytree(PUBLIC_FIXTURE, oversized_snapshot)
+                (oversized_snapshot / filename).write_bytes(
+                    b" " * (PACKAGE_FILE_BYTE_LIMITS[filename] + 1)
+                )
+
+                with self.assertRaisesRegex(ValueError, f"byte limit: {filename}") as error:
+                    read_public_snapshot(self.spark, str(oversized_snapshot))
+
+                self.assertNotIn(str(oversized_snapshot), str(error.exception))
 
 
 if __name__ == "__main__":

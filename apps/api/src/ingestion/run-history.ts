@@ -45,8 +45,8 @@ function readFlag(args: string[], flag: string): string | undefined {
 
 function parsePositiveInteger(value: string, label: string): number {
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`Expected ${label} to be a positive integer`);
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 32) {
+    throw new Error(`Expected ${label} to be an integer between 1 and 32`);
   }
   return parsed;
 }

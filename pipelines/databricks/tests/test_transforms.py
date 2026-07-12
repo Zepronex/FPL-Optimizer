@@ -8,6 +8,7 @@ from pathlib import Path
 from pipelines.databricks.io import write_local_tables
 from pipelines.databricks.transforms import (
     GOLD_TABLE_COLUMNS,
+    MAX_INGESTION_FILE_BYTES,
     SILVER_TABLE_COLUMNS,
     build_bronze_tables,
     build_gold_tables,
@@ -92,6 +93,101 @@ class DatabricksPipelineTransformTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Manifest counts do not match normalized files'):
             validate_ingestion_dataset(dataset)
 
+    def test_validation_rejects_boolean_values_in_integer_id_fields(self) -> None:
+        cases = (
+            ('players', 0, 'id'),
+            ('players', 0, 'teamId'),
+            ('teams', 0, 'id'),
+            ('events', 0, 'id'),
+            ('fixtures', 0, 'id'),
+            ('fixtures', 0, 'eventId')
+        )
+
+        for collection, index, field_name in cases:
+            with self.subTest(collection=collection, field=field_name):
+                dataset = sample_dataset()
+                dataset[collection][index][field_name] = True
+
+                with self.assertRaises(ValueError):
+                    validate_ingestion_dataset(dataset)
+
+    def test_validation_rejects_truthy_strings_and_integers_as_boolean_flags(self) -> None:
+        cases = (
+            ('events', 0, 'finished', 'false'),
+            ('events', 0, 'isCurrent', 'yes'),
+            ('fixtures', 0, 'started', 1),
+            ('fixtures', 0, 'finished', 0)
+        )
+
+        for collection, index, field_name, invalid_value in cases:
+            with self.subTest(collection=collection, field=field_name):
+                dataset = sample_dataset()
+                dataset[collection][index][field_name] = invalid_value
+
+                with self.assertRaisesRegex(ValueError, 'must be a boolean'):
+                    validate_ingestion_dataset(dataset)
+
+    def test_validation_rejects_non_finite_normalized_numbers(self) -> None:
+        cases = (
+            ('players', 0, 'nowCost', float('nan')),
+            ('players', 0, 'expectedGoals', float('inf')),
+            ('events', 0, 'averageEntryScore', float('-inf'))
+        )
+
+        for collection, index, field_name, invalid_value in cases:
+            with self.subTest(collection=collection, field=field_name):
+                dataset = sample_dataset()
+                dataset[collection][index][field_name] = invalid_value
+
+                with self.assertRaisesRegex(ValueError, 'finite number'):
+                    validate_ingestion_dataset(dataset)
+
+    def test_validation_rejects_out_of_range_normalized_fields(self) -> None:
+        cases = (
+            ('players', 0, 'nowCost', 101),
+            ('players', 0, 'selectedByPercent', -1),
+            ('teams', 0, 'strength', 10_001),
+            ('events', 0, 'id', 39),
+            ('fixtures', 0, 'teamHScore', 101),
+            ('fixtures', 0, 'teamHDifficulty', 6)
+        )
+
+        for collection, index, field_name, invalid_value in cases:
+            with self.subTest(collection=collection, field=field_name):
+                dataset = sample_dataset()
+                dataset[collection][index][field_name] = invalid_value
+
+                with self.assertRaises(ValueError):
+                    validate_ingestion_dataset(dataset)
+
+    def test_validation_rejects_oversized_normalized_collections(self) -> None:
+        cases = (
+            ('players', 2_001),
+            ('teams', 101),
+            ('events', 101),
+            ('fixtures', 5_001)
+        )
+
+        for collection, size in cases:
+            with self.subTest(collection=collection):
+                dataset = sample_dataset()
+                dataset[collection] = [dataset[collection][0]] * size
+
+                with self.assertRaisesRegex(ValueError, 'invalid number of entries'):
+                    validate_ingestion_dataset(dataset)
+
+        dataset = sample_dataset()
+        dataset['manifest']['sources'] = [dataset['manifest']['sources'][0]] * 11
+        with self.assertRaisesRegex(ValueError, 'invalid number of entries'):
+            validate_ingestion_dataset(dataset)
+
+    def test_validation_rejects_unknown_normalized_fields(self) -> None:
+        dataset = sample_dataset()
+        dataset['players'][0]['unexpected'] = 'value'
+
+        with self.assertRaisesRegex(ValueError, 'required object schema'):
+            validate_ingestion_dataset(dataset)
+
     def test_local_writer_outputs_dry_run_jsonl_sample(self) -> None:
         tables = build_gold_tables(build_silver_tables(sample_dataset()))
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -129,6 +225,48 @@ class DatabricksPipelineTransformTests(unittest.TestCase):
 
         self.assertEqual(loaded['manifest']['schemaVersion'], 1)
         self.assertEqual(len(loaded['players']), 2)
+
+    def test_reader_rejects_oversized_normalized_file_before_parsing(self) -> None:
+        dataset = sample_dataset()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = Path(temp_dir)
+            file_map = {
+                'manifest.json': dataset['manifest'],
+                'players.json': dataset['players'],
+                'teams.json': dataset['teams'],
+                'events.json': dataset['events'],
+                'fixtures.json': dataset['fixtures']
+            }
+            for file_name, value in file_map.items():
+                (input_dir / file_name).write_text(json.dumps(value), encoding='utf-8')
+            (input_dir / 'players.json').write_bytes(
+                b' ' * (MAX_INGESTION_FILE_BYTES['players'] + 1)
+            )
+
+            with self.assertRaisesRegex(ValueError, 'byte limit: players.json'):
+                read_ingestion_dataset(input_dir)
+
+    def test_reader_uses_strict_non_echoing_json_errors(self) -> None:
+        dataset = sample_dataset()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_dir = Path(temp_dir)
+            file_map = {
+                'manifest.json': dataset['manifest'],
+                'players.json': dataset['players'],
+                'teams.json': dataset['teams'],
+                'events.json': dataset['events'],
+                'fixtures.json': dataset['fixtures']
+            }
+            for file_name, value in file_map.items():
+                (input_dir / file_name).write_text(json.dumps(value), encoding='utf-8')
+            invalid_payload = '{"privateValue": NaN}'
+            (input_dir / 'manifest.json').write_text(invalid_payload, encoding='utf-8')
+
+            with self.assertRaisesRegex(ValueError, 'not valid strict JSON: manifest.json') as error:
+                read_ingestion_dataset(input_dir)
+
+            self.assertNotIn(invalid_payload, str(error.exception))
+            self.assertNotIn(str(input_dir), str(error.exception))
 
 
 def sample_dataset() -> dict[str, object]:

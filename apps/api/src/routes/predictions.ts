@@ -8,21 +8,29 @@ import {
   readTopPredictions
 } from '../db/predictionQueries';
 import { PLAYER_CANDIDATE_REQUIRED_COMMANDS } from '../db/playerQueries';
+import {
+  EmptyQuerySchema,
+  GameweekIdParamSchema,
+  PositiveIdParamSchema,
+  queryIntegerSchema
+} from './validation';
 
 const PositionSchema = z.enum(['GK', 'DEF', 'MID', 'FWD']);
-const PositiveIdSchema = z.coerce.number().int().positive();
+const playerParamsSchema = z.object({ playerId: PositiveIdParamSchema }).strict();
+const gameweekParamsSchema = z.object({ gameweekId: GameweekIdParamSchema }).strict();
 
 const topPredictionsQuerySchema = z.object({
-  gameweekId: z.coerce.number().int().positive().optional(),
+  gameweekId: GameweekIdParamSchema.optional(),
   position: PositionSchema.optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(25)
-});
+  limit: queryIntegerSchema(1, 100).optional().default('25')
+}).strict();
 
 export function createPredictionsRouter(client: Queryable = createDbPool()): ExpressRouter {
   const router: ExpressRouter = Router();
 
-  router.get('/latest', async (_req, res) => {
+  router.get('/latest', async (req, res) => {
     try {
+      EmptyQuerySchema.parse(req.query);
       const summary = await readLatestPredictionSummary(client);
       if (!summary) {
         return res.status(404).json({
@@ -44,7 +52,8 @@ export function createPredictionsRouter(client: Queryable = createDbPool()): Exp
 
   router.get('/player/:playerId', async (req, res) => {
     try {
-      const playerId = PositiveIdSchema.parse(req.params.playerId);
+      EmptyQuerySchema.parse(req.query);
+      const { playerId } = playerParamsSchema.parse(req.params);
       const predictions = await readPlayerPredictions(client, playerId);
       if (predictions.length === 0) {
         return res.status(404).json({
@@ -69,7 +78,8 @@ export function createPredictionsRouter(client: Queryable = createDbPool()): Exp
 
   router.get('/gameweek/:gameweekId', async (req, res) => {
     try {
-      const gameweekId = PositiveIdSchema.parse(req.params.gameweekId);
+      EmptyQuerySchema.parse(req.query);
+      const { gameweekId } = gameweekParamsSchema.parse(req.params);
       const summary = await readGameweekPredictionSummary(client, gameweekId);
       if (!summary) {
         return res.status(404).json({
@@ -129,5 +139,3 @@ function handleRouteError(res: Response, error: unknown): void {
     error: 'Failed to fetch prediction data'
   });
 }
-
-export const predictionsRouter = createPredictionsRouter();

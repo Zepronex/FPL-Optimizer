@@ -1,184 +1,164 @@
 # ScoutIQ Architecture
 
-This document describes the current repository architecture and local data flow. It is intended for technical reviewers who want to understand how ingestion, modelling, optimization, explanation, and the web demo fit together.
+This document owns ScoutIQ's system boundaries, component responsibilities, and data flow. Setup stays in the root README, Databricks operations stay in `DATABRICKS.md`, and security controls stay in `SECURITY.md`.
 
-## Repository Structure
-
-```text
-apps/
-  api/                 Express and TypeScript API
-  web/                 React and Vite frontend
-db/
-  migrations/          PostgreSQL schema migrations
-docs/                  Architecture, setup, pipeline, and demo docs
-fixtures/
-  agent/               Local explanation-agent request fixtures
-pipelines/
-  databricks/          Legacy local JSONL Bronze, Silver, Gold pipeline scripts
-  expected_points/     Feature, train, backtest, predict, and test scripts
-src/
-  scoutiq_databricks/  PySpark and Delta Bronze, Silver, Gold, evaluation tasks
-resources/             Databricks Job, schema, and Volume bundle resources
-databricks.yml         Declarative Automation Bundle entry point
-scripts/               Windows-friendly local workflow helpers
-data/                  Gitignored local ingestion, feature, model, and prediction outputs
-```
-
-The normal local application path is `apps/api` plus `apps/web`. Expected-points training, backtesting, and prediction generation run through the `pipelines/` commands and load outputs into PostgreSQL.
-
-## High-Level Flow
+## System Context
 
 ```mermaid
 flowchart LR
-  A["Public FPL API"] --> B["TypeScript ingestion"]
-  B --> C["data/fpl/latest JSON"]
-  B --> D0["Ignored public Databricks snapshot"]
-  D0 --> D1["Unity Catalog managed Volume"]
-  D1 --> D2["Bronze Delta"]
-  D2 --> D3["Silver Delta"]
-  D3 --> D4["Gold features and outcomes"]
-  D4 --> D5["Walk-forward Delta evaluation"]
-  C --> D["PostgreSQL normalized tables"]
-  C --> E["Bronze layer"]
-  E --> F["Silver layer"]
-  F --> G["Gold feature rows"]
-  G --> H["Expected-points train and backtest"]
-  H --> I["Prediction artifacts"]
-  I --> J["Prediction-serving tables"]
-  J --> K["API prediction and optimizer routes"]
-  K --> L["React analysis and evaluation pages"]
-  K --> M["Explanation agent"]
-  M --> L
+  FPL["Official public FPL APIs"]
+  ING["TypeScript ingestion"]
+  LOCAL["Ignored local JSON and JSONL artifacts"]
+  DB["PostgreSQL serving store"]
+  API["Express API"]
+  WEB["React application"]
+  MODEL["Expected-points pipeline"]
+  OPT["Deterministic optimizer"]
+  AGENT["Optional explanation provider"]
+  SNAP["Ignored public snapshot package"]
+  UC["Unity Catalog Volume"]
+  DATABRICKS["Databricks Bronze / Silver / Gold / Evaluation"]
+
+  FPL --> ING
+  ING --> LOCAL
+  LOCAL --> DB
+  LOCAL --> MODEL
+  MODEL --> LOCAL
+  LOCAL --> DB
+  DB --> API
+  API --> WEB
+  API --> OPT
+  OPT --> AGENT
+  AGENT --> API
+  ING --> SNAP
+  SNAP --> UC
+  UC --> DATABRICKS
 ```
 
-## Data Ingestion To Database
+The core serving-time trust boundaries are browser-to-API and API-to-PostgreSQL; live explanation mode adds API-to-provider. The provider is downstream of an already-computed optimizer result. Databricks is an offline analytics boundary and receives only the prepared public-data package.
 
-The ingestion entry points live in `apps/api/src/ingestion`.
+## Repository Ownership
 
-- `pnpm.cmd run ingest:fpl` fetches public bootstrap and fixture data.
-- `pnpm.cmd run ingest:fpl:history` fetches public player gameweek history.
-- Normalized records are written under `data/fpl/latest` and `data/fpl/history`.
-- The manifest preserves source URLs, fetch timestamps, season metadata, record counts, and a deterministic snapshot hash.
+| Path | Responsibility |
+| --- | --- |
+| `apps/web` | React/Vite user interface and relative `/api` client |
+| `apps/api` | Express routes, validation, database access, optimizer, and explanation orchestration |
+| `db/migrations` | PostgreSQL schema and constraints |
+| `pipelines/databricks` | Legacy local JSONL Bronze/Silver/Gold compatibility path |
+| `pipelines/expected_points` | Feature generation, training, backtesting, and prediction |
+| `src/scoutiq_databricks` | PySpark/Delta Bronze, Silver, Gold, and evaluation tasks |
+| `databricks.yml`, `resources` | Declarative Automation Bundle and Job resources |
+| `scripts` | Local workflow, packaging, smoke, evidence, and security helpers |
+| `fixtures` | Small deterministic test inputs; not full-run evidence |
+| `data`, `artifacts/resume_metrics.json` | Generated local outputs ignored by Git |
 
-PostgreSQL loading is handled by `apps/api/src/db`.
+## Public Data Ingestion
 
-- `pnpm.cmd run db:migrate` applies SQL files from `db/migrations`.
-- `pnpm.cmd run db:load:fpl` loads teams, players, gameweeks, fixtures, and ingestion run metadata.
-- `pnpm.cmd run db:load:predictions` loads prediction runs, player predictions, and model evaluation summaries.
+The TypeScript ingestion code accepts data only from the official public FPL endpoints:
 
-The database gives the API a stable serving layer while local pipeline artifacts remain gitignored.
+- `https://fantasy.premierleague.com/api/bootstrap-static/`
+- `https://fantasy.premierleague.com/api/fixtures/`
+- `https://fantasy.premierleague.com/api/element-summary/{player_id}/`
 
-## Bronze, Silver, And Gold Pipelines
+Raw responses are schema-validated and normalized into players, teams, gameweeks, fixtures, and player-gameweek history. Generated files live under ignored `data/fpl` paths.
 
-The legacy local JSONL pipeline lives in `pipelines/databricks`. It remains useful for fast local development and compatibility with the existing expected-points pipeline.
+The normalized manifest records source URLs, capture timestamps, season metadata, and record counts. PostgreSQL load planning and Databricks packaging derive deterministic snapshot hashes; the package also adds per-file SHA-256 metadata, and Bronze verifies exact file hashes and snapshot-hash linkage before ingestion.
 
-The genuine Databricks implementation lives in `src/scoutiq_databricks` and is deployed through `databricks.yml` plus `resources/scoutiq_job.yml`.
+## PostgreSQL Serving Layer
 
-- Bronze reads an uploaded public package from a managed Unity Catalog Volume and writes source-preserving managed Delta tables.
-- Silver reads Bronze, parses explicit schemas, validates references, and deduplicates deterministically.
-- Gold reads Silver, aggregates double gameweeks before prior-only windows, and keeps model features separate from target-gameweek outcomes.
-- Evaluation reads Gold, applies a strict earlier-gameweek walk-forward split, compares the model with a recent-points baseline, and writes Delta predictions, metrics, and run evidence.
+PostgreSQL is the source used by the HTTP application. Migrations define:
 
-Databricks remains an offline transformation and analytics layer. PostgreSQL remains the serving database used by the API and optimizer.
+- normalized `teams`, `players`, `gameweeks`, `fixtures`, and `ingestion_runs` tables;
+- expected-points model-run and player-output foundations; and
+- `prediction_runs`, `player_predictions`, and `model_evaluations` serving tables.
 
-## Model Training, Backtesting, And Prediction
+Migration application is checksum-tracked. Loaders validate local artifacts, retain lineage, and use parameterized queries with conflict-safe updates. Replaying the same deterministic inputs updates the corresponding keys instead of creating duplicate logical runs.
 
-The expected-points pipeline lives in `pipelines/expected_points`.
+Database migrations, ingestion, model generation, and database loading are operator-run batch commands. They are intentionally not exposed as HTTP maintenance endpoints.
 
-- `features.py` builds current prediction rows and historical training rows.
-- `train.py` trains the expected-points baseline model.
-- `backtest.py` runs walk-forward evaluation with a historical baseline comparison.
-- `predict.py` writes current prediction rows for serving.
-- Tests under `pipelines/expected_points/tests` check feature and evaluation behavior.
+## Local Lakehouse And Expected-Points Flow
 
-The current backtest is mixed rather than clearly better than baseline: MAE is worse than baseline, while RMSE is better. The project reports this as a limitation.
+The local compatibility pipeline under `pipelines/databricks` writes JSONL Bronze, Silver, and Gold outputs for fast development. The production-shaped PySpark implementation is separate and described in `DATABRICKS.md`.
 
-## Prediction Serving Layer
+The expected-points pipeline then:
 
-Prediction serving is documented in `docs/PREDICTION_SERVING.md` and implemented in `apps/api/src/db` plus `apps/api/src/routes`.
+1. builds current upcoming-fixture prediction rows and historical player-gameweek training rows;
+2. trains an interpretable rule-based baseline;
+3. performs walk-forward evaluation against a recent-points comparison baseline; and
+4. writes prediction, model, and evaluation artifacts for loading into PostgreSQL.
 
-Primary API surfaces include:
+If a completed-season snapshot has no upcoming fixtures, the local feature command deliberately emits the latest historical gameweek as a validation-only prediction slice. Those rows exercise the serving path; they are not live upcoming recommendations. The command reports `prediction_source=latest-historical-gameweek`, but the JSONL output does not persist that label, so screenshots and downstream claims must retain this qualification.
 
-- `GET /api/predictions/latest`
-- `GET /api/predictions/player/:playerId`
-- `GET /api/predictions/gameweek/:gameweekId`
-- `GET /api/predictions/top`
-- `GET /api/model/evaluations/latest`
-- `GET /api/evaluation/latest`
-- `GET /api/evaluation/runs`
-- `GET /api/evaluation/data-health`
+### Leakage controls
 
-Prediction responses include run metadata so downstream recommendations can be traced to the model output and source snapshot used.
+- A target gameweek never contributes to its own features.
+- Rolling points and minutes use strictly earlier player-gameweeks.
+- Double gameweeks are aggregated to player-gameweek grain before prior windows are calculated.
+- Walk-forward evaluation trains or calibrates only on earlier gameweeks.
+- Target points, target minutes, fixture outcomes, and post-event values remain outside model features.
+- Boolean-like strings, booleans in numeric fields, and non-finite feature, target, or correction values are rejected.
 
-## Optimizer Flow
+The recorded portfolio evaluation is mixed: RMSE improved relative to the comparison baseline while MAE did not. Exact evidence and qualifications are in `RESUME_EVIDENCE.md`.
 
-Optimizer logic lives in `apps/api/src/optimizer` and is exposed through `apps/api/src/routes/optimizer.ts`.
+## API Surface
 
-The implemented optimizer endpoints are:
+All HTTP routes are mounted below `/api` and return JSON. The route groups are:
 
-- `POST /api/optimizer/starting-xi`
-- `POST /api/optimizer/transfers`
-- `POST /api/optimizer/squad`
+| Group | Endpoints | Behavior |
+| --- | --- | --- |
+| Health | `GET /api/health` | Process/configuration status; no database mutation |
+| Players | list, search, position, and ID lookups | PostgreSQL reads |
+| Predictions | latest, player, gameweek, and top projections | PostgreSQL reads |
+| Model | latest model evaluation | PostgreSQL read |
+| Evaluation | latest, recent runs, and data health | PostgreSQL/local artifact reads |
+| Analyze | squad analysis, validation, weights, and presets | Read-only computation plus prediction reads |
+| Optimizer | starting XI, transfers, and full squad | Expensive deterministic computation plus prediction reads |
+| Agent | public status and recommendation explanation | Status read or optional provider-backed explanation |
 
-The optimizer consumes prediction-backed player candidates and applies deterministic FPL constraints such as squad size, positions, budget, formations, club limits, captaincy, and bench order. It does not call the LLM explanation layer and does not rely on random or mock recommendation data.
+The POST routes do not modify application state: they analyze or optimize caller-supplied data. There are no user-account, ingestion, maintenance, upload, or administrator HTTP routes.
 
-## Explanation Agent Flow
+The expensive routes are `GET /api/evaluation/data-health`, `POST /api/analyze`, the three optimizer POST routes, and `POST /api/agent/explain-recommendation`. They receive a stricter rate limit in addition to the global limiter. Exact limits and schema bounds are documented in `SECURITY.md`.
 
-The explanation layer lives in `apps/api/src/agent` and is exposed through `apps/api/src/routes/agent.ts`.
+## Prediction And Optimizer Flow
 
-The implemented agent endpoints are:
+Prediction responses retain model-run, target-gameweek, fixture, and snapshot lineage. Per-fixture rows are aggregated deliberately before a player is optimized for a gameweek.
 
-- `GET /api/agent/status`
-- `POST /api/agent/explain-recommendation`
+The optimizer implements three operations:
 
-The agent receives optimizer result JSON after the optimizer has already made decisions. Provider output is schema-validated and checked for unsupported player references before it can be returned. If provider mode is disabled, unconfigured, unavailable, invalid, or unsafe, the API returns deterministic fallback explanation output instead.
+- starting XI, bench order, captain, and vice-captain selection from a valid 15-player squad;
+- bounded transfer recommendations under free-transfer and points-hit settings; and
+- full 15-player squad construction from a bounded candidate pool.
 
-The agent explains but does not decide. It does not choose players, transfers, captaincy, bench order, or chips.
+Constraints cover squad composition, formation, budget, bank, unique players, maximum players per club, transfer counts, and recommendation consistency. The optimizer is deterministic and does not call an LLM to make decisions.
 
-## Evaluation Dashboard Flow
+## Explanation Boundary
 
-The web evaluation page is `apps/web/src/pages/EvaluationPage.tsx`. It reads the evaluation API routes to display:
+The explanation route receives structured optimizer output after player and transfer decisions exist. Provider mode is optional.
 
-- latest backtest metrics
-- comparison against baseline MAE and RMSE
-- coverage counts for loaded data
-- prediction run metadata
-- setup warnings when evaluation or prediction data is missing
-- current limitations
+Provider input/output is token/byte-bounded and schema-validated. Responses are checked for unsupported player references and structural inconsistency before display. Invalid, unconfigured, unavailable, or timed-out provider behavior produces a deterministic explanation fallback. These controls cannot prove that every free-text sentence faithfully summarizes the optimizer; provider text is narrative only and cannot mutate the returned optimizer result.
 
-The dashboard is a transparency surface. It does not claim model superiority unless both tracked error metrics beat the baseline.
+The React UI renders all explanation strings as ordinary React text. It does not use raw HTML injection.
 
-## Local Development Flow
+## Frontend Flow
 
-The default reviewer and development path is:
+The Vite client uses same-origin relative `/api` requests with a 10-second Axios timeout. It does not call OpenAI, Azure OpenAI, Databricks, PostgreSQL, or FPL providers directly and does not read server environment variables.
 
-```powershell
-pnpm.cmd install
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-if (!(Test-Path apps\api\.env)) { Copy-Item apps\api\.env.example apps\api\.env }
-docker compose up -d postgres
-pnpm.cmd run db:migrate
-pnpm.cmd run ingest:fpl
-pnpm.cmd run db:load:fpl
-pnpm.cmd run ingest:fpl:history
-pnpm.cmd run pipeline:features
-pnpm.cmd run model:train
-pnpm.cmd run model:backtest
-pnpm.cmd run model:predict
-pnpm.cmd run db:load:predictions
-pnpm.cmd run dev:app
-```
+The only interactive free-text input is player search, bounded to 100 characters in the client and validated again by the API. Player detail route IDs are parsed as canonical positive integers before a request is sent. Squad and analysis state is kept in browser session storage for navigation convenience; that storage is not treated as trusted, authenticated, or secret state.
 
-`pnpm.cmd run dev:app` starts the API and web app only. It does not require an OpenAI API key.
+React's default escaping remains the output boundary. There is no `dangerouslySetInnerHTML`, `eval`, dynamic code execution, browser credential storage, or user-controlled external URL fetch in `apps/web/src`.
 
-Useful local validation commands:
+## Local And Deployment Boundaries
 
-```powershell
-pnpm.cmd run build:api
-pnpm.cmd run test:api
-pnpm.cmd run test:smoke
-pnpm.cmd run pipeline:test
-pnpm.cmd run model:test
-pnpm.cmd run build
-pnpm.cmd run build:web
-```
+Local development runs the Vite frontend, Express API, and Docker Compose PostgreSQL separately. The frontend development proxy forwards `/api` to the local API.
+
+A hosted deployment must provide:
+
+- one externally reachable API process or an external shared rate-limit store;
+- a PostgreSQL service with migrations and current serving data loaded;
+- same-origin `/api` routing or an explicit frontend-to-API rewrite;
+- an exact HTTPS CORS allowlist;
+- an exact trusted-proxy IP/CIDR configuration when a known reverse proxy is present;
+- platform secret storage, TLS, logging, monitoring, backups, and scheduled batch jobs; and
+- separate security headers for the static frontend host when it is not served by Express.
+
+`docker-compose.yml` provisions local PostgreSQL only. The Vercel descriptors are partial build/route descriptors, not evidence of a complete production deployment.

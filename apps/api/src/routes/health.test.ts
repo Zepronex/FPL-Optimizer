@@ -23,9 +23,9 @@ describe('health route', () => {
   it('does not include secrets or raw environment values', () => {
     const body = buildHealthResponse({
       env: {
-        OPENAI_API_KEY: 'secret-openai-key',
-        POSTGRES_PASSWORD: 'secret-db-password',
-        DATABASE_URL: 'postgresql://user:secret-db-password@localhost:5432/scoutiq',
+        OPENAI_API_KEY: 'unit-test-openai-placeholder',
+        POSTGRES_PASSWORD: 'unit-test-database-placeholder',
+        DATABASE_URL: ['synthetic', 'non-disclosure', 'marker'].join('-'),
         SCOUTIQ_APP_VERSION: 'local-demo'
       },
       now: () => new Date('2026-07-06T12:00:00.000Z')
@@ -35,14 +35,24 @@ describe('health route', () => {
     assert.equal(body.status, 'ok');
     assert.equal(body.service, 'scoutiq-api');
     assert.equal(body.version, 'local-demo');
-    assert.doesNotMatch(serialized, /secret-openai-key/);
-    assert.doesNotMatch(serialized, /secret-db-password/);
+    assert.doesNotMatch(serialized, /unit-test-openai-placeholder/);
+    assert.doesNotMatch(serialized, /unit-test-database-placeholder/);
     assert.doesNotMatch(serialized, /DATABASE_URL/);
     assert.doesNotMatch(serialized, /OPENAI_API_KEY/);
   });
+
+  it('rejects unknown health-check query fields', async () => {
+    const response = await getJson(createHealthRouter(), '/api/health?verbose=true');
+
+    assert.equal(response.status, 400);
+    assert.equal(response.body.error, 'invalid_health_request');
+  });
 });
 
-async function getJson(router: ReturnType<typeof createHealthRouter>) {
+async function getJson(
+  router: ReturnType<typeof createHealthRouter>,
+  routePath = '/api/health'
+) {
   const app = express();
   app.use('/api/health', router);
 
@@ -50,7 +60,7 @@ async function getJson(router: ReturnType<typeof createHealthRouter>) {
   const address = server.address() as AddressInfo;
 
   try {
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
+    const response = await fetch(`http://127.0.0.1:${address.port}${routePath}`);
 
     return {
       status: response.status,

@@ -304,7 +304,7 @@ const ExplanationPanel = ({ explanation, isLoading, error, onRetry }: Explanatio
           <div>
             <h4 className="text-sm font-semibold text-gray-900">Why this is safe</h4>
             <p className="mt-1 text-sm text-gray-600">
-              The optimizer decides the recommendation. The agent only explains the supplied optimizer output, and live provider responses must pass schema validation and grounding checks before display. If those checks fail, deterministic fallback is used.
+              The optimizer result remains unchanged. Provider narrative is size-bounded and must pass schema and grounding checks before display, but free text is not treated as a new optimizer decision. If checks fail, deterministic fallback is used.
             </p>
           </div>
         </div>

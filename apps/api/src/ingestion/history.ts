@@ -1,9 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { NormalizedFplDatasetSchema, NormalizedPlayer } from './schemas';
+import { readNormalizedFplJson } from './localJson';
 
 const FPL_API_BASE = 'https://fantasy.premierleague.com/api';
+const MAX_HISTORY_ROWS_PER_PLAYER = 200;
 
 type RawElementSummary = {
   history?: unknown;
@@ -62,15 +64,18 @@ export async function ingestOfficialFplPlayerHistory(
   options: IngestPlayerHistoryOptions
 ): Promise<PlayerGameweekHistoryFile> {
   const dataset = NormalizedFplDatasetSchema.parse({
-    manifest: await readJson(path.join(options.inputDir, 'manifest.json')),
-    players: await readJson(path.join(options.inputDir, 'players.json')),
-    teams: await readJson(path.join(options.inputDir, 'teams.json')),
-    events: await readJson(path.join(options.inputDir, 'events.json')),
-    fixtures: await readJson(path.join(options.inputDir, 'fixtures.json'))
+    manifest: await readNormalizedFplJson(path.join(options.inputDir, 'manifest.json')),
+    players: await readNormalizedFplJson(path.join(options.inputDir, 'players.json')),
+    teams: await readNormalizedFplJson(path.join(options.inputDir, 'teams.json')),
+    events: await readNormalizedFplJson(path.join(options.inputDir, 'events.json')),
+    fixtures: await readNormalizedFplJson(path.join(options.inputDir, 'fixtures.json'))
   });
 
   const client = options.client ?? axios.create({
     timeout: 15000,
+    maxContentLength: 4 * 1024 * 1024,
+    maxBodyLength: 4 * 1024 * 1024,
+    maxRedirects: 0,
     headers: {
       Accept: 'application/json',
       'User-Agent': 'ScoutIQ-Ingestion/1.0'
@@ -109,6 +114,9 @@ export function normalizeElementSummaryHistory(
   if (!Array.isArray(summary.history)) {
     throw new Error(`Player ${playerId} element-summary response is missing a history array`);
   }
+  if (summary.history.length > MAX_HISTORY_ROWS_PER_PLAYER) {
+    throw new Error(`Player ${playerId} element-summary response exceeds the history row limit`);
+  }
 
   return summary.history
     .map(rawRow => normalizeHistoryRow(playerId, rawRow))
@@ -145,41 +153,21 @@ function normalizeHistoryRow(playerId: number, rawRow: unknown): PlayerGameweekH
   const row = rawRow as RawElementSummaryHistoryRow;
   return {
     playerId,
-    fixtureId: positiveInteger(row.fixture, 'fixture'),
-    gameweekId: positiveInteger(row.round, 'round'),
-    opponentTeamId: positiveInteger(row.opponent_team, 'opponent_team'),
+    fixtureId: rangedInteger(row.fixture, 'fixture', 1, 2_147_483_647),
+    gameweekId: rangedInteger(row.round, 'round', 1, 38),
+    opponentTeamId: rangedInteger(row.opponent_team, 'opponent_team', 1, 100),
     wasHome: booleanValue(row.was_home, 'was_home'),
     kickoffTime: nullableString(row.kickoff_time),
-    totalPoints: integerValue(row.total_points, 'total_points'),
-    minutes: nonnegativeInteger(row.minutes, 'minutes'),
+    totalPoints: rangedInteger(row.total_points, 'total_points', -20, 100),
+    minutes: rangedInteger(row.minutes, 'minutes', 0, 180),
     price: priceValue(row.value),
-    selected: nonnegativeInteger(row.selected, 'selected')
+    selected: rangedInteger(row.selected, 'selected', 0, 100_000_000)
   };
-}
-
-async function readJson(filePath: string): Promise<unknown> {
-  return JSON.parse(await readFile(filePath, 'utf8'));
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-}
-
-function positiveInteger(value: unknown, label: string): number {
-  const parsed = integerValue(value, label);
-  if (parsed <= 0) {
-    throw new Error(`Expected ${label} to be a positive integer`);
-  }
-  return parsed;
-}
-
-function nonnegativeInteger(value: unknown, label: string): number {
-  const parsed = integerValue(value, label);
-  if (parsed < 0) {
-    throw new Error(`Expected ${label} to be a nonnegative integer`);
-  }
-  return parsed;
 }
 
 function integerValue(value: unknown, label: string): number {
@@ -200,13 +188,26 @@ function nullableString(value: unknown): string | null {
   if (value === null || value === undefined) {
     return null;
   }
-  if (typeof value !== 'string') {
+  if (typeof value !== 'string' || value.length > 100 || Number.isNaN(Date.parse(value))) {
     throw new Error('Expected kickoff_time to be a string or null');
   }
   return value;
 }
 
 function priceValue(value: unknown): number {
-  const rawValue = nonnegativeInteger(value, 'value');
+  const rawValue = rangedInteger(value, 'value', 0, 1_000);
   return rawValue / 10;
+}
+
+function rangedInteger(
+  value: unknown,
+  label: string,
+  minimum: number,
+  maximum: number
+): number {
+  const parsed = integerValue(value, label);
+  if (parsed < minimum || parsed > maximum) {
+    throw new Error(`Expected ${label} to be between ${minimum} and ${maximum}`);
+  }
+  return parsed;
 }

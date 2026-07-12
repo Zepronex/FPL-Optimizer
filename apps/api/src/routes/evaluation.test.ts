@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, truncate, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { AddressInfo } from 'node:net';
@@ -12,6 +12,10 @@ import {
   EvaluationLatestApiResponseSchema,
   EvaluationRunsApiResponseSchema
 } from '../evaluation/schemas';
+import {
+  MAX_PLAYER_HISTORY_ARTIFACT_BYTES,
+  readPlayerGameweekHistoryArtifact
+} from '../evaluation/dashboard';
 import { createEvaluationRouter } from './evaluation';
 
 type EvaluationRow = {
@@ -159,6 +163,8 @@ describe('evaluation route', () => {
     assert.equal(parsed.data.coverage.latestPredictionRows, 841);
     assert.equal(parsed.data.coverage.playerGameweekHistoryRows, 29747);
     assert.equal(parsed.data.playerGameweekHistory?.sourceName, 'element-summary');
+    assert.equal(parsed.data.playerGameweekHistory?.path, path.basename(historyPath));
+    assert.doesNotMatch(JSON.stringify(response.body), new RegExp(escapeRegExp(path.dirname(historyPath))));
   });
 
   it('does not return misleading model-improved language', async () => {
@@ -194,6 +200,39 @@ describe('evaluation route', () => {
     assert.equal(response.status, 200);
     assert.deepEqual(parsed.data.runs.map(run => run.id), [3, 2, 1]);
     assert.equal(parsed.count, 3);
+  });
+
+  it('rejects unknown and non-canonical evaluation query values', async () => {
+    const router = createEvaluationRouter(fakeClient({}));
+
+    assert.equal((await getJson(router, '/api/evaluation/latest?extra=1')).status, 400);
+    assert.equal((await getJson(router, '/api/evaluation/runs?limit=01')).status, 400);
+    assert.equal((await getJson(router, '/api/evaluation/runs?limit=101')).status, 400);
+  });
+
+  it('does not expose configured absolute paths when the history artifact is missing', async () => {
+    const configuredPath = path.join(tmpdir(), 'private-workspace', 'player_gameweek_history.json');
+    const result = await readPlayerGameweekHistoryArtifact(configuredPath);
+
+    assert.equal(result.artifact, null);
+    assert.doesNotMatch(result.warnings.join(' '), new RegExp(escapeRegExp(configuredPath)));
+    assert.deepEqual(result.warnings, ['Player-gameweek history artifact is missing.']);
+  });
+
+  it('rejects oversized local history artifacts before reading them', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'evaluation-route-oversized-'));
+    tmpDirs.push(dir);
+    const filePath = path.join(dir, 'player_gameweek_history.json');
+    await writeFile(filePath, '{}', 'utf8');
+    await truncate(filePath, MAX_PLAYER_HISTORY_ARTIFACT_BYTES + 1);
+
+    const result = await readPlayerGameweekHistoryArtifact(filePath);
+
+    assert.equal(result.artifact, null);
+    assert.deepEqual(result.warnings, [
+      'Player-gameweek history artifact is invalid or exceeds the supported size.'
+    ]);
+    assert.doesNotMatch(result.warnings.join(' '), new RegExp(escapeRegExp(path.dirname(filePath))));
   });
 });
 
@@ -353,4 +392,8 @@ async function writeHistoryArtifact(): Promise<string> {
     'utf8'
   );
   return filePath;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

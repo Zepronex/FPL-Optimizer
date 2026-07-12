@@ -76,12 +76,61 @@ describe('recommendation explanation schemas', () => {
     assert.equal(result.success, false);
   });
 
+  it('rejects unknown nested fields, numeric strings, and non-finite values', () => {
+    const baseRequest = {
+      optimizerResult: {
+        startingXi: startingXiFixture(),
+        transferRecommendations: [],
+        predictionRunIds: [42],
+        targetGameweekId: 3
+      }
+    };
+
+    const unknownField = structuredClone(baseRequest) as any;
+    unknownField.optimizerResult.startingXi.starters[0].unexpected = true;
+    assert.equal(ExplainRecommendationRequestSchema.safeParse(unknownField).success, false);
+
+    const numericString = structuredClone(baseRequest) as any;
+    numericString.optimizerResult.startingXi.starters[0].playerId = '1';
+    assert.equal(ExplainRecommendationRequestSchema.safeParse(numericString).success, false);
+
+    const nonFinite = structuredClone(baseRequest) as any;
+    nonFinite.optimizerResult.startingXi.starters[0].predictedPoints = Number.POSITIVE_INFINITY;
+    assert.equal(ExplainRecommendationRequestSchema.safeParse(nonFinite).success, false);
+  });
+
+  it('bounds provider output strings and arrays', () => {
+    const baseOutput = {
+      summary: 'Valid summary',
+      recommendedActions: [],
+      startingXiReasoning: [],
+      captaincyReasoning: [],
+      transferReasoning: [],
+      risks: [],
+      alternatives: [],
+      dataLimitations: [],
+      constraintSummary: [],
+      disclaimer: 'Decision support only.'
+    };
+
+    assert.equal(RecommendationExplanationCoreSchema.safeParse({
+      ...baseOutput,
+      summary: 'x'.repeat(2_001)
+    }).success, false);
+    assert.equal(RecommendationExplanationCoreSchema.safeParse({
+      ...baseOutput,
+      risks: Array.from({ length: 13 }, () => 'Bounded risk')
+    }).success, false);
+  });
+
   it('keeps the provider JSON schema aligned with the validated output keys', () => {
     const schemaKeys = Object.keys(RecommendationExplanationJsonSchema.properties).sort();
     const zodKeys = Object.keys(RecommendationExplanationCoreSchema.shape).sort();
 
     assert.deepEqual(schemaKeys, zodKeys);
     assert.deepEqual([...RecommendationExplanationJsonSchema.required].sort(), zodKeys);
+    assert.equal(RecommendationExplanationJsonSchema.properties.summary.maxLength, 2_000);
+    assert.equal(RecommendationExplanationJsonSchema.properties.risks.maxItems, 12);
   });
 });
 

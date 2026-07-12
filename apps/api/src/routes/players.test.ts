@@ -64,6 +64,42 @@ describe('players route', () => {
     assert.equal(response.body.count, 1);
     assert.equal(response.body.data[0].pos, 'MID');
   });
+
+  it('rejects unknown query fields and non-canonical player IDs', async () => {
+    const client = fakeClient([
+      playerRowFixture({ id: 1, displayName: 'Gabriel Martinelli', position: 'MID' })
+    ]);
+
+    assert.equal((await getJson(client, '/api/players?extra=1')).status, 400);
+    assert.equal((await getJson(client, '/api/players/search?name=saka&extra=1')).status, 400);
+    assert.equal((await getJson(client, '/api/players/1e2')).status, 400);
+    assert.equal((await getJson(client, '/api/players/01')).status, 400);
+  });
+
+  it('treats injection-shaped search text as data', async () => {
+    let queryText = '';
+    const client: Queryable = {
+      async query<T extends QueryResultRow = QueryResultRow>(text: string): Promise<QueryResult<T>> {
+        queryText = text;
+        return {
+          command: 'SELECT',
+          rowCount: 1,
+          oid: 0,
+          fields: [],
+          rows: [playerRowFixture({ id: 1, displayName: 'Gabriel Martinelli', position: 'MID' })] as unknown as T[]
+        };
+      }
+    };
+    const injectionText = "'; DROP TABLE players;--";
+    const response = await getJson(
+      client,
+      `/api/players/search?name=${encodeURIComponent(injectionText)}`
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.count, 0);
+    assert.doesNotMatch(queryText, /DROP TABLE/i);
+  });
 });
 
 async function getJson(client: Queryable, routePath: string) {

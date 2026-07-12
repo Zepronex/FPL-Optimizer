@@ -11,7 +11,10 @@ export type Queryable = {
 export function createDbPool(config: DatabaseConfig = readDatabaseConfig()): Pool {
   const poolConfig: PoolConfig = {
     connectionString: config.connectionString,
-    ssl: config.ssl ? { rejectUnauthorized: false } : undefined
+    ssl: config.ssl ? { rejectUnauthorized: config.sslRejectUnauthorized } : false,
+    connectionTimeoutMillis: config.connectionTimeoutMs,
+    query_timeout: config.queryTimeoutMs,
+    statement_timeout: config.queryTimeoutMs
   };
 
   return new Pool(poolConfig);

@@ -39,6 +39,7 @@ describe('LLM recommendation explanation service', () => {
     assert.equal(explanation.agentStatus.providerConfigured, true);
     assert.equal(calls[0].url, 'https://api.openai.test/v1/responses');
     const body = calls[0].body as OpenAIRequestBody;
+    assert.equal(body.max_output_tokens, 800);
     assert.equal(body.text.format.type, 'json_schema');
     assert.equal(body.text.format.strict, true);
   });
@@ -66,6 +67,7 @@ describe('LLM recommendation explanation service', () => {
     assert.equal(explanation.agentStatus.provider, 'azure_openai');
     assert.equal(calls[0].url, 'https://azure.example/openai/v1/chat/completions');
     const body = calls[0].body as AzureOpenAIRequestBody;
+    assert.equal(body.max_completion_tokens, 800);
     assert.equal(body.response_format.type, 'json_schema');
     assert.equal(body.response_format.json_schema.strict, true);
   });
@@ -105,6 +107,25 @@ describe('LLM recommendation explanation service', () => {
     assert.equal(explanation.usedFallback, true);
     assert.equal(explanation.agentStatus.fallbackReasonCode, 'provider_error');
     assert.doesNotMatch(JSON.stringify(explanation), /raw provider detail/);
+  });
+
+  it('rejects oversized provider responses without returning their content', async () => {
+    const marker = ['provider', 'response', 'marker'].join('-');
+    const fetchImpl: FetchLike = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ marker }),
+      text: async () => JSON.stringify({ marker, padding: 'x'.repeat(140_000) })
+    });
+
+    const explanation = await explainRecommendation(explanationInputFixture(), {
+      config: openAIConfigFixture(),
+      fetchImpl
+    });
+
+    assert.equal(explanation.provider, 'deterministic_fallback');
+    assert.equal(explanation.agentStatus.fallbackReasonCode, 'provider_error');
+    assert.equal(JSON.stringify(explanation).includes(marker), false);
   });
 
   it('falls back when provider output references an unknown player id', async () => {
@@ -161,6 +182,7 @@ function jsonFetch(calls: Array<{ url: string; body: unknown }>, payload: unknow
 }
 
 type OpenAIRequestBody = {
+  max_output_tokens: number;
   text: {
     format: {
       type: string;
@@ -170,6 +192,7 @@ type OpenAIRequestBody = {
 };
 
 type AzureOpenAIRequestBody = {
+  max_completion_tokens: number;
   response_format: {
     type: string;
     json_schema: {
